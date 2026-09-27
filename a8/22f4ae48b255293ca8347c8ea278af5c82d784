@@ -1,0 +1,21 @@
+.vercelignore
+  s_9206094997c110::t_949f8f2629190d 16-17
+.gitignore
+  s_9206094997c110::t_949f8f2629190d 29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a822f4ae48b255293ca8347c8ea278af5c82d784",
+  "prompts": {},
+  "sessions": {
+    "s_9206094997c110": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e18b-73be-73e1-8436-c87390ccbaa0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
