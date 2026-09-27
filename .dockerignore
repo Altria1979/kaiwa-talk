@@ -9,8 +9,7 @@
 !shared/
 !shared/**/
 !shared/**/*.ts
-!docker/
-!docker/Dockerfile
+!Dockerfile
 !.dockerignore
 
 # Never send local secrets or personal data to the image builder.

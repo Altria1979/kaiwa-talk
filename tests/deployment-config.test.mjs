@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile, access } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { test } from 'node:test';
 
 const root = new URL('../', import.meta.url);
@@ -29,6 +30,8 @@ test('the container uses the repository as build context and its explicit Docker
   const backend = config.services.backend;
   assert.equal(backend.root, '.');
   assert.equal(backend.runtime, 'container');
+  // The cloud builder uses the Dockerfile directory as its COPY context.
+  assert.equal(dirname(backend.entrypoint), '.');
   await access(new URL(backend.entrypoint, root));
   assert.equal(backend.functions['**'].maxDuration, 300);
   for (const rule of config.rewrites) assert.ok(config.services[rule.destination.service]);
