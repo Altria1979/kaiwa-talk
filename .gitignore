@@ -26,6 +26,8 @@ data/
 .idea/
 .vscode/
 .omx/
+.agents/
+skills-lock.json
 AGENTS.md
 CLAUDE.md
 __pycache__/
