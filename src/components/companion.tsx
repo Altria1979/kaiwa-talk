@@ -8,12 +8,15 @@ import { AVATAR_FRAMING_STORAGE_KEY, DEFAULT_AVATAR_FRAMING, parseAvatarFraming 
 import type { AvatarEmotion } from '../../shared/avatar-emotion';
 import type { AvatarCapabilities, AvatarCommand } from '../lib/avatar-animation';
 import { useConversation } from '../hooks/use-conversation';
+import { useConversationScroll } from '../hooks/use-conversation-scroll';
 import { useReadingPreferences } from '../hooks/use-reading-preferences';
-import { ReadingControls, ReplyReading, type ReadingControlsProps } from './reading-aids';
+import { ReadingControls, type ReadingControlsProps } from './reading-aids';
+import { MessageReadingAid } from './message-reading-aid';
 import { AvatarStage, validateAvatarFile } from './avatar-stage';
 import { AvatarControls } from './avatar-controls';
 import { Icon } from './icon';
 import { ReplySuggestions } from './reply-suggestions';
+import { TranscriptPreview } from './transcript-preview';
 import { BailianSettings } from './bailian-settings';
 import { PaperNavigation, type Panel } from './paper-navigation';
 import { useI18n } from '../i18n/provider';
@@ -26,7 +29,7 @@ export function Companion() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const readingPreferences = useReadingPreferences();
   const [avatarFraming, setAvatarFraming] = useState(DEFAULT_AVATAR_FRAMING);
-  const [avatarEmotionMode, setAvatarEmotionMode] = useState<AvatarEmotion | 'auto'>('auto');
+  const [avatarEmotionMode, setAvatarEmotionMode] = useState<AvatarEmotion | 'auto'>('neutral');
   const [avatarCommand, setAvatarCommand] = useState<AvatarCommand | null>(null);
   const [avatarCapabilities, setAvatarCapabilities] = useState<AvatarCapabilities>({ ready: false, actions: [], emotions: [], interactions: [] });
   const avatarRequest = useRef(0);
@@ -42,15 +45,16 @@ export function Companion() {
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<CompanionMessageKey | null>(null);
   const [input, setInput] = useState('');
-  const [showLatest, setShowLatest] = useState(false);
   const [busy, setBusy] = useState(false);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translating, setTranslating] = useState<string | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
   const statusRequest = useRef(0);
-  const chatScroll = useRef<HTMLDivElement>(null);
-  const chatContent = useRef<HTMLDivElement>(null);
-  const followLatest = useRef(true);
+  const { chatScroll, chatContent, onScroll, showLatest, scrollToLatest } = useConversationScroll({
+    sessionId: conversation.session?.id,
+    latestUserMessageId: conversation.messages.findLast(message => message.role === 'user')?.id,
+    recognizing: Boolean(conversation.pendingTranscript),
+  });
   const active = conversation.active;
   // A running session owns its credentials even if another tab clears storage.
   const ready = active || status?.ready === true;
@@ -115,22 +119,6 @@ export function Companion() {
     if (conversation.session) void api.sessions().then(setSessions).catch(() => {});
   }, [conversation.session]);
   useEffect(() => {
-    followLatest.current = true;
-    if (chatScroll.current) chatScroll.current.scrollTop = chatScroll.current.scrollHeight;
-  }, [conversation.session?.id]);
-  useEffect(() => {
-    const scroll = chatScroll.current;
-    const content = chatContent.current;
-    if (!scroll || !content) return;
-    // Follow streamed text and layout changes only while the reader is at the bottom.
-    const observer = new ResizeObserver(() => {
-      if (followLatest.current) scroll.scrollTop = scroll.scrollHeight;
-    });
-    observer.observe(scroll);
-    observer.observe(content);
-    return () => observer.disconnect();
-  }, []);
-  useEffect(() => {
     if (!notice) return;
     const timeout = setTimeout(() => setNotice(null), 4200);
     return () => clearTimeout(timeout);
@@ -141,12 +129,12 @@ export function Companion() {
     setError(null);
     try { await action(); } catch (cause) { setError(cause); } finally { setBusy(false); }
   };
-  const sendText = async (text: string) => {
+  const sendText = async (text: string, startVoice = false) => {
     if (!text.trim() || busy || !ready) return;
     await perform(async () => {
+      if (startVoice) await conversation.start({ voice: true, sessionId: conversation.session?.endedAt ? undefined : conversation.session?.id });
       await conversation.sendText(text.trim());
-      followLatest.current = true;
-      if (chatScroll.current) chatScroll.current.scrollTop = chatScroll.current.scrollHeight;
+      scrollToLatest();
       setInput('');
       composer.current?.focus();
     });
@@ -166,23 +154,56 @@ export function Companion() {
     setNotice('companion.memorySaved');
   };
   const displayError = error ? formatError(error) : conversation.error ? formatError(conversation.error, conversation.errorDetails) : '';
-  // Recognition is still the user's turn to read; the hook clears suggestions on send.
-  const showReplySuggestions = active && conversation.replySuggestions !== null;
   const listeningLabel = conversation.muted ? t('companion.muted') : conversation.voiceEnabled ? t('companion.state.listening') : t('companion.textConversation');
   const statusLabel = active ? conversation.state === 'listening' ? listeningLabel : t(`companion.state.${conversation.state}`) : conversation.session ? t('companion.state.idle') : '';
   const errorBanner = displayError && <div className="error-banner" role="alert"><Icon name="info" size={18} /><span>{displayError}</span><button className="icon-button" aria-label={t('companion.dismissError')} onClick={() => { setError(null); conversation.clearError(); }}><Icon name="close" size={16} /></button></div>;
-  const renderMessage = (message: ChatMessage, showReference = true) => <Message
-    key={message.id}
-    showReference={showReference}
-    readingPreferences={readingPreferences}
-    message={message}
-    name={settings.characterName}
-    translation={translations[message.id] ?? (message.translationLanguage === 'ja' ? message.translation : null)}
-    translating={translating === message.id}
-    canReplay={active && !busy && conversation.canReplay(message.turnId)}
-    onTranslate={() => void translate(message)}
-    onReplay={(slow) => void perform(() => conversation.replay(message.turnId, slow))}
-  />;
+  const latestAssistantId = conversation.messages.findLast(message => message.role === 'assistant')?.id;
+  const renderMessage = (message: ChatMessage, autoLoadAid = false) => {
+    const currentSuggestions = active && conversation.replySuggestions?.messageId === message.id ? conversation.replySuggestions : null;
+    const savedSuggestions = message.replySuggestions?.length ? {
+      type: 'reply.suggestions' as const, turnId: message.turnId, messageId: message.id,
+      status: 'ready' as const, suggestions: message.replySuggestions, meaningLanguage: message.replySuggestionsLanguage,
+    } : null;
+    return <Message
+      key={message.id}
+      readingPreferences={readingPreferences}
+      message={message}
+      autoLoadAid={autoLoadAid}
+      streaming={message.id === conversation.streamingMessageId}
+      onReadingAid={conversation.setMessageReadingAid}
+      name={settings.characterName}
+      translation={translations[message.id] ?? (message.translationLanguage === 'ja' ? message.translation : null)}
+      translating={translating === message.id}
+      canReplay={active && !busy && conversation.canReplay(message.turnId)}
+      onTranslate={() => void translate(message)}
+      onReplay={(slow) => void perform(() => conversation.replay(message.turnId, slow))}
+    >
+      {message.role === 'assistant' && (currentSuggestions ? <ReplySuggestions
+        key={message.id}
+        value={currentSuggestions}
+        learningLanguage={settings.learningLanguage}
+        readingPreferences={readingPreferences}
+        characterName={settings.characterName}
+        voiceEnabled={conversation.voiceEnabled}
+        muted={conversation.muted}
+        userSpeaking={conversation.userSpeaking}
+        vadStatus={conversation.vadStatus}
+        busy={busy}
+        speech={conversation.suggestionSpeech}
+        onListen={(index) => conversation.listenSuggestion(message.id, index)}
+        onSend={sendText}
+        onPractice={() => perform(async () => {
+          if (conversation.muted) conversation.toggleMute();
+          await conversation.start({ voice: true, sessionId: conversation.session?.id });
+        })}
+      /> : savedSuggestions && <ReplySuggestions
+        key={message.id}
+        readOnly
+        value={savedSuggestions}
+        readingPreferences={readingPreferences}
+      />)}
+    </Message>;
+  };
   const renderReview = (review: LearningReview) => review.language !== 'ja' ? <p className="review-pending">{t('companion.reviewUnavailable')}</p> : <Review review={review} memories={memories} onSave={async (content) => {
     try { await saveSuggestion(content); } catch (cause) { setError(cause); throw cause; }
   }} />;
@@ -196,59 +217,34 @@ export function Companion() {
       <div className="chat-layout">
         <section className="conversation-panel" aria-label={t('companion.currentConversation')}>
           <div className="conversation-body">
-            <div className="conversation-scroll" ref={chatScroll} tabIndex={0} aria-label={t('companion.conversationMessages')} onScroll={() => {
-              const node = chatScroll.current;
-              if (!node) return;
-              const atBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 64;
-              followLatest.current = atBottom;
-              setShowLatest(!atBottom);
-            }}>
+            <div className="conversation-scroll" ref={chatScroll} tabIndex={0} aria-label={t('companion.conversationMessages')} onScroll={onScroll}>
               <div className="conversation-content" ref={chatContent}>
-                {conversation.messages.map(message => renderMessage(message, !(showReplySuggestions && message.id === conversation.replySuggestions?.messageId)))}
-                {conversation.pendingTranscript && <article className="message user-message transcript-preview"><div className="message-meta"><span>{t('companion.you')}</span><span className="listening-dot" /><small>{t('companion.recognizing')}</small></div><div className="message-bubble"><p>{conversation.pendingTranscript}</p></div></article>}
-                {!conversation.messages.length && !conversation.pendingTranscript && <div className="conversation-empty"><span className="empty-symbol" aria-hidden="true">K</span><h2>{t('companion.emptyHeading')}</h2><p>{t('companion.emptyDescription')}</p><div className="conversation-starters">{[{ id: 'greeting', label: t('companion.starterGreeting'), text: 'こんにちは！' }, { id: 'introduction', label: t('companion.starterIntroduction'), text: '日本語で自己紹介を練習したいです。' }, { id: 'cafe', label: t('companion.starterCafe'), text: 'カフェで注文する練習をしましょう。' }].map(starter => <button key={starter.id} disabled={!ready || busy} onClick={() => void sendText(starter.text)}>{starter.label}<Icon name="arrow" size={13} /></button>)}</div></div>}
+                {conversation.messages.map(message => renderMessage(message, message.id === latestAssistantId))}
+                <TranscriptPreview text={conversation.pendingTranscript} recognizing={Boolean(conversation.transcript)} />
+                {!conversation.messages.length && !conversation.pendingTranscript && <div className="conversation-empty"><h2>{t('companion.emptyHeading')}</h2><p>{t('companion.emptyDescription')}</p><div className="conversation-starters">{[{ id: 'greeting', label: t('companion.starterGreeting'), text: 'こんにちは！' }, { id: 'introduction', label: t('companion.starterIntroduction'), text: '日本語で自己紹介を練習したいです。' }, { id: 'cafe', label: t('companion.starterCafe'), text: 'カフェで注文する練習をしましょう。' }].map(starter => <button key={starter.id} disabled={!ready || busy} onClick={() => void sendText(starter.text, true)}>{starter.label}<Icon name="arrow" size={13} /></button>)}</div></div>}
                 {conversation.session?.review && renderReview(conversation.session.review)}
                 {conversation.session?.endedAt && !conversation.session.review && <p className="review-pending" role="status"><Icon name="spark" size={15} />{t('companion.reviewPending')}</p>}
               </div>
             </div>
-            {showLatest && <button className="latest-message" aria-label={t('companion.latestMessage')} onClick={() => {
-              followLatest.current = true;
-              if (chatScroll.current) chatScroll.current.scrollTop = chatScroll.current.scrollHeight;
-              setShowLatest(false);
-            }}>{t('companion.latestMessageButton')}</button>}
+            {showLatest && <button className="latest-message" aria-label={t('companion.latestMessage')} onClick={scrollToLatest}>{t('companion.latestMessageButton')}</button>}
           </div>
-          {showReplySuggestions && conversation.replySuggestions && <ReplySuggestions
-            key={conversation.replySuggestions.turnId}
-            value={conversation.replySuggestions}
-            learningLanguage={settings.learningLanguage}
-            readingPreferences={readingPreferences}
-            characterName={settings.characterName}
-            voiceEnabled={conversation.voiceEnabled}
-            muted={conversation.muted}
-            userSpeaking={conversation.userSpeaking}
-            vadStatus={conversation.vadStatus}
-            busy={busy}
-            speech={conversation.suggestionSpeech}
-            onListen={(index) => conversation.listenSuggestion(conversation.replySuggestions!.messageId, index)}
-            onSend={sendText}
-            onPractice={() => perform(async () => {
-              if (conversation.muted) conversation.toggleMute();
-              await conversation.start({ voice: true, sessionId: conversation.session?.id });
-            })}
-          />}
           <div className="conversation-footer">
-            <form id="text-composer" className="composer" onSubmit={submit}>
-              <label className="sr-only" htmlFor="message-input">{t('companion.messageInput')}</label>
-              <textarea ref={composer} id="message-input" value={input} maxLength={MAX_TEXT_LENGTH} onChange={(event) => setInput(event.target.value)} placeholder={t('companion.messagePlaceholder')} rows={2} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendText(input); } }} />
-              <button className="send-button" type="submit" aria-label={t('companion.sendMessage')} disabled={!input.trim() || !ready || busy}><Icon name="send" size={18} /></button>
-            </form>
-            <div className="main-controls">
-              {active && conversation.voiceEnabled ? <button className="primary-button end-button" onClick={() => void perform(conversation.end)} disabled={busy}><Icon name="stop" size={14} />{t('companion.endConversation')}</button> : <button className="primary-button" onClick={() => void perform(() => conversation.start({ voice: true, sessionId: conversation.session?.endedAt ? undefined : conversation.session?.id }))} disabled={!ready || busy}><Icon name="mic" size={16} />{busy ? t('companion.connecting') : active ? t('companion.enableVoice') : t('companion.startConversation')}</button>}
-              <button className={`round-control ${conversation.muted ? 'is-muted' : ''}`} aria-label={conversation.muted ? t('companion.unmute') : t('companion.mute')} title={conversation.muted ? t('companion.unmute') : t('companion.mute')} aria-pressed={conversation.muted} disabled={!active || !conversation.voiceEnabled} onClick={conversation.toggleMute}><Icon name={conversation.muted ? 'mic-off' : 'mic'} size={18} /></button>
-              <button className="round-control" aria-label={t('companion.stopReply')} title={t('companion.stopReply')} disabled={!active || !['thinking', 'speaking'].includes(conversation.state)} onClick={conversation.cancel}><Icon name="pause" size={15} /></button>
-              {active && !conversation.voiceEnabled && <button className="text-button" onClick={() => void perform(conversation.end)} disabled={busy}>{t('companion.endConversation')}</button>}
-              <span className="composer-hint">{t('companion.composerHint')}</span>
+            <div className="composer-row">
+              <div className="conversation-start">
+                {active && conversation.voiceEnabled ? <button type="button" className="primary-button end-button" onClick={() => void perform(conversation.end)} disabled={busy}><Icon name="stop" size={14} />{t('companion.endConversation')}</button> : <button type="button" className="primary-button" onClick={() => void perform(() => conversation.start({ voice: true, sessionId: conversation.session?.endedAt ? undefined : conversation.session?.id }))} disabled={!ready || busy}><Icon name="mic" size={16} />{busy ? t('companion.connecting') : active ? t('companion.enableVoice') : t('companion.startConversation')}</button>}
+              </div>
+              <form id="text-composer" className="composer" onSubmit={submit}>
+                <label className="sr-only" htmlFor="message-input">{t('companion.messageInput')}</label>
+                <textarea ref={composer} id="message-input" value={input} maxLength={MAX_TEXT_LENGTH} onChange={(event) => setInput(event.target.value)} placeholder={t('companion.messagePlaceholder')} rows={1} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendText(input); } }} />
+                <button className="send-button" type="submit" aria-label={t('companion.sendMessage')} disabled={!input.trim() || !ready || busy}><Icon name="send" size={18} /></button>
+              </form>
+              <div className="composer-secondary-controls">
+                <button type="button" className={`round-control ${conversation.muted ? 'is-muted' : ''}`} aria-label={conversation.muted ? t('companion.unmute') : t('companion.mute')} title={conversation.muted ? t('companion.unmute') : t('companion.mute')} aria-pressed={conversation.muted} disabled={!active || !conversation.voiceEnabled} onClick={conversation.toggleMute}><Icon name={conversation.muted ? 'mic-off' : 'mic'} size={18} /></button>
+                <button type="button" className="round-control" aria-label={t('companion.stopReply')} title={t('companion.stopReply')} disabled={!active || !['thinking', 'speaking'].includes(conversation.state)} onClick={conversation.cancel}><Icon name="pause" size={15} /></button>
+                {active && !conversation.voiceEnabled && <button type="button" className="text-button" onClick={() => void perform(conversation.end)} disabled={busy}>{t('companion.endConversation')}</button>}
+              </div>
             </div>
+            <span className="composer-hint">{t('companion.composerHint')}</span>
           </div>
         </section>
 
@@ -342,14 +338,14 @@ function HistoryMessages({ session, messages, renderMessage, renderReview }: {
   </div>;
 }
 
-function Message({ message, name, translation, translating, canReplay, onTranslate, onReplay, showReference = true, readingPreferences }: { readingPreferences: ReadingControlsProps; showReference?: boolean; message: ChatMessage; name: string; translation: string | null; translating: boolean; canReplay: boolean; onTranslate: () => void; onReplay: (slow?: boolean) => void }) {
+function Message({ message, name, translation, translating, canReplay, onTranslate, onReplay, children, readingPreferences, autoLoadAid, streaming, onReadingAid }: { readingPreferences: ReadingControlsProps; children?: ReactNode; message: ChatMessage; name: string; translation: string | null; translating: boolean; canReplay: boolean; onTranslate: () => void; onReplay: (slow?: boolean) => void; autoLoadAid: boolean; streaming: boolean; onReadingAid: (messageId: string, content: string, aid: NonNullable<ChatMessage['readingAid']>) => void }) {
   const { t } = useI18n();
   const isAssistant = message.role === 'assistant';
   return <article className={`message ${isAssistant ? 'assistant-message' : 'user-message'}`}>
     <div className="message-meta">{isAssistant && <span className="message-avatar">A</span>}<span>{isAssistant ? name : t('companion.you')}</span>{message.interrupted && <small>{t('companion.interrupted')}</small>}{message.delivery === 'voice' && !isAssistant && <Icon name="mic" size={12} />}</div>
-    <div className="message-bubble"><p>{message.content || '…'}</p>{translation && <div className="message-translation"><Icon name="translate" size={13} /><span lang="ja">{translation}</span></div>}</div>
+    <div className="message-bubble"><p>{message.content || '…'}</p>{isAssistant && <MessageReadingAid message={message} autoLoad={autoLoadAid} streaming={streaming} showKana={readingPreferences.showKana} onReady={onReadingAid} />}{translation && <div className="message-translation"><Icon name="translate" size={13} /><span lang="ja">{translation}</span></div>}</div>
     {isAssistant && message.content && <div className="message-actions"><button onClick={() => onReplay()} disabled={!canReplay} title={canReplay ? t('companion.replayTitle') : t('companion.replayUnavailable')}><Icon name="volume" size={14} />{t('companion.replay')}</button><button onClick={() => onReplay(true)} disabled={!canReplay}><Icon name="slow" size={14} />{t('companion.listenSlowly')}</button><button onClick={onTranslate} disabled={translating || !!translation}><Icon name="translate" size={14} />{translating ? t('companion.preparingExplanation') : translation ? t('companion.explained') : t('companion.explainJapanese')}</button></div>}
-    {isAssistant && showReference && message.replySuggestionsLanguage === 'ja' && !!message.replySuggestions?.length && <details className="reply-reference"><summary>{t('companion.replyReference')}</summary><ul>{message.replySuggestions.map(suggestion => <li key={suggestion.text}><p lang={suggestion.romaji ? 'ja' : undefined}>{suggestion.text}</p><ReplyReading suggestion={suggestion} {...readingPreferences} /><small lang="ja">{suggestion.meaning}</small></li>)}</ul></details>}
+    {children}
   </article>;
 }
 

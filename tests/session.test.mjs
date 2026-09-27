@@ -443,16 +443,19 @@ test('cancelling a voice turn aborts active synthesis and skips queued sentences
   assert.equal(last(events, 'turn.cancelled').turnId, turnId);
 });
 
-test('suggestions and reviews use Japanese explanations despite legacy Chinese settings and mark fresh content', async (t) => {
+test('suggestions persist two Chinese translations while reviews keep Japanese explanations', async (t) => {
   settings.supportLanguage = '中文';
   const suggestions = [
-    { text: '好きです。', reading: 'すきです。', meaning: '好みを伝える表現です。' },
-    { text: '苦手です。', reading: 'にがてです。', meaning: 'あまり好きではないと伝えます。' },
-    { text: 'まだわかりません。', reading: 'まだわかりません。', meaning: 'まだ判断できないと伝えます。' },
+    { text: '好きです。', reading: 'すきです。', meaning: '我喜欢。' },
+    { text: '苦手です。', reading: 'にがてです。', meaning: '我不太喜欢。' },
   ];
   const review = {
     topic: '好きな食べ物について話しました。',
-    expressions: suggestions.map(({ text, meaning }) => ({ text, meaning })),
+    expressions: [
+      { text: '好きです。', meaning: '好みを伝える表現です。' },
+      { text: '苦手です。', meaning: 'あまり好きではないと伝えます。' },
+      { text: 'まだわかりません。', meaning: 'まだ判断できないと伝えます。' },
+    ],
     improvement: '好きな理由を一言添えてみましょう。',
     memorySuggestions: [],
   };
@@ -462,11 +465,13 @@ test('suggestions and reviews use Japanese explanations despite legacy Chinese s
   await session.handle({ type: 'text', text: 'りんごが好きです。' });
   await waitFor(() => last(events, 'reply.suggestions')?.status === 'ready');
   const suggestionPrompt = completionPrompts[0][0].content;
-  assert.match(suggestionPrompt, /辅助语言始终是日本語/);
-  assert.match(suggestionPrompt, /meaning 始终用日语/);
+  assert.match(suggestionPrompt, /meaning 始终使用简体中文/);
+  assert.match(suggestionPrompt, /suggestions 必须恰好两项/);
   const assistant = messages.find(message => message.role === 'assistant');
-  assert.equal(assistant.replySuggestionsLanguage, 'ja');
+  assert.equal(assistant.replySuggestionsLanguage, 'zh-CN');
   assert.deepEqual(assistant.replySuggestions, suggestions);
+  assert.equal(last(events, 'reply.suggestions').meaningLanguage, 'zh-CN');
+  assert.deepEqual(last(events, 'reply.suggestions').suggestions, suggestions);
 
   await session.handle({ type: 'end' });
   await waitFor(() => sessions.get(sessionId).review);

@@ -19,7 +19,7 @@ No registration or website password is required. Bring your own Alibaba Cloud Mo
 | Feature | What you can do |
 | --- | --- |
 | Voice and text practice | Speak Japanese, or start a conversation and ask questions through text. Stop replies, mute the microphone, and turn voice back on |
-| Help with replies | View 3 suggested responses with kana or romaji hints. Choose “Read aloud” to practise, send a suggestion directly, or listen to a sample on demand |
+| Help with replies | View 2 suggested responses with Simplified Chinese translations and kana or romaji hints. Choose “Read aloud” to practise, send a suggestion directly, or listen to a sample on demand |
 | Replay and slow playback | Listen again to complete sentences already synthesised in the current conversation, or play them at 0.8× speed while preserving pitch |
 | Japanese explanations and recaps | Request a brief Japanese explanation. After a conversation, receive a topic summary, three useful expressions, and one suggestion for improvement |
 | 3D companion | Mouth movements, expressions, and captions alongside speech; actions such as waving, nodding, and bowing; and interactions by clicking the head, body, or hands |

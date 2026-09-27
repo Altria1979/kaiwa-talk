@@ -4,9 +4,8 @@ import { DEFAULT_SETTINGS } from '../shared/protocol.ts';
 import { parseReplySuggestions, replySuggestionPrompt } from '../server/reply-suggestions.ts';
 
 const suggestions = [
-  { text: '本を読みます。', reading: 'ほんを よみます。', meaning: '読書をします。', romaji: 'Hon o yomimasu.' },
-  { text: '音楽を聴きます。', reading: 'おんがくを ききます。', meaning: '音楽を楽しみます。', romaji: 'Ongaku o kikimasu.' },
-  { text: 'まだ決めていません。', reading: 'まだ きめていません。', meaning: 'まだ予定はありません。', romaji: 'Mada kimete imasen.' },
+  { text: '本を読みます。', reading: 'ほんを よみます。', meaning: '我会看书。', romaji: 'Hon o yomimasu.' },
+  { text: '音楽を聴きます。', reading: 'おんがくを ききます。', meaning: '我会听音乐。', romaji: 'Ongaku o kikimasu.' },
 ];
 const parse = items => parseReplySuggestions(JSON.stringify({ suggestions: items }));
 
@@ -14,7 +13,7 @@ test('accepts new romaji and legacy suggestions without adding an absent field',
   assert.deepEqual(parse(suggestions), suggestions);
   const legacy = suggestions.map(({ text, reading, meaning }) => ({ text, reading, meaning }));
   assert.deepEqual(parse(legacy), legacy);
-  assert.deepEqual(parse([suggestions[0], legacy[1], suggestions[2]]), [suggestions[0], legacy[1], suggestions[2]]);
+  assert.deepEqual(parse([suggestions[0], legacy[1]]), [suggestions[0], legacy[1]]);
 });
 
 test('preserves bounded Hepburn macrons, apostrophes and digits while trimming surrounding spaces', () => {
@@ -32,10 +31,25 @@ test('rejects invalid optional romaji rather than silently dropping a malformed 
 test('keeps strict schema, required fields, count and distinct text validation', () => {
   assert.throws(() => parse([{ ...suggestions[0], translation: 'extra' }, ...suggestions.slice(1)]), /fields/);
   assert.throws(() => parse([{ ...suggestions[0], meaning: undefined }, ...suggestions.slice(1)]), /field/);
-  assert.throws(() => parse(suggestions.slice(1)), /three/);
-  assert.throws(() => parse([suggestions[0], { ...suggestions[1], text: '本を 読みます!' }, suggestions[2]]), /distinct/);
-  assert.throws(() => parseReplySuggestions(JSON.stringify({ suggestions, extra: true })), /three/);
+  for (const items of [[], suggestions.slice(1), [...suggestions, { text: 'まだ決めていません。', reading: 'まだ きめていません。', meaning: '我还没有决定。' }]]) {
+    assert.throws(() => parse(items), /exactly two/);
+  }
+  assert.throws(() => parse([suggestions[0], { ...suggestions[1], text: '本を 読みます!' }]), /distinct/);
+  assert.throws(() => parseReplySuggestions(JSON.stringify({ suggestions, extra: true })), /exactly two/);
   assert.throws(() => parseReplySuggestions(' '.repeat(4097)), /response limit/);
+});
+
+test('requests exactly two distinct replies with Chinese translations regardless of auxiliary language settings', () => {
+  for (const supportLanguage of ['日本語', '中文', 'English']) {
+    const [system] = replySuggestionPrompt({ ...DEFAULT_SETTINGS, supportLanguage }, [], '次は何をしますか？');
+    assert.match(system.content, /恰好两个/);
+    assert.match(system.content, /suggestions 必须恰好两项/);
+    assert.match(system.content, /两个选项应表达不同/);
+    assert.match(system.content, /meaning 始终使用简体中文/);
+    assert.match(system.content, /自然、准确的简体中文翻译/);
+    assert.match(system.content, /不要用日语改写原句/);
+    assert.doesNotMatch(system.content, /meaning 始终用日语|辅助语言始终是日本語|恰好三项/);
+  }
 });
 
 test('asks Japanese suggestions for contextual Hepburn with particles and four fields', () => {
@@ -53,5 +67,6 @@ test('keeps non-Japanese suggestions on the original schema without romaji', () 
   const [system] = replySuggestionPrompt({ ...DEFAULT_SETTINGS, learningLanguage: '英語' }, [], 'What are you doing?');
   assert.match(system.content, /非日语学习不要输出 romaji 字段/);
   assert.match(system.content, /这三个非空字符串字段/);
+  assert.match(system.content, /自然、准确的简体中文翻译/);
   assert.doesNotMatch(system.content, /"romaji":/);
 });

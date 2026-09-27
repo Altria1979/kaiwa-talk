@@ -10,7 +10,8 @@ import { RealtimeSession } from './session.js';
 import { providerError } from './providers/errors.js';
 import { QwenClient } from './providers/qwen.js';
 import { SuggestionAudioError, synthesizeSuggestionAudio } from './suggestion-audio.js';
-import { MAX_MODEL_BYTES, MAX_TEXT_LENGTH, type ClientEvent, type Settings } from '../shared/protocol.js';
+import { messageReadingAidPrompt, parseMessageReadingAid } from './message-reading-aid.js';
+import { MAX_MODEL_BYTES, MAX_TEXT_LENGTH, type ClientEvent, type MessageReadingAid, type Settings } from '../shared/protocol.js';
 
 const origins = new Set([`http://localhost:${config.webPort}`, `http://127.0.0.1:${config.webPort}`]);
 const localHosts = new Set([`localhost:${config.servicePort}`, `127.0.0.1:${config.servicePort}`]);
@@ -97,6 +98,7 @@ function settingsPatch(input: Record<string, unknown>): Partial<Settings> {
 }
 
 const translations = new Map<string, Promise<string>>();
+const readingAids = new Map<string, Promise<MessageReadingAid>>();
 async function handle(req: IncomingMessage, res: ServerResponse) {
   if (!config.cloud && !localHosts.has(req.headers.host ?? '')) throw new HttpError(403, 'この端末からのみアクセスできます');
   const origin = req.headers.origin;
@@ -159,6 +161,35 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     } finally {
       req.removeListener('aborted', cancel);
       res.removeListener('close', cancel);
+    }
+  }
+  const readingAidPath = path.match(/^\/api\/messages\/([0-9a-f-]{36})\/reading-aid$/);
+  if (readingAidPath && req.method === 'POST') {
+    const runtime = requestBailianConfig(req);
+    const message = await store.getMessage(readingAidPath[1]);
+    if (message?.role !== 'assistant' || !message.content.trim()) throw new HttpError(404, 'メッセージが見つからないか、内容が空です');
+    if (message.readingAid) return send(res, 200, { readingAid: message.readingAid });
+    if (!getStatus(runtime).ready) throw new HttpError(503, '練習設定に Bailian API キーを入力し、接続先ドメインを確認してください');
+    const credentialId = createHash('sha256').update(runtime.apiKey).update('\0').update(runtime.chatBaseUrl).digest('hex');
+    const contentId = createHash('sha256').update(message.content).digest('hex');
+    const taskId = `${browserId}:${message.id}:${credentialId}:${contentId}`;
+    if (!readingAids.has(taskId)) {
+      if ([...readingAids.keys()].filter(key => key.startsWith(`${browserId}:`)).length >= 3 || readingAids.size >= 100) throw new HttpError(429, '解説のリクエストが混み合っています。しばらくしてから再試行してください');
+      const task = new QwenClient(runtime).complete(messageReadingAidPrompt(message.content), AbortSignal.timeout(45_000))
+        .then(async raw => {
+          const readingAid = parseMessageReadingAid(raw, message.content);
+          const current = await store.getMessage(message.id);
+          if (!current || current.content !== message.content) throw new HttpError(409, 'メッセージが更新されました。もう一度お試しください。');
+          await store.updateMessage(message.id, { readingAid });
+          return readingAid;
+        }).finally(() => readingAids.delete(taskId));
+      readingAids.set(taskId, task);
+    }
+    try { return send(res, 200, { readingAid: await readingAids.get(taskId) }); }
+    catch (error) {
+      if (error instanceof HttpError) throw error;
+      const fallback = '解説を生成できませんでした。Bailian の設定、モデルのアクセス権、利用枠を確認して再試行してください';
+      throw new HttpError(502, fallback, providerError(error, fallback));
     }
   }
   const translatePath = path.match(/^\/api\/messages\/([0-9a-f-]{36})\/translate$/);

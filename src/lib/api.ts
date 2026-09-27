@@ -1,5 +1,5 @@
 import { AppError, describeError, type ErrorDescriptor } from '../../shared/app-errors';
-import { MAX_MODEL_BYTES, type BrowserBailianCredentials, type ChatMessage, type MemoryRecord, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
+import { MAX_MODEL_BYTES, type BrowserBailianCredentials, type ChatMessage, type MemoryRecord, type MessageReadingAid, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
 import { browserCredentialHeaders, readBrowserCredentials } from './bailian-credentials';
 import { ensureBrowserSession, SERVICE_URL } from './browser-session';
 export { ensureBrowserSession, SERVICE_URL, SOCKET_URL } from './browser-session';
@@ -37,6 +37,7 @@ export const api = {
   sessions: () => request<SessionRecord[]>('/api/sessions'),
   session: (id: string) => request<{ session: SessionRecord; messages: ChatMessage[] }>(`/api/sessions/${encodeURIComponent(id)}`),
   translate: async (id: string) => request<{ translation: string }>(`/api/messages/${encodeURIComponent(id)}/translate`, { method: 'POST', headers: browserCredentialHeaders() }, 70_000),
+  readingAid: (id: string, signal: AbortSignal) => request<{ readingAid: MessageReadingAid }>(`/api/messages/${encodeURIComponent(id)}/reading-aid`, { method: 'POST', headers: browserCredentialHeaders(), signal }, 70_000),
   suggestionAudio: (id: string, index: number, signal: AbortSignal) => request<{ audio: string; sampleRate: 24000 }>(
     `/api/messages/${encodeURIComponent(id)}/suggestions/${index}/audio`,
     { method: 'POST', headers: browserCredentialHeaders(), signal },

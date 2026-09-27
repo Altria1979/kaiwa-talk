@@ -615,9 +615,9 @@ export class RealtimeSession {
       if (signal.aborted) throw signal.reason;
       const suggestions = parseReplySuggestions(response);
       if (!ownsRequest() || signal.aborted) return;
-      await this.updateTurn(turn, { replySuggestions: suggestions, replySuggestionsLanguage: 'ja' });
+      await this.updateTurn(turn, { replySuggestions: suggestions, replySuggestionsLanguage: 'zh-CN' });
       if (!ownsRequest() || signal.aborted) return;
-      this.send({ type: 'reply.suggestions', turnId: turn.id, messageId: turn.message.id, status: 'ready', suggestions });
+      this.send({ type: 'reply.suggestions', turnId: turn.id, messageId: turn.message.id, status: 'ready', suggestions, meaningLanguage: 'zh-CN' });
     } catch {
       // A timeout or invalid auxiliary response is local to this feature, never a chat error.
       if (ownsRequest()) this.send({ type: 'reply.suggestions', turnId: turn.id, messageId: turn.message.id, status: 'unavailable', suggestions: [] });

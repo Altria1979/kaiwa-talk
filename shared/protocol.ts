@@ -49,6 +49,11 @@ export interface ReplySuggestion {
   romaji?: string;
 }
 
+export interface MessageReadingAid {
+  translation: string;
+  reading: string;
+}
+
 export interface ChatMessage {
   id: string;
   sessionId: string;
@@ -60,9 +65,10 @@ export interface ChatMessage {
   delivery: 'text' | 'voice';
   translation: string | null;
   translationLanguage?: 'ja';
+  readingAid?: MessageReadingAid;
   createdAt: string;
   replySuggestions?: ReplySuggestion[];
-  replySuggestionsLanguage?: 'ja';
+  replySuggestionsLanguage?: 'ja' | 'zh-CN';
 }
 
 export interface MemoryRecord {
@@ -109,7 +115,7 @@ export type ServerEvent =
   | { type: 'avatar.emotion'; turnId: string; messageId: string; emotion: AvatarEmotion }
   | { type: 'reply.delta'; turnId: string; delta: string }
   | { type: 'reply.done'; turnId: string; message: ChatMessage }
-  | { type: 'reply.suggestions'; turnId: string; messageId: string; status: 'loading' | 'ready' | 'unavailable'; suggestions: ReplySuggestion[] }
+  | { type: 'reply.suggestions'; turnId: string; messageId: string; status: 'loading' | 'ready' | 'unavailable'; suggestions: ReplySuggestion[]; meaningLanguage?: 'ja' | 'zh-CN' }
   | { type: 'audio.sentence'; turnId: string; sentenceId: string; text: string }
   | { type: 'audio'; turnId: string; sentenceId: string; audio: string; sampleRate: 24000 }
   | { type: 'audio.end'; turnId: string; sentenceId: string; text: string }

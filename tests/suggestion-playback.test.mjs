@@ -535,3 +535,13 @@ test('a completed demonstration reuses cached audio without synthesizing the sam
   assert.equal(audio.busy, false);
   assert.equal(audio.muted, false);
 });
+
+test('Chinese suggestion language metadata survives the live event for later history rendering', async t => {
+  const { current, receive } = await conversation(t);
+  const translated = suggestions.map((suggestion, index) => ({ ...suggestion, meaning: index === 0 ? '是的，我会好好休息。' : '不，我会读书。' }));
+  receive({ type: 'reply.suggestions', turnId: assistant.turnId, messageId: assistant.id, status: 'ready', suggestions: translated, meaningLanguage: 'zh-CN' });
+  assert.equal(current().replySuggestions.meaningLanguage, 'zh-CN');
+  const saved = current().messages.find(message => message.id === assistant.id);
+  assert.equal(saved.replySuggestionsLanguage, 'zh-CN');
+  assert.deepEqual(saved.replySuggestions, translated);
+});

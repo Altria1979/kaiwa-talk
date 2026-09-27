@@ -78,3 +78,52 @@ test('reply meanings retain Japanese semantics across interface and learning lan
     }
   }
 });
+
+test('shows two reply options with Chinese meanings regardless of reading toggles or interface language', () => {
+  const options = [
+    { ...suggestion, meaning: '我读书。' },
+    { text: '音楽を聴きます。', reading: 'おんがくを ききます。', romaji: 'Ongaku o kikimasu.', meaning: '我听音乐。' },
+    { text: 'まだ決めていません。', reading: 'まだ きめていません。', meaning: '我还没决定。' },
+  ];
+  for (const locale of ['ja', 'zh-CN', 'en']) {
+    for (const showKana of [true, false]) for (const showRomaji of [true, false]) {
+      const markup = renderToStaticMarkup(createElement(I18nProvider, { initialLocale: locale }, createElement(ReplySuggestions, {
+        value: { status: 'ready', messageId: 'message', suggestions: options, meaningLanguage: 'zh-CN' },
+        learningLanguage: '日本語', characterName: 'Koharu',
+        readingPreferences: { showKana, showRomaji, setShowKana() {}, setShowRomaji() {} },
+        voiceEnabled: false, muted: false, userSpeaking: false, vadStatus: 'idle', busy: false, speech: null,
+        onListen: async () => {}, onPractice: async () => {}, onSend: async () => {},
+      })));
+      assert.equal((markup.match(/class="reply-option /g) ?? []).length, 2);
+      for (const option of options.slice(0, 2)) {
+        assert.ok(markup.includes(option.text));
+        assert.ok(markup.includes(`<p class="reply-option-meaning" lang="zh-CN">${option.meaning}</p>`));
+        assert.equal(markup.includes(option.reading), showKana);
+        assert.equal(markup.includes(option.romaji), showRomaji);
+      }
+      assert.ok(!markup.includes(options[2].text));
+      assert.ok(!markup.includes(options[2].meaning));
+    }
+  }
+});
+
+test('past reply suggestions stay expanded as readable references without current-turn controls', () => {
+  const options = [
+    { ...suggestion, meaning: '我读书。' },
+    { text: '音楽を聴きます。', reading: 'おんがくを ききます。', romaji: 'Ongaku o kikimasu.', meaning: '我听音乐。' },
+  ];
+  const markup = renderToStaticMarkup(createElement(I18nProvider, { initialLocale: 'zh-CN' }, createElement(ReplySuggestions, {
+    readOnly: true,
+    value: { status: 'ready', messageId: 'past-message', suggestions: options, meaningLanguage: 'zh-CN' },
+    learningLanguage: '日本語',
+    readingPreferences: { showKana: true, showRomaji: true, setShowKana() {}, setShowRomaji() {} },
+  })));
+  for (const option of options) {
+    assert.ok(markup.includes(option.text));
+    assert.ok(markup.includes(option.meaning));
+    assert.ok(markup.includes(option.reading));
+    assert.ok(markup.includes(option.romaji));
+  }
+  assert.equal((markup.match(/class="reply-option /g) ?? []).length, 2);
+  assert.doesNotMatch(markup, /<button|<details|reply-practice-hint|reply-suggestions-tools/);
+});

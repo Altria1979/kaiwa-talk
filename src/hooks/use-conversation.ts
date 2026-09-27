@@ -2,7 +2,7 @@
 
 import { AppError, describeError, type ErrorDescriptor } from '../../shared/app-errors';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DEFAULT_SETTINGS, type ChatMessage, type ClientEvent, type ConversationState, type ServerEvent, type SessionRecord } from '../../shared/protocol';
+import { DEFAULT_SETTINGS, type ChatMessage, type ClientEvent, type ConversationState, type MessageReadingAid, type ServerEvent, type SessionRecord } from '../../shared/protocol';
 import { isAvatarEmotion, type AvatarEmotion } from '../../shared/avatar-emotion';
 import { api, ensureBrowserSession, SOCKET_URL } from '../lib/api';
 import { readBrowserCredentials } from '../lib/bailian-credentials';
@@ -26,6 +26,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   const [muted, setMuted] = useState(false);
   const [session, setSession] = useState<SessionRecord | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [replySuggestions, setReplySuggestions] = useState<ReplySuggestionsState | null>(null);
   const [suggestionSpeech, setSuggestionSpeech] = useState<SuggestionSpeech | null>(null);
   const [transcript, setTranscript] = useState('');
@@ -129,6 +130,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     if (audio) void audio.dispose().catch(() => {});
     audioLevelRef.current = 0;
     if (mountedRef.current) {
+      setStreamingMessageId(null);
       setTranscript('');
       setPendingTranscript('');
       setAudioBusy(false);
@@ -155,6 +157,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       return;
     }
     resetAvatarEmotion();
+    setStreamingMessageId(null);
     ++replayRequestRef.current;
     audioRef.current?.cancelTurn();
     replyGeneratingRef.current = false;
@@ -193,12 +196,20 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     const upsert = (message: ChatMessage) => setMessages(current => {
       const index = current.findIndex(item => item.id === message.id);
       if (index < 0) return [...current, message];
-      return current.map(item => item.id === message.id ? message : item);
+      return current.map(item => {
+        if (item.id !== message.id) return item;
+        // Speech acknowledgements may arrive after the client loaded reading aids.
+        if (item.content === message.content && item.readingAid && !message.readingAid) return { ...message, readingAid: item.readingAid };
+        return message;
+      });
     });
     switch (event.type) {
       case 'session.started': {
         if (endingRef.current) { send({ type: 'end' }); return; }
-        if (!activeRef.current || sessionRef.current?.id !== event.session.id) resetAvatarEmotion();
+        if (!activeRef.current || sessionRef.current?.id !== event.session.id) {
+          resetAvatarEmotion();
+          setStreamingMessageId(null);
+        }
         if (sessionRef.current?.id !== event.session.id) { setMessages([]); setReplySuggestions(null); }
         if (event.messages) setMessages(event.messages);
         setPlaybackCaption(null);
@@ -266,6 +277,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         if (endingRef.current || !activeRef.current || cancelledRef.current.has(event.turnId) || event.message.sessionId !== sessionRef.current?.id || event.message.turnId !== event.turnId || event.message.role !== 'assistant') break;
         resetAvatarEmotion();
         replyMessageRef.current = event.message.id;
+        setStreamingMessageId(event.message.id);
         stopSuggestionSpeech();
         replySuggestionsRef.current = null;
         resetSpeechInput();
@@ -286,7 +298,13 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         setMessages(current => current.map(item => item.turnId === event.turnId && item.role === 'assistant' ? { ...item, content: item.content + event.delta } : item));
         break;
       case 'reply.done':
-        if (!cancelledRef.current.has(event.turnId) && event.message.sessionId === sessionRef.current?.id) upsert(event.message);
+        if (!cancelledRef.current.has(event.turnId) && event.message.sessionId === sessionRef.current?.id) {
+          upsert(event.message);
+          // Text is ready for reading aids before TTS generation and playback finish.
+          if (event.turnId === turnRef.current && event.message.turnId === event.turnId && event.message.role === 'assistant') {
+            setStreamingMessageId(current => current === event.message.id ? null : current);
+          }
+        }
         break;
       case 'reply.suggestions':
         if (!activeRef.current || endingRef.current || event.turnId !== turnRef.current || cancelledRef.current.has(event.turnId)) break;
@@ -294,7 +312,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         setReplySuggestions(event);
         if (event.status === 'ready') setMessages(current => current.map(item =>
           item.id === event.messageId && item.turnId === event.turnId
-            ? { ...item, replySuggestions: event.suggestions, replySuggestionsLanguage: 'ja' } : item));
+            ? { ...item, replySuggestions: event.suggestions, replySuggestionsLanguage: event.meaningLanguage ?? 'ja' } : item));
         break;
       case 'audio.sentence':
         if (activeRef.current && !suggestionSpeechRef.current && event.turnId === turnRef.current && !cancelledRef.current.has(event.turnId) && !endingRef.current) audioRef.current?.registerSentence(event.turnId, event.sentenceId, event.text);
@@ -317,7 +335,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         rememberCancellation(event.turnId);
         audioRef.current?.cancelTurn(event.turnId);
         setPlaybackCaption(current => current?.turnId === event.turnId ? null : current);
-        if (turnRef.current === event.turnId) { turnRef.current = null; replyGeneratingRef.current = false; resetAvatarEmotion(); }
+        if (turnRef.current === event.turnId) { turnRef.current = null; replyGeneratingRef.current = false; resetAvatarEmotion(); setStreamingMessageId(null); }
         setReplySuggestions(current => current?.turnId === event.turnId && current.status !== 'ready' ? null : current);
         setAudioRevision(value => value + 1);
         break;
@@ -385,6 +403,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         if (turnRef.current) rememberCancellation(turnRef.current);
         turnRef.current = null;
         replyGeneratingRef.current = false;
+        setStreamingMessageId(null);
         setTranscript(''); setReplySuggestions(null);
         replySuggestionsRef.current = null;
         resetAvatarEmotion();
@@ -595,6 +614,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         rememberCancellation(previousTurn);
         turnRef.current = null;
         resetAvatarEmotion();
+        setStreamingMessageId(null);
         replyGeneratingRef.current = false;
         send({ type: 'cancel', turnId: previousTurn });
       }
@@ -625,7 +645,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     if (activeRef.current && socketRef.current?.readyState !== WebSocket.OPEN) return reconnect();
     if (activeRef.current && (!options.voice || voiceRef.current)) return Promise.resolve();
     const generation = ++lifecycleRef.current;
-    if (!activeRef.current) resetAvatarEmotion();
+    if (!activeRef.current) { resetAvatarEmotion(); setStreamingMessageId(null); }
     endingRef.current = false;
     resetSpeechInput();
     setTranscript(''); setPendingTranscript('');
@@ -704,6 +724,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     resetAvatarEmotion();
     stopSuggestionSpeech();
     resetSpeechInput();
+    setStreamingMessageId(null);
     replySuggestionsRef.current = null;
     setTranscript(''); setPendingTranscript('');
     setReplySuggestions(null);
@@ -717,6 +738,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
 
   const cancel = useCallback(() => {
     resetAvatarEmotion();
+    setStreamingMessageId(null);
     if (suggestionSpeechRef.current) { stopSuggestionSpeech(); return; }
     resetSpeechInput();
     replySuggestionsRef.current = null;
@@ -752,6 +774,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       send({ type: 'cancel', turnId: cancelledTurnId });
       turnRef.current = null;
       resetAvatarEmotion();
+      setStreamingMessageId(null);
       replyGeneratingRef.current = false;
       // Wait for server cancellation before starting a replay that it could otherwise stop.
       await new Promise<void>((resolve, reject) => {
@@ -772,6 +795,11 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   }, [rememberCancellation, resetAvatarEmotion, resetSpeechInput, send, stopSuggestionSpeech]);
 
   const canReplay = useCallback((turnId: string) => audioRef.current?.canReplay(turnId) ?? false, []);
+  const setMessageReadingAid = useCallback((messageId: string, content: string, aid: MessageReadingAid) => {
+    if (!mountedRef.current) return;
+    setMessages(current => current.map(message => message.id === messageId && message.content === content
+      ? { ...message, readingAid: aid } : message));
+  }, []);
   const loadHistory = useCallback(async (sessionId: string) => {
     if (activeRef.current || startRef.current || endingRef.current) throw new AppError('現在の会話を終了してから、履歴を開いてください。');
     resetAvatarEmotion();
@@ -797,8 +825,8 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
 
   return {
     state: suggestionSpeech?.status === 'loading' ? 'thinking' as const : audioBusy ? 'speaking' as const : state,
-    connected, active, voiceEnabled, muted, session, messages, replySuggestions, suggestionSpeech, playbackCaption, transcript, pendingTranscript, error, errorDetails, userSpeaking, vadStatus, avatarEmotion,
-    audioLevelRef, start, end, sendText, cancel, toggleMute, replay, canReplay, loadHistory, listenSuggestion, stopSuggestionSpeech,
+    connected, active, voiceEnabled, muted, session, messages, streamingMessageId, replySuggestions, suggestionSpeech, playbackCaption, transcript, pendingTranscript, error, errorDetails, userSpeaking, vadStatus, avatarEmotion,
+    audioLevelRef, start, end, sendText, cancel, toggleMute, replay, canReplay, loadHistory, listenSuggestion, stopSuggestionSpeech, setMessageReadingAid,
     clearAvatarEmotion: resetAvatarEmotion,
     clearError: useCallback(() => setErrorDetails(null), []),
   };
