@@ -7,6 +7,7 @@ import { isAvatarEmotion, type AvatarEmotion } from '../../shared/avatar-emotion
 import { api, ensureBrowserSession, SOCKET_URL } from '../lib/api';
 import { readBrowserCredentials } from '../lib/bailian-credentials';
 import { BrowserAudio } from '../lib/browser-audio';
+import type { ConversationRecordingResult } from '../lib/conversation-recorder';
 import type { VadStatus } from '../lib/browser-vad';
 import { SpeechAdmission } from '../lib/speech-admission';
 import type { PlaybackCaption } from '../lib/playback-captions';
@@ -16,6 +17,7 @@ type PendingStart = { resolve: () => void; reject: (error: Error) => void; timer
 export type ReplySuggestionsState = Extract<ServerEvent, { type: 'reply.suggestions' }>;
 export type SuggestionSpeech = { messageId: string; index: number; status: 'loading' | 'playing' };
 type SuggestionSpeechRequest = SuggestionSpeech & { controller: AbortController; audioTurnId: string };
+export type ConversationRecording = { sessionId: string; createdAt: string } & (ConversationRecordingResult | { status: 'finalizing' });
 
 export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }: { vadSilenceMs?: number } = {}) {
   const [state, setState] = useState<ConversationState>('idle');
@@ -37,10 +39,13 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   const [playbackCaption, setPlaybackCaption] = useState<PlaybackCaption | null>(null);
   const [userSpeaking, setUserSpeaking] = useState(false);
   const [vadStatus, setVadStatus] = useState<VadStatus>('idle');
+  const [recording, setRecording] = useState<ConversationRecording | null>(null);
   const [, setAudioRevision] = useState(0);
   const audioLevelRef = useRef(0);
   const socketRef = useRef<WebSocket | null>(null);
   const audioRef = useRef<BrowserAudio | null>(null);
+  const audioSessionRef = useRef<{ sessionId: string; createdAt: string } | null>(null);
+  const recordingRequestRef = useRef(0);
   const sessionRef = useRef<SessionRecord | null>(null);
   const activeRef = useRef(false);
   const voiceRef = useRef(false);
@@ -121,7 +126,25 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     resetSpeechInput();
     vadStatusRef.current = 'idle';
     const audio = audioRef.current;
+    const recordedSession = audioSessionRef.current;
     audioRef.current = null;
+    audioSessionRef.current = null;
+    if (audio && recordedSession) {
+      const request = recordingRequestRef.current;
+      if (mountedRef.current) setRecording({ ...recordedSession, status: 'finalizing' });
+      const saveRecording = (result: ConversationRecordingResult) => {
+        if (mountedRef.current && request === recordingRequestRef.current && sessionRef.current?.id === recordedSession.sessionId) {
+          setRecording({ ...recordedSession, ...result });
+        }
+      };
+      // Request the last recorder chunk before disposing the audio graph.
+      void audio.stopRecording().then(saveRecording, () => saveRecording({ status: 'failed' }));
+    } else if (!audio && mountedRef.current && sessionRef.current && (endingRef.current || sessionRef.current.endedAt)) {
+      const endedSession = sessionRef.current;
+      setRecording(current => current?.sessionId === endedSession.id ? current : {
+        sessionId: endedSession.id, createdAt: endedSession.createdAt, status: 'empty',
+      });
+    }
     asrStreamRef.current = null;
     speechAdmissionRef.current.reset(null);
     audioBusyRef.current = false;
@@ -207,6 +230,8 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       case 'session.started': {
         if (endingRef.current) { send({ type: 'end' }); return; }
         if (!activeRef.current || sessionRef.current?.id !== event.session.id) {
+          ++recordingRequestRef.current;
+          setRecording(null);
           resetAvatarEmotion();
           setStreamingMessageId(null);
         }
@@ -216,6 +241,10 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         setTranscript(''); setPendingTranscript('');
         sessionRef.current = event.session;
         setSession(event.session);
+        if (audioRef.current) {
+          audioSessionRef.current = { sessionId: event.session.id, createdAt: event.session.createdAt };
+          if (event.voice) audioRef.current.startRecording();
+        }
         activeRef.current = true;
         voiceRef.current = event.voice;
         setActive(true); setVoiceEnabled(event.voice);
@@ -514,6 +543,9 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       });
       audioRef.current = audio;
     }
+    if (activeRef.current && sessionRef.current && !endingRef.current) {
+      audioSessionRef.current = { sessionId: sessionRef.current.id, createdAt: sessionRef.current.createdAt };
+    }
     audioRef.current.setMuted(mutedRef.current || !!suggestionSpeechRef.current);
     return audioRef.current;
   }, [evaluateSpeech, interruptTurn, resetSpeechInput, send, stopSuggestionSpeech, vadSilenceMs]);
@@ -622,11 +654,13 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       await audio.prepare();
       if (!isCurrent()) return;
       if (audio.canReplay(request.audioTurnId)) {
+        audio.startRecording();
         await audio.replay(request.audioTurnId);
       } else {
         const result = await api.suggestionAudio(messageId, index, request.controller.signal);
         if (!isCurrent()) return;
         if (result.sampleRate !== 24000 || !result.audio) throw new AppError('お手本の音声を再生できませんでした。もう一度お試しください。');
+        audio.startRecording();
         audio.beginTurn(request.audioTurnId);
         audio.registerSentence(request.audioTurnId, 'example', suggestion.text);
         audio.pushAudio(request.audioTurnId, 'example', result.audio);
@@ -640,6 +674,8 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   }, [getAudio, rememberCancellation, resetAvatarEmotion, resetSpeechInput, send, stopSuggestionSpeech]);
 
   const start = useCallback((options: StartOptions): Promise<void> => {
+    // Wait for the end acknowledgement before allowing another recorder to own this session.
+    if (endingRef.current) return Promise.resolve();
     stopSuggestionSpeech();
     if (startRef.current) return startRef.current;
     if (activeRef.current && socketRef.current?.readyState !== WebSocket.OPEN) return reconnect();
@@ -805,6 +841,8 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     resetAvatarEmotion();
     const result = await api.session(sessionId);
     releaseAudio(); turnRef.current = null;
+    ++recordingRequestRef.current;
+    setRecording(null);
     setReplySuggestions(null);
     sessionRef.current = result.session; setSession(result.session); setMessages(result.messages); setTranscript('');
   }, [releaseAudio, resetAvatarEmotion]);
@@ -825,7 +863,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
 
   return {
     state: suggestionSpeech?.status === 'loading' ? 'thinking' as const : audioBusy ? 'speaking' as const : state,
-    connected, active, voiceEnabled, muted, session, messages, streamingMessageId, replySuggestions, suggestionSpeech, playbackCaption, transcript, pendingTranscript, error, errorDetails, userSpeaking, vadStatus, avatarEmotion,
+    connected, active, voiceEnabled, muted, session, messages, streamingMessageId, replySuggestions, suggestionSpeech, playbackCaption, transcript, pendingTranscript, error, errorDetails, userSpeaking, vadStatus, avatarEmotion, recording,
     audioLevelRef, start, end, sendText, cancel, toggleMute, replay, canReplay, loadHistory, listenSuggestion, stopSuggestionSpeech, setMessageReadingAid,
     clearAvatarEmotion: resetAvatarEmotion,
     clearError: useCallback(() => setErrorDetails(null), []),

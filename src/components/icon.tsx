@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-export type IconName = 'mic' | 'mic-off' | 'send' | 'settings' | 'history' | 'memory' | 'close' | 'plus' | 'pause' | 'play' | 'volume' | 'slow' | 'translate' | 'arrow' | 'check' | 'trash' | 'edit' | 'upload' | 'spark' | 'chevron' | 'headphones' | 'stop' | 'info';
+export type IconName = 'mic' | 'mic-off' | 'send' | 'settings' | 'history' | 'memory' | 'close' | 'plus' | 'pause' | 'play' | 'volume' | 'slow' | 'translate' | 'arrow' | 'check' | 'trash' | 'edit' | 'upload' | 'download' | 'spark' | 'chevron' | 'headphones' | 'stop' | 'info';
 
 const paths: Record<IconName, React.ReactNode> = {
   mic: <><rect x="9" y="2" width="6" height="13" rx="3" /><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" /></>,
@@ -21,6 +21,7 @@ const paths: Record<IconName, React.ReactNode> = {
   trash: <><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" /></>,
   edit: <><path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-3 3 5 5" /></>,
   upload: <><path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5" /></>,
+  download: <><path d="M12 3v13m-5-5 5 5 5-5M4 16v5h16v-5" /></>,
   spark: <><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" /></>,
   chevron: <path d="m9 5 7 7-7 7" />,
   headphones: <><path d="M4 14v-3a8 8 0 0 1 16 0v3" /><rect x="2" y="12" width="5" height="8" rx="2" /><rect x="17" y="12" width="5" height="8" rx="2" /></>,

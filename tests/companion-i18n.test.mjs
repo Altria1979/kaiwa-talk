@@ -80,6 +80,7 @@ registerHooks({ load(url, context, nextLoad) {
   return nextLoad(url, context);
 } });
 const { Companion } = await import('../src/components/companion.tsx');
+const { ConversationAudioExport } = await import('../src/components/conversation-audio-export.tsx');
 
 const children = node => React.isValidElement(node) ? React.Children.toArray(node.props.children) : [];
 function find(node, predicate) {
@@ -92,6 +93,31 @@ function find(node, predicate) {
 function text(node) {
   return typeof node === 'string' || typeof node === 'number' ? String(node) : children(node).map(text).join('');
 }
+
+test('audio export stays associated with the recorded session and translates every result', () => {
+  const original = { ...conversation };
+  const recording = { sessionId: session.id, createdAt: session.createdAt, status: 'ready', blob: new Blob(['audio']), extension: 'webm' };
+  try {
+    conversation.recording = recording;
+    assert.equal(find(harness(Companion)(), node => node.type === ConversationAudioExport).props.recording, recording);
+    conversation.recording = { ...recording, sessionId: 'another-session' };
+    assert.equal(find(harness(Companion)(), node => node.type === ConversationAudioExport), undefined);
+    for (const next of ['ja', 'zh-CN', 'en']) {
+      locale = next;
+      for (const [status, description] of [['ready', 'audioExportHint'], ['finalizing', 'audioPreparing'], ['unavailable', 'audioUnsupported'], ['empty', 'audioEmpty'], ['failed', 'audioFailed']]) {
+        const tree = harness(ConversationAudioExport, { recording: { ...recording, status } })();
+        assert.match(text(tree), new RegExp(t(`companion.${description}`).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+        const button = find(tree, node => node.type === 'button');
+        assert.equal(button.props.disabled, status !== 'ready');
+        assert.equal(text(button), t(status === 'finalizing' ? 'companion.audioPreparingButton' : 'companion.exportAudio'));
+      }
+    }
+  } finally {
+    delete conversation.recording;
+    Object.assign(conversation, original);
+    locale = 'ja';
+  }
+});
 function harness(component, initialProps = {}) {
   const state = { cursor: 0, slots: [], effects: [] };
   let props = initialProps;

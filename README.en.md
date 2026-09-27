@@ -50,9 +50,9 @@ Your API key is stored only in the current browser's localStorage. When making a
 3. Pause briefly when you finish speaking. By default, the app waits **1.6 seconds** before submitting your utterance; you can adjust this in settings. Recognised speech, your companion's response, and playback status appear on the page.
 4. If you are unsure how to respond, open the suggested replies to see the Japanese text, reading hints, and Japanese meanings. “Read aloud” enables the microphone or unmutes it; it does not automatically send the sentence for you.
 5. Use “Listen again” or “Listen slowly” to hear a response again, or request a Japanese explanation. To interrupt generation and playback immediately, click “Stop current reply”.
-6. Click “End conversation” to release the microphone and wait for the learning recap. Only memory suggestions you explicitly save will be used in future conversations.
+6. Click “End conversation” to release the microphone and wait for the learning recap. Choose “Export audio” under “This conversation’s audio” to save your voice and the companion audio actually played, including replays and examples. Only memory suggestions you explicitly save will be used in future conversations.
 
-Replay audio stays in browser memory for the current conversation only. It is not restored after the conversation ends, the connection drops, or the page reloads. Microphone and speaker performance depends on your device, surroundings, and browser. Headphones usually help reduce echo.
+The recording stays in memory on the current page, in a browser-supported format such as WebM or M4A. Download it before starting another conversation, reloading, or closing the page; history cannot restore it. Muted microphone input is excluded, and text-only conversations without audio playback have no recording to export. Microphone and speaker performance depends on your device, surroundings, and browser. Headphones usually help reduce echo.
 
 ### Choose a different companion
 
@@ -65,7 +65,7 @@ The project includes **VRoid Avatar A** from the pixiv VRoid Project as its defa
 - The site creates a separate browser identity automatically, without a login. History, memories, settings, and avatars are stored on the server and isolated by that identity. **Not all data is stored only in your browser.**
 - Tabs using the same browser profile and site origin share records. Each browser can have one active conversation at a time; different browsers can practise independently.
 - Clearing site data, closing a private browsing session, changing browsers, or moving to another domain may remove your access to previous records. There is currently no account login, cross-device sync, or identity recovery.
-- Bailian receives audio for recognition, conversation context, and text to synthesise. The app does not persist raw microphone recordings. Your key is never used as a default server credential for other visitors.
+- Bailian receives audio for recognition, conversation context, and text to synthesise. Conversation recordings stay in the current page’s memory until you export them to your device; they are not uploaded for server storage. Your key is never used as a default server credential for other visitors.
 - Shared data from older private deployments remains in its original tables and files. It is not automatically assigned or exposed to new visitors.
 
 ### Run locally

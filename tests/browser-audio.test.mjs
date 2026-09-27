@@ -14,8 +14,9 @@ function playback(t) {
   const contexts = [];
   const elements = [];
   class AudioNode {
-    connect(target) { this.target = target; }
-    disconnect() { this.disconnected = true; }
+    targets = new Set();
+    connect(target) { this.target = target; this.targets.add(target); }
+    disconnect(target) { if (target) this.targets.delete(target); else { this.disconnected = true; this.targets.clear(); } }
   }
   class BufferSource extends AudioNode {
     start(time) { this.startTime = time; }
@@ -33,6 +34,11 @@ function playback(t) {
     });
     constructor() { contexts.push(this); }
     createAnalyser() { return this.analyser; }
+    createGain() { return Object.assign(new AudioNode(), { gain: { value: 1 } }); }
+    createMediaStreamDestination() {
+      this.recordingDestination = Object.assign(new AudioNode(), { stream: { getTracks: () => [] } });
+      return this.recordingDestination;
+    }
     createBuffer(_channels, length, sampleRate) {
       return { duration: length / sampleRate, getChannelData: () => new Float32Array(length) };
     }
@@ -539,4 +545,107 @@ test('stream failures and replay failures clear the level and pending animation 
       state.assertClosed();
     });
   }
+});
+
+function enableRecording(t) {
+  const instances = [];
+  class Recorder {
+    static isTypeSupported(type) { return type === 'audio/webm;codecs=opus'; }
+    state = 'inactive';
+    stops = 0;
+    constructor(stream, options) { this.stream = stream; this.mimeType = options.mimeType; instances.push(this); }
+    start() { this.state = 'recording'; }
+    stop() { this.stops++; this.state = 'inactive'; }
+    finish(text = 'conversation') {
+      this.ondataavailable?.({ data: new Blob([text], { type: this.mimeType }) });
+      this.onstop?.();
+    }
+  }
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder');
+  Object.defineProperty(globalThis, 'MediaRecorder', { configurable: true, value: Recorder });
+  t.after(() => { if (descriptor) Object.defineProperty(globalThis, 'MediaRecorder', descriptor); else delete globalThis.MediaRecorder; });
+  return instances;
+}
+
+test('audio preparation does not record until the confirmed conversation explicitly starts recording', async t => {
+  const recorders = enableRecording(t);
+  const state = playback(t);
+  await state.audio.prepare();
+  assert.equal(recorders.length, 0);
+  state.audio.startRecording();
+  state.audio.startRecording();
+  await state.audio.prepare();
+  assert.equal(recorders.length, 1);
+  assert.equal(recorders[0].stream, state.context.recordingDestination.stream);
+  const pending = state.audio.stopRecording();
+  assert.equal(state.audio.stopRecording(), pending);
+  assert.equal(recorders[0].stops, 1);
+  recorders[0].finish();
+  const result = await pending;
+  assert.equal(result.status, 'ready');
+  state.audio.startRecording();
+  await state.audio.prepare();
+  assert.equal(recorders.length, 1, 'a finished recording cannot restart on the same audio session');
+  await state.audio.dispose();
+  assert.equal(await result.blob.text(), 'conversation');
+  assert.equal(await state.audio.stopRecording(), result);
+});
+
+test('a recording request before prepare starts once, unless the session was already ended', async t => {
+  for (const stopBeforePrepare of [false, true]) {
+    await t.test(String(stopBeforePrepare), async t => {
+      const recorders = enableRecording(t);
+      const state = playback(t);
+      state.audio.startRecording();
+      assert.equal(recorders.length, 0);
+      if (stopBeforePrepare) assert.deepEqual(await state.audio.stopRecording(), { status: 'empty' });
+      await state.audio.prepare();
+      assert.equal(recorders.length, stopBeforePrepare ? 0 : 1);
+      const disposal = state.audio.dispose();
+      recorders[0]?.finish();
+      await disposal;
+    });
+  }
+});
+
+test('dispose stops playback immediately but closes the context only after final recording data', async t => {
+  const recorders = enableRecording(t);
+  const state = playback(t);
+  await state.stream();
+  state.audio.startRecording();
+  const disposal = state.audio.dispose();
+  assert.equal(state.audio.dispose(), disposal);
+  assert.equal(recorders[0].stops, 1);
+  assert.ok(state.context.sources[0].stopped);
+  assert.equal(state.context.state, 'running');
+  const pending = state.audio.stopRecording();
+  recorders[0].finish('last syllable');
+  await disposal;
+  assert.equal(state.context.state, 'closed');
+  assert.equal(await (await pending).blob.text(), 'last syllable');
+});
+
+test('live playback, replay and suggestion playback use the same recorded output and cancellation stops queued audio', async t => {
+  const recorders = enableRecording(t);
+  const state = playback(t);
+  await state.audio.prepare();
+  state.audio.startRecording();
+  await state.stream();
+  assert.ok(state.context.analyser.targets.has(state.context.recordingDestination));
+  assert.ok(state.context.sources[0].targets.has(state.context.analyser));
+  state.context.sources[0].finish();
+  await state.audio.replay('turn');
+  assert.ok(state.context.mediaSource.targets.has(state.context.analyser));
+  state.audio.beginTurn('suggestion');
+  assert.equal(state.element.paused, true);
+  state.audio.pushAudio('suggestion', 'example', pcm);
+  const suggestion = state.context.sources.at(-1);
+  assert.ok(suggestion.targets.has(state.context.analyser));
+  state.audio.cancelTurn();
+  assert.equal(suggestion.stopped, true, 'unplayed cached or queued audio is not added to the recording');
+  assert.equal(suggestion.targets.size, 0);
+  assert.equal(recorders.length, 1);
+  const disposal = state.audio.dispose();
+  recorders[0].finish();
+  await disposal;
 });

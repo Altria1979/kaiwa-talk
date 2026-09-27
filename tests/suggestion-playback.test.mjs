@@ -74,6 +74,8 @@ class FakeAudio {
   completed = new Set();
   disposed = false;
   constructor(callbacks) { this.callbacks = callbacks; FakeAudio.latest = this; }
+  startRecording() {}
+  async stopRecording() { return { status: 'empty' }; }
   async prepare() { this.prepared++; }
   async startMicrophone() { this.microphoneStarts++; }
   stopMicrophone() {}

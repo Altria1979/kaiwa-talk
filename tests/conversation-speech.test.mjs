@@ -29,6 +29,8 @@ class Audio {
   currentTurn = null;
   busy = false;
   constructor(callbacks) { this.callbacks = callbacks; Audio.latest = this; }
+  startRecording() {}
+  async stopRecording() { return { status: 'empty' }; }
   async prepare() {}
   async startMicrophone() {}
   stopMicrophone() {}

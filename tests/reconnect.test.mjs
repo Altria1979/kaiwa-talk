@@ -32,6 +32,8 @@ class Audio {
   cancellations = 0;
   disposed = false;
   constructor(callbacks) { this.callbacks = callbacks; Audio.instances.push(this); }
+  startRecording() {}
+  async stopRecording() { return { status: 'empty' }; }
   async prepare() {}
   async startMicrophone() { this.starts++; }
   stopMicrophone() { this.stops++; }

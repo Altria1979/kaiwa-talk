@@ -141,25 +141,47 @@ test('inference errors report unavailable once without leaking stale evidence', 
   assert.equal(state.frames.length, 0);
 });
 
-function capture(t) {
+function capture(t, { recordingError = false } = {}) {
   let audio;
   t.after(() => audio?.dispose());
   const nodes = [];
   const sent = [];
   const frames = [];
-  const track = { enabled: true, stop() {} };
+  const tracks = [];
+  const contexts = [];
+  const recorders = [];
   class AudioNode {
-    connect() {}
-    disconnect() {}
+    targets = new Set();
+    connect(target) { this.targets.add(target); }
+    disconnect(target) { if (target) this.targets.delete(target); else this.targets.clear(); }
   }
   class Context {
     state = 'running';
     destination = new AudioNode();
     audioWorklet = { async addModule() {} };
-    createAnalyser() { return new AudioNode(); }
+    sources = [];
+    constructor() { contexts.push(this); }
+    createAnalyser() { this.analyser = new AudioNode(); return this.analyser; }
     createGain() { return Object.assign(new AudioNode(), { gain: { value: 1 } }); }
-    createMediaStreamSource() { return new AudioNode(); }
+    createMediaStreamSource() { const source = new AudioNode(); this.sources.push(source); return source; }
+    createMediaStreamDestination() {
+      this.recordingDestination = Object.assign(new AudioNode(), { stream: { getTracks: () => [] } });
+      return this.recordingDestination;
+    }
     async close() {}
+  }
+  class Recorder {
+    static isTypeSupported() { return true; }
+    state = 'inactive';
+    constructor(stream, options) { this.stream = stream; this.mimeType = options.mimeType; recorders.push(this); }
+    start() { if (recordingError) throw new Error('recording failed'); this.state = 'recording'; }
+    stop() {
+      this.state = 'inactive';
+      queueMicrotask(() => {
+        this.ondataavailable?.({ data: new Blob(['recorded audio'], { type: this.mimeType }) });
+        this.onstop?.();
+      });
+    }
   }
   class Worklet extends AudioNode {
     port = { postMessage() {}, close() {} };
@@ -168,7 +190,12 @@ function capture(t) {
   const replacements = {
     AudioContext: Context,
     AudioWorkletNode: Worklet,
-    navigator: { mediaDevices: { async getUserMedia() { return { getAudioTracks: () => [track], getTracks: () => [track] }; } } },
+    MediaRecorder: Recorder,
+    navigator: { mediaDevices: { async getUserMedia() {
+      const track = { enabled: true, stopped: false, stop() { this.stopped = true; } };
+      tracks.push(track);
+      return { getAudioTracks: () => [track], getTracks: () => [track] };
+    } } },
     cancelAnimationFrame() {},
   };
   for (const [name, value] of Object.entries(replacements)) {
@@ -183,7 +210,11 @@ function capture(t) {
     getSpeechContext: () => context, onVadFrame: frame => frames.push(frame),
     onPlayed() {}, onBusy() {}, onError: error => assert.fail(error),
   });
-  return { audio, sent, frames, track, emit: () => nodes.at(-1).port.onmessage({ data: pcm().buffer }) };
+  return {
+    audio, sent, frames, recorders, tracks,
+    get track() { return tracks.at(-1); }, get context() { return contexts.at(-1); },
+    emit: () => nodes.at(-1).port.onmessage({ data: pcm().buffer }),
+  };
 }
 
 test('capture only uploads with an enabled recognition stream and resets time on stream replacement', async t => {
@@ -235,4 +266,49 @@ test('muted capture uploads silence on the same clock but never emits voice evid
   await tick();
   assert.equal(state.frames.at(-1).startMs, 120);
   assert.equal(state.track.enabled, true);
+});
+
+test('recording includes an existing or later microphone and preserves mute state across reconnect', async t => {
+  for (const microphoneFirst of [true, false]) {
+    await t.test(String(microphoneFirst), async t => {
+      const state = capture(t);
+      state.audio.setMuted(true);
+      if (microphoneFirst) await state.audio.startMicrophone();
+      state.audio.startRecording();
+      if (!microphoneFirst) await state.audio.startMicrophone();
+      const firstSource = state.context.sources[0];
+      const recordingGain = [...firstSource.targets].find(node => node.gain);
+      assert.ok(recordingGain);
+      assert.equal(recordingGain.gain.value, 0);
+      assert.ok(recordingGain.targets.has(state.context.recordingDestination));
+      assert.equal(recordingGain.targets.has(state.context.destination), false);
+      state.audio.setMuted(false);
+      assert.equal(recordingGain.gain.value, 1);
+      assert.equal(state.track.enabled, true);
+      state.audio.stopMicrophone();
+      assert.equal(state.tracks[0].stopped, true);
+      assert.equal(firstSource.targets.size, 0);
+      await state.audio.startMicrophone();
+      assert.ok(state.context.sources[1].targets.has(recordingGain));
+      assert.equal(state.recorders.length, 1);
+      assert.equal(state.recorders[0].stream, state.context.recordingDestination.stream);
+      state.audio.setMuted(true);
+      assert.equal(recordingGain.gain.value, 0);
+      assert.equal(state.track.enabled, false);
+      assert.equal((await state.audio.stopRecording()).status, 'ready');
+    });
+  }
+});
+
+test('recording failure leaves microphone capture and recognition operational', async t => {
+  const state = capture(t, { recordingError: true });
+  state.audio.startRecording();
+  await state.audio.startMicrophone();
+  state.audio.setRecognitionStream('voice');
+  state.audio.setVadEnabled(true);
+  state.emit();
+  assert.equal(state.sent.length, 1);
+  assert.equal(state.sent[0].streamId, 'voice');
+  assert.equal(state.track.stopped, false);
+  assert.deepEqual(await state.audio.stopRecording(), { status: 'failed' });
 });

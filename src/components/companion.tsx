@@ -17,6 +17,7 @@ import { AvatarControls } from './avatar-controls';
 import { Icon } from './icon';
 import { ReplySuggestions } from './reply-suggestions';
 import { TranscriptPreview } from './transcript-preview';
+import { ConversationAudioExport } from './conversation-audio-export';
 import { BailianSettings } from './bailian-settings';
 import { PaperNavigation, type Panel } from './paper-navigation';
 import { useI18n } from '../i18n/provider';
@@ -229,6 +230,7 @@ export function Companion() {
             {showLatest && <button className="latest-message" aria-label={t('companion.latestMessage')} onClick={scrollToLatest}>{t('companion.latestMessageButton')}</button>}
           </div>
           <div className="conversation-footer">
+            {conversation.recording && conversation.recording.sessionId === conversation.session?.id && <ConversationAudioExport key={conversation.recording.sessionId} recording={conversation.recording} />}
             <div className="composer-row">
               <div className="conversation-start">
                 {active && conversation.voiceEnabled ? <button type="button" className="primary-button end-button" onClick={() => void perform(conversation.end)} disabled={busy}><Icon name="stop" size={14} />{t('companion.endConversation')}</button> : <button type="button" className="primary-button" onClick={() => void perform(() => conversation.start({ voice: true, sessionId: conversation.session?.endedAt ? undefined : conversation.session?.id }))} disabled={!ready || busy}><Icon name="mic" size={16} />{busy ? t('companion.connecting') : active ? t('companion.enableVoice') : t('companion.startConversation')}</button>}

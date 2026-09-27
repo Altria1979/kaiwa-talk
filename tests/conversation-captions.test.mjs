@@ -56,6 +56,8 @@ mock.module('../src/lib/browser-audio.ts', { exports: { BrowserAudio: class {
   registrations = [];
   audioEvents = [];
   constructor(callbacks) { this.callbacks = callbacks; this.constructor.latest = this; }
+  startRecording() {}
+  async stopRecording() { return { status: 'empty' }; }
   async prepare() {}
   async startMicrophone() {}
   async dispose() {}

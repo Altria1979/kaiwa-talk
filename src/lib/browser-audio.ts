@@ -2,6 +2,7 @@ import { AppError, APP_ERROR_MESSAGES, describeError, type ErrorDescriptor } fro
 import { BrowserVad, type BrowserVadCallbacks } from './browser-vad';
 import type { SpeechContext } from '../../shared/speech-policy';
 import { captionCharacters, type PlaybackCaption } from './playback-captions';
+import { ConversationRecorder, type ConversationRecordingResult } from './conversation-recorder';
 
 interface BrowserAudioOptions extends BrowserVadCallbacks {
   /** Raw RMS of the actual playback output, zero while playback is inactive. */
@@ -91,6 +92,10 @@ export class BrowserAudio {
   private recognitionSamples = 0;
   private muted = false;
   private disposed = false;
+  private disposePromise: Promise<void> | null = null;
+  private recordingRequested = false;
+  private recorder: ConversationRecorder | null = null;
+  private recordingResult: Promise<ConversationRecordingResult> | null = null;
   private currentTurn: string | null = null;
   private nextStart = 0;
   private sources = new Set<AudioBufferSourceNode>();
@@ -126,6 +131,22 @@ export class BrowserAudio {
     }
     if (this.disposed || !this.context) throw new AppError('音声セッションは終了しました。会話を開始し直してください。');
     if (this.context.state !== 'running') throw new AppError('ブラウザーの音声機能が起動していません。もう一度、会話の開始ボタンを押してください。');
+    if (this.recordingRequested) this.startRecording();
+  }
+
+  startRecording(): void {
+    if (this.disposed || this.recordingResult || this.recorder) return;
+    this.recordingRequested = true;
+    if (!this.context || !this.analyser || this.context.state !== 'running') return;
+    this.recorder = new ConversationRecorder(this.context, this.analyser);
+    this.recorder.setMuted(this.muted);
+    this.recorder.setMicrophone(this.microphoneSource);
+  }
+
+  stopRecording(): Promise<ConversationRecordingResult> {
+    this.recordingRequested = false;
+    this.recordingResult ??= this.recorder?.stop() ?? Promise.resolve({ status: 'empty' });
+    return this.recordingResult;
   }
 
   async startMicrophone(_vadSilenceMs?: number): Promise<void> {
@@ -162,6 +183,7 @@ export class BrowserAudio {
       this.captureGain.gain.value = 0;
       this.microphoneSource = this.context.createMediaStreamSource(stream);
       this.microphoneSource.connect(capture);
+      this.recorder?.setMicrophone(this.microphoneSource);
       capture.connect(this.captureGain);
       this.captureGain.connect(this.context.destination);
       capture.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
@@ -199,6 +221,7 @@ export class BrowserAudio {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
+    this.recorder?.setMuted(muted);
     this.capture?.port.postMessage({ muted });
     for (const track of this.stream?.getAudioTracks() ?? []) track.enabled = !muted;
     this.vad?.setPaused(muted || !this.vadEnabled || !this.recognitionStream);
@@ -236,6 +259,7 @@ export class BrowserAudio {
     this.capture?.port.close();
     if (this.capture) this.capture.onprocessorerror = null;
     this.capture?.disconnect();
+    this.recorder?.setMicrophone(null);
     this.microphoneSource?.disconnect();
     this.captureGain?.disconnect();
     for (const track of this.stream?.getTracks() ?? []) { track.onended = null; track.stop(); }
@@ -427,20 +451,25 @@ export class BrowserAudio {
     }
   }
 
-  async dispose(): Promise<void> {
-    if (this.disposed) return;
+  dispose(): Promise<void> {
+    if (this.disposePromise) return this.disposePromise;
     this.disposed = true;
+    const recording = this.stopRecording();
     this.stopMicrophone();
     this.cancelTurn();
     this.turns.clear();
     this.cacheBytes = 0;
     this.replaySource?.disconnect();
-    this.analyser?.disconnect();
-    if (this.context && this.context.state !== 'closed') await this.context.close().catch(() => undefined);
-    this.context = null;
-    this.analyser = null;
-    this.replayElement = null;
-    this.replaySource = null;
+    this.disposePromise = (async () => {
+      await recording;
+      this.analyser?.disconnect();
+      if (this.context && this.context.state !== 'closed') await this.context.close().catch(() => undefined);
+      this.context = null;
+      this.analyser = null;
+      this.replayElement = null;
+      this.replaySource = null;
+    })();
+    return this.disposePromise;
   }
 
   private acknowledge(turnId: string, sentence: CachedSentence): void {

@@ -39,6 +39,8 @@ mock.module('../src/lib/browser-audio.ts', { exports: { BrowserAudio: class {
   static latest;
   cancelCount = 0;
   constructor(callbacks) { this.callbacks = callbacks; this.constructor.latest = this; }
+  startRecording() {}
+  async stopRecording() { return { status: 'empty' }; }
   async prepare() {}
   async startMicrophone() {}
   async dispose() {}
