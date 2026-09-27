@@ -1,0 +1,22 @@
+LICENSE
+  h_04d8bae17367b3 1-21
+README.en.md
+  h_04d8bae17367b3 153
+README.ja.md
+  h_04d8bae17367b3 153
+README.md
+  h_04d8bae17367b3 153
+package.json
+  h_04d8bae17367b3 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c2b53f24590366411f864da2c92ba9f4707cfa57",
+  "prompts": {},
+  "humans": {
+    "h_04d8bae17367b3": {
+      "author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
