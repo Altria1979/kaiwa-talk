@@ -1,0 +1,23 @@
+THIRD_PARTY_NOTICES.md
+  s_4c07a79c3b7de7::t_3fd34a7fea6b40 6-14,18,23-24
+tests/default-avatar.test.mjs
+  s_4c07a79c3b7de7::t_66a9519481a0d5 1-32
+README.md
+  s_4c07a79c3b7de7::t_3fd34a7fea6b40 63,81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "20d04c5260d73f112bcb4dce1d83f2c5eb286bc0",
+  "prompts": {},
+  "sessions": {
+    "s_4c07a79c3b7de7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e205-0f24-7ec1-a758-c56236210c10",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
