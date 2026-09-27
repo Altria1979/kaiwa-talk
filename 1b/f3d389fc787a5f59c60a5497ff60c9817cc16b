@@ -1,0 +1,160 @@
+src/hooks/use-conversation-scroll.ts
+  s_7dffcd890d557a::t_da3ae357b13b4a 28-31
+  s_7dffcd890d557a::t_9c73196e05a6ec 1-27,32-45,47,50-79,81-105
+  s_7dffcd890d557a::t_3cfb6e8bed8137 46,48-49,80
+tests/message-reading-aid.test.mjs
+  s_67844395f7b0f2::t_71523af1b49a3c 1-212
+src/components/transcript-preview.tsx
+  s_7dffcd890d557a::t_55494f055cf986 1-15
+src/lib/api.ts
+  s_67844395f7b0f2::t_38c479321c962a 2,40
+tests/companion-i18n.test.mjs
+  s_6625af05343555::t_e312a071a26fe4 45,199-300,370,372,377,379,382,385,402,410-411,420,422,433
+  s_6625af05343555::t_49864ba482ca84 369
+  s_6625af05343555::t_865a6ec58a52a3 371
+  s_6625af05343555::t_7793add9655e13 373
+  s_6625af05343555::t_2dc073edae6d87 378
+  s_6625af05343555::t_6d2f387b96fedf 380-381
+  s_6625af05343555::t_220d447241caef 383-384
+  s_6625af05343555::t_a636de8c1dd432 386-388,399-401
+  s_6625af05343555::t_7f2d3aee70f332 403-405,407-409
+  s_6625af05343555::t_7865853690e96b 412-414,417-419
+  s_6625af05343555::t_049c4d05284368 421
+  s_6625af05343555::t_038930d2c3a8df 423-425,430-432
+  s_6625af05343555::t_5d48b2c773a796 434-436
+  s_679768e86b41e2::t_2708f3e3b58987 389-398,406,415-416,426-429,437-442
+src/components/companion.tsx
+  s_7dffcd890d557a::t_1290b30665e49a 11,53-57,137,220,229
+  s_6625af05343555::t_9b79e3f5f1f2c3 132,135,224
+  s_2e65b8291eb9db::t_c7f126f4f0b493 32
+  s_67844395f7b0f2::t_b0259ce216da9b 173,346
+  s_67844395f7b0f2::t_38c479321c962a 14,160,171-172,222
+  s_7dffcd890d557a::t_b7858e335dbe1a 19,223
+  s_67844395f7b0f2::t_08d85ead5f222c 13
+  s_67844395f7b0f2::t_e4bc694261f2ac 161-163,168-170
+  s_67844395f7b0f2::t_6afa5b40e8e003 174-176
+  s_679768e86b41e2::t_6f0919ace69717 164-167,177-206,232-245,247,341,348
+src/components/paper-navigation.module.css
+  s_52b0b6337827f0::t_08e87e10bf1984 3
+src/components/message-reading-aid.tsx
+  s_67844395f7b0f2::t_b0259ce216da9b 8,13,30-33,38
+  s_67844395f7b0f2::t_028535651d78b7 15,44-45
+  s_67844395f7b0f2::t_38c479321c962a 1-7,9-12,14,16-29,34-37,39-43,46-52
+src/hooks/use-conversation.ts
+  s_67844395f7b0f2::t_27249d8e875ec3 5,199-204,798-802,828
+  s_67844395f7b0f2::t_7be7970022edaf 29,133,160,209-212,280,301-307,315,338,406,617,648,727,741,777
+  s_67844395f7b0f2::t_2947e68014f343 829
+tests/transcript-preview.test.mjs
+  s_7dffcd890d557a::t_55494f055cf986 1-31
+src/components/paper-navigation.tsx
+  s_52b0b6337827f0::t_08e87e10bf1984 45
+shared/protocol.ts
+  s_67844395f7b0f2::t_6aad1501980019 52-56,68
+server/message-reading-aid.ts
+  s_67844395f7b0f2::t_6aad1501980019 1-50
+tests/conversation-reading-aid.test.mjs
+  s_67844395f7b0f2::t_4a8a8aa00cf1f4 196-237
+  s_67844395f7b0f2::t_98e390f703a06a 1-134,136,139-195
+  s_67844395f7b0f2::t_dc046c282b5fe2 135,137-138
+src/i18n/messages/companion.ts
+  s_67844395f7b0f2::t_028535651d78b7 69-72,84,100,206-209,221,237,341-344,356,372
+tests/message-reading-aid-ui.test.mjs
+  s_67844395f7b0f2::t_db5540a4978818 1-217
+server/index.ts
+  s_67844395f7b0f2::t_6aad1501980019 13-14,101,166-193
+  s_e1838243427e41::t_4f76270b4fcd1b 194
+src/components/companion.module.css
+  s_67844395f7b0f2::t_38c479321c962a 123-128
+  s_6625af05343555::t_9b79e3f5f1f2c3 1-5,10,19-23,28,30-37,55-58,66,76,81,99,132,136-137,145-147,263,267-276,279,285-292,294,296
+tests/conversation-scroll.test.mjs
+  s_7dffcd890d557a::t_fe9c5eeacefa86 1-35,38-39,41-42,45-57,59-69,71-82,84-149,170-198,215-254
+  s_7dffcd890d557a::t_e20913a35bad61 36-37,40,43-44,58,70,83
+  s_7dffcd890d557a::t_3cfb6e8bed8137 150-169
+  s_7dffcd890d557a::t_da3ae357b13b4a 199-214
+README.en.md
+  s_679768e86b41e2::t_a2468f7640f7a9 22
+README.ja.md
+  s_679768e86b41e2::t_8b5387106d13c5 22
+README.md
+  s_679768e86b41e2::t_09bfcfdbbe0ae0 22
+next-env.d.ts
+  s_b8fe478b6da5a2::t_36af916431dc50 3-4
+src/components/reply-suggestions.tsx
+  s_b8fe478b6da5a2::t_5868f9104229f7 10,12,14-17,28,30-31,36-37,39,42-46,48,50-64,66,69,71-74,76
+tests/reading-aids.test.mjs
+  s_b8fe478b6da5a2::t_2355ca5de3a22a 81-129
+tests/suggestion-playback.test.mjs
+  s_679768e86b41e2::t_537296bca0c29c 538-547
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1bf3d389fc787a5f59c60a5497ff60c9817cc16b",
+  "prompts": {},
+  "sessions": {
+    "s_2e65b8291eb9db": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e345-0f1c-7361-860e-9c2ab7128976",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_52b0b6337827f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e349-1991-7660-917b-ed0a5581ec7f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_6625af05343555": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e354-6717-74f0-8f9a-fd18937d5079",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_67844395f7b0f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e31f-d357-78b3-abdb-3941ea257f39",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_679768e86b41e2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e35e-cc93-73b1-b9f5-350951f23d47",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_7dffcd890d557a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e323-3cc2-7ce0-ab74-d8a1cb1bbab6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_b8fe478b6da5a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e2f0-93b7-7bb2-8ae0-fc421d4c3009",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_e1838243427e41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e320-41f0-7132-b471-3c91112436e0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
