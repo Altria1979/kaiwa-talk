@@ -21,7 +21,8 @@ test('Vercel leaves pages and static model, VAD and Next assets with the native 
     assert.deepEqual(serviceFor(path), { service: 'frontend' }, path);
   }
   assert.equal(config.services.frontend.framework, 'nextjs');
-  assert.equal(config.services.frontend.runtime, 'nodejs24.x');
+  // Services rejects a versioned Node runtime; the Next.js framework detects it.
+  assert.equal(config.services.frontend.runtime, undefined);
 });
 
 test('the container uses the repository as build context and its explicit Docker entry exists', async () => {

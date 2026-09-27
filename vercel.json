@@ -4,7 +4,6 @@
     "frontend": {
       "root": ".",
       "framework": "nextjs",
-      "runtime": "nodejs24.x",
       "installCommand": "pnpm install --frozen-lockfile",
       "buildCommand": "pnpm build:web"
     },
