@@ -1,0 +1,65 @@
+scripts/run.mjs
+  s_5d8e32af690bfd::t_39e8081ed66401 11,13
+src/lib/api.ts
+  s_5d8e32af690bfd::t_39e8081ed66401 6
+src/components/companion.tsx
+  s_5d8e32af690bfd::t_18b4c73ce9f314 209
+Dockerfile
+  s_5d8e32af690bfd::t_5b61e3539310b8 21
+src/components/paper-navigation.tsx
+  s_5d8e32af690bfd::t_2342f2dd0eec5c 45
+.env.example
+  s_5d8e32af690bfd::t_6e38155fc7c62b 1-2,11
+  s_5d8e32af690bfd::t_18b4c73ce9f314 12-13,15-16,23
+tests/cloud-access.test.mjs
+  s_5d8e32af690bfd::t_8b9abbbeaea64e 3,8-13,25-28,31,33-34,36,40-66,68-69
+  s_5d8e32af690bfd::t_e6749512a5ada9 67
+src/i18n/messages/controls.ts
+  s_5d8e32af690bfd::t_18b4c73ce9f314 5,30,53
+docs/IMPLEMENTATION.md
+  s_5d8e32af690bfd::t_18b4c73ce9f314 17
+server/storage.ts
+  s_5d8e32af690bfd::t_e453a5e1027f5c 220
+docs/vercel-deployment.md
+  s_5d8e32af690bfd::t_6e38155fc7c62b 1,52-53,76
+  s_5d8e32af690bfd::t_18b4c73ce9f314 44-46,64,74-75,106,121,126
+  s_5d8e32af690bfd::t_a0f807d36911cf 66,77
+  s_5d8e32af690bfd::t_8c3ae0eb948ea3 65
+package.json
+  s_5d8e32af690bfd::t_2342f2dd0eec5c 2
+tests/naming-config.test.mjs
+  s_5d8e32af690bfd::t_476430a988eb95 72-92
+  s_5d8e32af690bfd::t_8b9abbbeaea64e 1-71,93-111,115-116
+  s_5d8e32af690bfd::t_ed3311783f6d8d 112-114,117-136
+server/index.ts
+  s_5d8e32af690bfd::t_2342f2dd0eec5c 314
+shared/cloud-access.ts
+  s_5d8e32af690bfd::t_39e8081ed66401 5,8-9,38-39,47
+src/app/icon.svg
+  s_5d8e32af690bfd::t_2342f2dd0eec5c 1
+README.md
+  s_5d8e32af690bfd::t_630f866bdc9f68 91
+  s_5d8e32af690bfd::t_a0f807d36911cf 87,89-90
+  s_5d8e32af690bfd::t_2342f2dd0eec5c 1,3,19,83-86,88
+  s_5d8e32af690bfd::t_47f4dbaba744c0 92
+server/config.ts
+  s_5d8e32af690bfd::t_39e8081ed66401 8,13,19-20
+src/i18n/messages/common.ts
+  s_5d8e32af690bfd::t_2342f2dd0eec5c 5-6,20-21,32-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9e35cfdff0621145e22afd3b6098a10ea6eff987",
+  "prompts": {},
+  "sessions": {
+    "s_5d8e32af690bfd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e215-4343-7131-93af-8f9a07c384dd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
