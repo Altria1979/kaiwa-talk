@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { browserCookie } from '../shared/cloud-access.ts';
 import { after, mock, test } from 'node:test';
 
 // Valid legacy settings must never authorize a request without a browser key.
@@ -26,18 +27,19 @@ mock.module('ws', { exports: {
   WebSocket: class { static OPEN = 1; },
   WebSocketServer: class extends EventEmitter { clients = new Set(); },
 } });
-mock.module('../server/storage.ts', { exports: { store: {
+const scopedStore = {
   getActiveSessionId: async () => null,
   acquireSessionLease: async () => { writes++; return false; },
   getMessage: async () => { throw new Error('Must reject missing credentials before reading message'); },
-} } });
+};
+mock.module('../server/storage.ts', { exports: { store: { forOwner: () => scopedStore } } });
 const { RealtimeSession } = await import('../server/session.ts');
 const signals = new Map(['SIGINT', 'SIGTERM'].map(signal => [signal, new Set(process.listeners(signal))]));
 await import('../server/index.ts');
 after(() => { for (const [signal, old] of signals) for (const fn of process.listeners(signal)) if (!old.has(fn)) process.off(signal, fn); });
 
 function request(path, credentials, method = 'GET') {
-  const headers = { host: `127.0.0.1:${config.servicePort}`, origin: `http://localhost:${config.webPort}` };
+  const headers = { cookie: browserCookie('11111111-1111-4111-8111-111111111111', config.browserSecret, false).split(';')[0], host: `127.0.0.1:${config.servicePort}`, origin: `http://localhost:${config.webPort}` };
   if (credentials) {
     headers['x-bailian-api-key'] = credentials.apiKey;
     if (credentials.apiHost) headers['x-bailian-api-host'] = credentials.apiHost;
@@ -108,7 +110,7 @@ test('text, voice and resumed sessions without credentials ask for settings and 
     { type: 'start', voice: false, sessionId: 'saved-session', resume: true },
   ]) {
     const sent = [];
-    const session = new RealtimeSession({ readyState: 1, send: value => sent.push(JSON.parse(value)) });
+    const session = new RealtimeSession({ readyState: 1, send: value => sent.push(JSON.parse(value)) }, scopedStore);
     await session.handle(event);
     assert.equal(session.sessionId, null);
     assert.equal(sent.length, 1);

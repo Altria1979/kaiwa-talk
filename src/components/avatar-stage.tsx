@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm';
+import { AppError, APP_ERROR_MESSAGES } from '../../shared/app-errors';
 import type { ConversationState } from '../../shared/protocol';
-import { SERVICE_URL } from '../lib/api';
+import { ensureBrowserSession, SERVICE_URL } from '../lib/api';
 import { AVATAR_BOB_RATIO, getAvatarFraming } from '../lib/avatar-framing';
 import { getMouthOpenness } from '../lib/avatar-mouth';
 import { getAvatarCaptionPosition } from '../lib/avatar-caption';
@@ -102,7 +103,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
   const capabilitiesCallback = useRef(onCapabilities);
   const engine = useRef<{ load: (url: string) => Promise<void>; resize: () => void; trigger: (command: AvatarCommand) => void } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<AvatarError | null>(null);
+  const [error, setError] = useState<AvatarError | AppError | null>(null);
   const [retry, setRetry] = useState(0);
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { emotionRef.current = emotion; }, [emotion]);
@@ -303,7 +304,8 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
     const load = async (url: string) => {
       const version = ++loadVersion;
       request?.abort();
-      request = new AbortController();
+      const controller = new AbortController();
+      request = controller;
       animator = null;
       gesture = null;
       gaze.set(0, 0);
@@ -314,8 +316,12 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
       setLoading(true);
       setError(null);
       try {
-        const resolved = url.startsWith('/api/') ? `${SERVICE_URL}${url}` : url;
-        const response = await fetch(resolved, { signal: request.signal });
+        const privateAvatar = url.startsWith('/api/');
+        if (privateAvatar) await ensureBrowserSession();
+        if (disposed || version !== loadVersion) return;
+        const resolved = privateAvatar ? `${SERVICE_URL}${url}` : url;
+        const response = await fetch(resolved, { signal: controller.signal, credentials: privateAvatar ? (SERVICE_URL ? 'include' : 'same-origin') : 'omit' });
+        if (privateAvatar && response.status === 401) throw new AppError(APP_ERROR_MESSAGES.browserSessionRequired);
         if (!response.ok) throw new AvatarError('avatarErrorFetch');
         const buffer = await response.arrayBuffer();
         checkEmbeddedModel(buffer);
@@ -342,7 +348,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
       } catch (cause) {
         if (disposed || version !== loadVersion || (cause instanceof Error && cause.name === 'AbortError')) return;
         setLoading(false);
-        setError(cause instanceof AvatarError ? cause : new AvatarError('avatarErrorUnknown'));
+        setError((cause instanceof AvatarError || cause instanceof AppError) ? cause : new AvatarError('avatarErrorUnknown'));
       }
     };
     engine.current = { load, resize, trigger };

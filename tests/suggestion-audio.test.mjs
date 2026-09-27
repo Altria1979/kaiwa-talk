@@ -1,3 +1,4 @@
+import { browserCookie } from '../shared/cloud-access.ts';
 import { ProviderError } from '../server/providers/errors.ts';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
@@ -170,7 +171,7 @@ mock.module('ws', {
   exports: { WebSocket: class {}, WebSocketServer: class extends EventEmitter { clients = new Set(); } },
 });
 mock.module('../server/storage.ts', {
-  exports: { store: { getMessage: id => id === messageId ? message : null, getSettings: () => settings } },
+  exports: { store: { forOwner: () => ({ getMessage: id => id === messageId ? message : null, getSettings: () => settings }) } },
 });
 mock.module('../server/session.ts', {
   exports: { RealtimeSession: class {}, getActiveSessionId: () => null },
@@ -188,6 +189,7 @@ function request(path = `/api/messages/${messageId}/suggestions/1/audio`, header
   Object.assign(req, {
     method: 'POST', url: path, aborted: false,
     headers: {
+      cookie: browserCookie('22222222-2222-4222-8222-222222222222', config.browserSecret, false).split(';')[0],
       host: `127.0.0.1:${config.servicePort}`, origin: `http://127.0.0.1:${config.webPort}`,
       'x-bailian-api-key': runtime.apiKey, 'x-bailian-api-host': 'dashscope-intl.aliyuncs.com', ...headers,
     },

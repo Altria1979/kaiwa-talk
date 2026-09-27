@@ -74,7 +74,9 @@ test('HTTP client accepts old and new error responses and sanitizes transport fa
     { error: APP_ERROR_MESSAGES.modelTooLarge, errorCode: 'modelTooLarge' },
     { error: 'old fallback', errorCode: 'fieldPersona', errorParams: { max: 2000 } },
   ]) {
-    t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify(body), { status: 400 }));
+    t.mock.method(globalThis, 'fetch', async url => String(url).endsWith('/api/browser')
+      ? new Response(JSON.stringify({ ok: true }), { status: 200 })
+      : new Response(JSON.stringify(body), { status: 400 }));
     await assert.rejects(api.settings(), error => {
       assert.ok(error instanceof ApiError);
       assert.equal(error.message, body.error);

@@ -1,25 +1,23 @@
 import { AppError, describeError, type ErrorDescriptor } from '../../shared/app-errors';
 import { MAX_MODEL_BYTES, type BrowserBailianCredentials, type ChatMessage, type MemoryRecord, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
 import { browserCredentialHeaders, readBrowserCredentials } from './bailian-credentials';
-import { serviceAddress } from './service-address';
-
-const address = serviceAddress(typeof window === 'undefined' ? undefined : window.location, (process.env.NEXT_PUBLIC_KAIWA_TALK_SAME_ORIGIN ?? process.env.NEXT_PUBLIC_KAIWA_LAB_SAME_ORIGIN ?? process.env.NEXT_PUBLIC_VIRTUALMAID_SAME_ORIGIN) === '1');
-export const SERVICE_URL = address.serviceUrl;
-export const SOCKET_URL = address.socketUrl;
+import { ensureBrowserSession, SERVICE_URL } from './browser-session';
+export { ensureBrowserSession, SERVICE_URL, SOCKET_URL } from './browser-session';
 
 async function request<T>(path: string, options: RequestInit = {}, timeout = 15_000): Promise<T> {
   try {
+    await ensureBrowserSession();
     const response = await fetch(`${SERVICE_URL}${path}`, {
       ...options,
       cache: 'no-store',
-      credentials: 'same-origin',
+      credentials: 'include',
       signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout),
     });
     const result = await response.json() as T & { error?: string } & Partial<ErrorDescriptor>;
     if (!response.ok) throw new ApiError(typeof result.error === 'string' ? result.error : 'ローカルサービスでリクエストを完了できませんでした。', describeError(result));
     return result;
   } catch (error) {
-    if (error instanceof ApiError) throw error;
+    if (error instanceof AppError) throw error instanceof ApiError ? error : new ApiError(error.message, describeError(error));
     throw new ApiError('ローカルサービスに接続できません。アプリが起動していることを確認して、もう一度お試しください。');
   }
 }

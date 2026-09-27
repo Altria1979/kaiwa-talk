@@ -95,7 +95,7 @@ test('storage uses the resolved deployment mode when the new setting overrides t
     } } });
     const { config } = await import('./server/config.ts');
     const { store } = await import('./server/storage.ts');
-    try { await store.getSettings(); } catch (error) { if (error.message !== 'database-probe') throw error; }
+    try { await store.forOwner('11111111-1111-4111-8111-111111111111').getSettings(); } catch (error) { if (error.message !== 'database-probe') throw error; }
     console.log(JSON.stringify({ cloud: config.cloud, deployment: databaseOptions.deployment ?? null }));
   `;
   for (const deployment of [
@@ -131,6 +131,6 @@ test('browser same-origin mode supports the legacy alias with explicit new-setti
   ]) {
     assert.deepEqual(output(clientScript, environment), sameOrigin
       ? { serviceUrl: '', socketUrl: 'ws://localhost:13000/ws' }
-      : { serviceUrl: 'http://127.0.0.1:13001', socketUrl: 'ws://127.0.0.1:13001/ws' });
+      : { serviceUrl: 'http://localhost:13001', socketUrl: 'ws://localhost:13001/ws' });
   }
 });

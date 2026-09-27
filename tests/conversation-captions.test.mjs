@@ -47,7 +47,7 @@ mock.module('react', { exports: {
     if (!(index in rendering.slots)) rendering.slots[index] = effect();
   },
 } });
-mock.module('../src/lib/api.ts', { exports: { api: {}, SOCKET_URL: 'ws://example.invalid' } });
+mock.module('../src/lib/api.ts', { exports: { ensureBrowserSession: async () => {}, api: {}, SOCKET_URL: 'ws://example.invalid' } });
 mock.module('../src/lib/browser-audio.ts', { exports: { BrowserAudio: class {
   static latest;
   recognitionTime = 0;

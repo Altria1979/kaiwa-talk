@@ -21,48 +21,68 @@ let lease;
 const runtimeConfig = { cloud: false };
 
 const copy = (value) => structuredClone(value);
-const assertGuard = (guard, sessionId) => {
-  if (guard && (!lease || guard.sessionId !== sessionId || lease.sessionId !== sessionId || lease.ownerId !== guard.ownerId || lease.expiresAt <= Date.now())) throw new Error('SessionLeaseLostError');
-};
-const store = {
-  async acquireSessionLease(sessionId, ownerId, ttlMs) {
-    if (lease && lease.expiresAt > Date.now() && lease.ownerId !== ownerId) return false;
-    lease = { sessionId, ownerId, expiresAt: Date.now() + ttlMs }; return true;
-  },
-  async renewSessionLease(sessionId, ownerId, ttlMs) {
-    if (!lease || lease.sessionId !== sessionId || lease.ownerId !== ownerId || lease.expiresAt <= Date.now()) return false;
-    lease.expiresAt = Date.now() + ttlMs; return true;
-  },
-  async releaseSessionLease(sessionId, ownerId) { if (lease?.sessionId === sessionId && lease.ownerId === ownerId) lease = null; },
-  async getActiveSessionId() { return lease && lease.expiresAt > Date.now() ? lease.sessionId : null; },
-  async reopenSession(id, guard) { assertGuard(guard, id); const value = sessions.get(id); value.endedAt = null; value.review = null; return copy(value); },
-  getSettings: async () => copy(settings),
-  listMemories: async () => [],
-  recentReviews: async () => [],
-  listMessages: async (sessionId) => messages.filter(message => message.sessionId === sessionId).map(copy),
-  async createSession(guard) {
-    assertGuard(guard, guard?.sessionId);
-    const session = { id: guard?.sessionId ?? randomUUID(), title: 'テスト', createdAt: new Date().toISOString(), endedAt: null, review: null };
-    sessions.set(session.id, session);
-    return copy(session);
-  },
-  getSession: async (id) => copy(sessions.get(id)),
-  async endSession(id, review, guard) { assertGuard(guard, id); sessions.get(id).endedAt = new Date().toISOString(); },
-  async saveReview(id, review, endedAt) { assert.equal(sessions.get(id).endedAt, endedAt); sessions.get(id).review = copy(review); },
-  async addMessage(input, guard) {
-    assertGuard(guard, input.sessionId);
-    const message = { ...input, id: randomUUID(), spokenContent: '', interrupted: false, translation: null, createdAt: new Date().toISOString() };
-    messages.push(copy(message));
-    return message;
-  },
-  async updateMessage(id, patch, guard) {
-    assertGuard(guard, messages.find(message => message.id === id)?.sessionId);
-    const index = messages.findIndex(message => message.id === id);
-    assert.notEqual(index, -1);
-    messages[index] = { ...messages[index], ...copy(patch) };
-    return copy(messages[index]);
-  },
-};
+function createMockStore(data) {
+  const assertGuard = (guard, sessionId) => {
+    if (guard && (!data.lease || guard.sessionId !== sessionId || data.lease.sessionId !== sessionId || data.lease.ownerId !== guard.ownerId || data.lease.expiresAt <= Date.now())) throw new Error('SessionLeaseLostError');
+  };
+  return {
+    async acquireSessionLease(sessionId, ownerId, ttlMs) {
+      if (data.lease && data.lease.expiresAt > Date.now() && data.lease.ownerId !== ownerId) return false;
+      data.lease = { sessionId, ownerId, expiresAt: Date.now() + ttlMs }; return true;
+    },
+    async renewSessionLease(sessionId, ownerId, ttlMs) {
+      if (!data.lease || data.lease.sessionId !== sessionId || data.lease.ownerId !== ownerId || data.lease.expiresAt <= Date.now()) return false;
+      data.lease.expiresAt = Date.now() + ttlMs; return true;
+    },
+    async releaseSessionLease(sessionId, ownerId) { if (data.lease?.sessionId === sessionId && data.lease.ownerId === ownerId) data.lease = null; },
+    async getActiveSessionId() { return data.lease && data.lease.expiresAt > Date.now() ? data.lease.sessionId : null; },
+    async reopenSession(id, guard) { assertGuard(guard, id); const value = data.sessions.get(id); value.endedAt = null; value.review = null; return copy(value); },
+    getSettings: async () => copy(data.settings),
+    listMemories: async () => copy(data.memories ?? []),
+    recentReviews: async () => copy(data.reviews ?? []),
+    listMessages: async (sessionId) => data.messages.filter(message => message.sessionId === sessionId).map(copy),
+    async createSession(guard) {
+      assertGuard(guard, guard?.sessionId);
+      const session = { id: guard?.sessionId ?? randomUUID(), title: 'テスト', createdAt: new Date().toISOString(), endedAt: null, review: null };
+      data.sessions.set(session.id, session);
+      return copy(session);
+    },
+    getSession: async (id) => copy(data.sessions.get(id)),
+    async endSession(id, review, guard) { assertGuard(guard, id); data.sessions.get(id).endedAt = new Date().toISOString(); },
+    async saveReview(id, review, endedAt) { assert.equal(data.sessions.get(id).endedAt, endedAt); data.sessions.get(id).review = copy(review); },
+    async addMessage(input, guard) {
+      assertGuard(guard, input.sessionId);
+      const message = { ...input, id: randomUUID(), spokenContent: '', interrupted: false, translation: null, createdAt: new Date().toISOString() };
+      data.messages.push(copy(message));
+      return message;
+    },
+    async updateMessage(id, patch, guard) {
+      assertGuard(guard, data.messages.find(message => message.id === id)?.sessionId);
+      const index = data.messages.findIndex(message => message.id === id);
+      assert.notEqual(index, -1);
+      data.messages[index] = { ...data.messages[index], ...copy(patch) };
+      return copy(data.messages[index]);
+    },
+  };
+}
+
+const store = createMockStore({
+  get settings() { return settings; },
+  get messages() { return messages; },
+  get sessions() { return sessions; },
+  get lease() { return lease; },
+  set lease(value) { lease = value; },
+});
+
+function browserStore(label) {
+  const data = {
+    settings: { ...DEFAULT_SETTINGS, characterName: `${label}-character`, persona: `${label}-persona` },
+    messages: [], sessions: new Map(), lease: null,
+    memories: [{ content: `${label}-memory` }],
+    reviews: [{ topic: `${label}-review` }],
+  };
+  return { data, store: createMockStore(data) };
+}
 
 mock.module('../server/config.ts', {
   exports: {
@@ -72,7 +92,6 @@ mock.module('../server/config.ts', {
     getStatus: () => ({ ready: true }),
   },
 });
-mock.module('../server/storage.ts', { exports: { store } });
 mock.module('../server/providers/asr.ts', {
   exports: {
     AsrClient: class {
@@ -117,7 +136,7 @@ mock.module('../server/providers/tts.ts', {
     },
   },
 });
-const { RealtimeSession } = await import('../server/session.ts');
+const { RealtimeSession, getActiveSessionId } = await import('../server/session.ts');
 
 beforeEach(() => {
   lease = null;
@@ -144,9 +163,9 @@ async function waitFor(predicate) {
   assert.fail('The expected session event did not arrive');
 }
 
-async function startSession(t, voice) {
+async function startSession(t, voice, scopedStore = store) {
   const events = [];
-  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close() {} });
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close() {} }, scopedStore);
   t.after(() => session.dispose());
   await session.handle({ type: 'start', voice });
   assert.ok(session.sessionId);
@@ -720,7 +739,7 @@ test('socket loss suspends and resumes the same session without a review or dupl
   assert.equal(sessions.get(id).review, null);
   assert.equal(completionPrompts.some(prompt => prompt[0].content.includes('聊天回顾')), false);
   const resumedEvents = [];
-  const resumed = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => resumedEvents.push(JSON.parse(raw)), close() {} });
+  const resumed = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => resumedEvents.push(JSON.parse(raw)), close() {} }, store);
   t.after(() => resumed.dispose());
   await resumed.handle({ type: 'start', sessionId: id, resume: true, voice: false });
   assert.equal(resumed.sessionId, id);
@@ -745,7 +764,7 @@ test('an expired owner cannot mutate messages, renew, or release its replacement
   const oldLease = { ...lease };
   lease.expiresAt = Date.now() - 1;
   const resumedEvents = [];
-  const resumed = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => resumedEvents.push(JSON.parse(raw)), close() {} });
+  const resumed = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => resumedEvents.push(JSON.parse(raw)), close() {} }, store);
   t.after(() => resumed.dispose());
   await resumed.handle({ type: 'start', sessionId: id, resume: true, voice: false });
   const replacementOwner = lease.ownerId;
@@ -765,7 +784,7 @@ test('resume cannot reopen an explicitly ended conversation or bypass a live own
   const { session: first } = await startSession(t, false);
   const id = first.sessionId;
   const events = [];
-  const second = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close() {} });
+  const second = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close() {} }, store);
   t.after(() => second.dispose());
   await second.handle({ type: 'start', sessionId: id, resume: true, voice: false });
   assert.equal(last(events, 'error').errorCode, 'sessionOtherPage');
@@ -783,7 +802,7 @@ test('cloud rotation persists an interrupted turn before the function connection
   runtimeConfig.cloud = true;
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1_000_000 });
   const events = [], closes = [];
-  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close: (...args) => closes.push(args) });
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close: (...args) => closes.push(args) }, store);
   t.after(() => session.dispose());
   await session.handle({ type: 'start', voice: false });
   const id = session.sessionId;
@@ -808,7 +827,7 @@ test('cloud rotation persists an interrupted turn before the function connection
 
 test('a failed explicit end releases ownership and closes instead of wedging the conversation', async t => {
   const events = [], closes = [];
-  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close: (...args) => closes.push(args) });
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close: (...args) => closes.push(args) }, store);
   t.after(() => session.dispose());
   await session.handle({ type: 'start', voice: false });
   const id = session.sessionId;
@@ -820,7 +839,7 @@ test('a failed explicit end releases ownership and closes instead of wedging the
   assert.deepEqual(closes, [[1012, 'Session end could not be saved']]);
   assert.equal(last(events, 'error').errorCode, 'sessionFailure');
   assert.equal(JSON.stringify(events).includes('private database'), false);
-  const next = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close() {} });
+  const next = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close() {} }, store);
   t.after(() => next.dispose());
   await next.handle({ type: 'start', sessionId: id, resume: true, voice: false });
   assert.equal(next.sessionId, id);
@@ -831,7 +850,7 @@ test('a failed explicit end releases ownership and closes instead of wedging the
 test('an old renewal rejection cannot dispose a new session on the same socket', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const closes = [];
-  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close: (...args) => closes.push(args) });
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close: (...args) => closes.push(args) }, store);
   t.after(() => session.dispose());
   let rejectRenewal;
   t.mock.method(store, 'renewSessionLease', () => new Promise((resolve, reject) => { rejectRenewal = reject; }), { times: 1 });
@@ -848,4 +867,178 @@ test('an old renewal rejection cannot dispose a new session on the same socket',
   assert.deepEqual(closes, []);
   assert.equal(session.sessionId, nextId);
   assert.equal(lease.sessionId, nextId);
+});
+
+test('browser-scoped sessions run concurrently while one browser still has a single lease', async t => {
+  const firstBrowser = browserStore('first');
+  const secondBrowser = browserStore('second');
+  const first = await startSession(t, false, firstBrowser.store);
+  const second = await startSession(t, false, secondBrowser.store);
+  assert.notEqual(first.session.sessionId, second.session.sessionId);
+  assert.equal(await getActiveSessionId(firstBrowser.store), first.session.sessionId);
+  assert.equal(await getActiveSessionId(secondBrowser.store), second.session.sessionId);
+
+  const refusedEvents = [];
+  const sameBrowser = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => refusedEvents.push(JSON.parse(raw)), close() {} }, firstBrowser.store);
+  t.after(() => sameBrowser.dispose());
+  await sameBrowser.handle({ type: 'start', voice: false });
+  assert.equal(last(refusedEvents, 'error').errorCode, 'sessionOtherPage');
+  assert.equal(firstBrowser.data.sessions.size, 1);
+
+  const originalId = first.session.sessionId;
+  await first.session.dispose();
+  assert.equal(await getActiveSessionId(firstBrowser.store), null);
+  assert.equal(await getActiveSessionId(secondBrowser.store), second.session.sessionId);
+  await sameBrowser.handle({ type: 'start', sessionId: originalId, resume: true, voice: false });
+  assert.equal(sameBrowser.sessionId, originalId);
+  assert.equal(secondBrowser.data.sessions.size, 1);
+});
+
+test('another browser cannot resume or reopen a known foreign session ID', async t => {
+  const firstBrowser = browserStore('first');
+  const secondBrowser = browserStore('second');
+  const first = await startSession(t, false, firstBrowser.store);
+  const id = first.session.sessionId;
+  await first.session.dispose();
+  const events = [];
+  const foreign = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close() {} }, secondBrowser.store);
+  t.after(() => foreign.dispose());
+  for (const resume of [true, false]) {
+    await foreign.handle({ type: 'start', sessionId: id, resume, voice: false });
+    assert.equal(last(events, 'error').errorCode, 'sessionNotFound');
+    assert.equal(foreign.sessionId, null);
+  }
+  assert.equal(secondBrowser.data.sessions.size, 0);
+  assert.equal(secondBrowser.data.lease, null);
+  assert.equal(firstBrowser.data.sessions.get(id).endedAt, null);
+});
+
+test('prompts, settings, history and asynchronous reviews stay inside the injected browser store', async t => {
+  const firstBrowser = browserStore('first');
+  const secondBrowser = browserStore('second');
+  const first = await startSession(t, false, firstBrowser.store);
+  const second = await startSession(t, false, secondBrowser.store);
+  for (const [browser, current, label] of [[firstBrowser, first, 'first'], [secondBrowser, second, 'second']]) {
+    await browser.store.addMessage({ sessionId: current.session.sessionId, turnId: randomUUID(), role: 'user', content: `${label}-history`, delivery: 'text' });
+    await current.session.handle({ type: 'text', text: `${label}-question` });
+    await waitFor(() => last(current.events, 'turn.done'));
+    const prompt = JSON.stringify(prompts.at(-1));
+    for (const part of ['character', 'persona', 'memory', 'review', 'history', 'question']) assert.ok(prompt.includes(`${label}-${part}`));
+    assert.ok(!prompt.includes(`${label === 'first' ? 'second' : 'first'}-`));
+    assert.equal(browser.data.messages.filter(message => message.role === 'assistant').length, 1);
+  }
+  const review = {
+    topic: '最初の会話', improvement: '次回も話しましょう。', memorySuggestions: [],
+    expressions: [1, 2, 3].map(index => ({ text: `表現${index}`, meaning: `意味${index}` })),
+  };
+  completeReply = () => JSON.stringify(review);
+  const firstId = first.session.sessionId;
+  const secondId = second.session.sessionId;
+  await first.session.handle({ type: 'end' });
+  await waitFor(() => firstBrowser.data.sessions.get(firstId).review);
+  const reviewPrompt = completionPrompts.findLast(prompt => prompt[0].content.includes('聊天回顾'));
+  assert.ok(JSON.stringify(reviewPrompt).includes('first-question'));
+  assert.ok(!JSON.stringify(reviewPrompt).includes('second-'));
+  assert.deepEqual(firstBrowser.data.sessions.get(firstId).review, { language: 'ja', ...review });
+  assert.equal(secondBrowser.data.sessions.get(secondId).review, null);
+  assert.equal(secondBrowser.data.sessions.get(secondId).endedAt, null);
+  assert.equal(await getActiveSessionId(secondBrowser.store), secondId);
+  assert.equal(messages.length, 0, 'the old shared mock must remain unused');
+  assert.equal(sessions.size, 0);
+});
+
+test('unstarted and refused-start sockets expire without extending the idle deadline', async t => {
+  for (const failedStart of [false, true]) await t.test(`failedStart=${failedStart}`, async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const closes = [];
+    const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close: (...args) => closes.push(args) }, store);
+    t.after(() => session.dispose());
+    t.mock.timers.tick(10_000);
+    if (failedStart) await session.handle({ type: 'start', sessionId: 'foreign-or-missing', resume: true, voice: false });
+    t.mock.timers.tick(4999);
+    assert.deepEqual(closes, []);
+    t.mock.timers.tick(1);
+    await nextTick();
+    assert.deepEqual(closes, [[1008, 'Session idle timeout']]);
+    assert.equal(lease, null);
+    await session.handle({ type: 'start', voice: false });
+    assert.equal(session.sessionId, null);
+  });
+});
+
+test('a started session clears the idle deadline and ending re-arms it', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const closes = [];
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close: (...args) => closes.push(args) }, store);
+  t.after(() => session.dispose());
+  await session.handle({ type: 'start', voice: false });
+  t.mock.timers.tick(15_000);
+  await nextTick();
+  assert.deepEqual(closes, []);
+  assert.ok(session.sessionId);
+  await session.handle({ type: 'end' });
+  t.mock.timers.tick(14_999);
+  assert.deepEqual(closes, []);
+  t.mock.timers.tick(1);
+  await nextTick();
+  assert.deepEqual(closes, [[1008, 'Session idle timeout']]);
+});
+
+test('disposing an unstarted socket cancels its deadline', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const closes = [];
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close: (...args) => closes.push(args) }, store);
+  await session.dispose();
+  t.mock.timers.tick(60_000);
+  assert.deepEqual(closes, []);
+});
+
+test('a slow session lookup cannot create or renew ownership after the idle timeout', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const closes = [];
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close: (...args) => closes.push(args) }, store);
+  t.after(() => session.dispose());
+  let resolveCreation;
+  t.mock.method(store, 'createSession', guard => new Promise(resolve => {
+    resolveCreation = () => resolve({ id: guard.sessionId, createdAt: '', title: '', endedAt: null, review: null });
+  }));
+  const starting = session.handle({ type: 'start', voice: false });
+  await waitFor(() => resolveCreation);
+  t.mock.timers.tick(15_000);
+  await nextTick();
+  assert.deepEqual(closes, [[1008, 'Session idle timeout']]);
+  resolveCreation();
+  await starting;
+  assert.equal(session.sessionId, null);
+  assert.equal(lease, null);
+  t.mock.timers.tick(30_000);
+  assert.equal(closes.length, 1);
+});
+
+test('an ended conversation gets one bounded grace period to persist its pending recap', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const closes = [], events = [];
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close: (...args) => closes.push(args) }, store);
+  t.after(() => session.dispose());
+  await session.handle({ type: 'start', voice: false });
+  const id = session.sessionId;
+  await session.handle({ type: 'text', text: '回顧を保存してください。' });
+  await waitFor(() => last(events, 'turn.done'));
+  let finishReview;
+  completeReply = () => new Promise(resolve => { finishReview = () => resolve(JSON.stringify({
+    topic: '会話の振り返り', improvement: '次回も話しましょう。', memorySuggestions: [],
+    expressions: [1, 2, 3].map(index => ({ text: `表現${index}`, meaning: `意味${index}` })),
+  })); });
+  await session.handle({ type: 'end' });
+  await waitFor(() => finishReview);
+  t.mock.timers.tick(15_000);
+  await nextTick();
+  assert.deepEqual(closes, []);
+  t.mock.timers.tick(5000);
+  finishReview();
+  await waitFor(() => sessions.get(id).review);
+  t.mock.timers.tick(10_000);
+  await nextTick();
+  assert.deepEqual(closes, [[1008, 'Session idle timeout']]);
+  assert.equal(sessions.get(id).review.topic, '会話の振り返り');
 });

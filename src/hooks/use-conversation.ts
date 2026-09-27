@@ -4,7 +4,7 @@ import { AppError, describeError, type ErrorDescriptor } from '../../shared/app-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, type ChatMessage, type ClientEvent, type ConversationState, type ServerEvent, type SessionRecord } from '../../shared/protocol';
 import { isAvatarEmotion, type AvatarEmotion } from '../../shared/avatar-emotion';
-import { api, SOCKET_URL } from '../lib/api';
+import { api, ensureBrowserSession, SOCKET_URL } from '../lib/api';
 import { readBrowserCredentials } from '../lib/bailian-credentials';
 import { BrowserAudio } from '../lib/browser-audio';
 import type { VadStatus } from '../lib/browser-vad';
@@ -348,6 +348,10 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
 
   const connect = useCallback(async () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return;
+    const generation = lifecycleRef.current;
+    await ensureBrowserSession();
+    if (!mountedRef.current || generation !== lifecycleRef.current) throw new AppError('接続をキャンセルしました。');
+    if (socketRef.current?.readyState === WebSocket.OPEN) return;
     const socket = new WebSocket(SOCKET_URL);
     socketRef.current = socket;
     await new Promise<void>((resolve, reject) => {
@@ -541,7 +545,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
           socket?.close(1000, 'Retry session resume');
           setConnected(false);
           // A missing/ended conversation or invalid credentials cannot recover by waiting.
-          if (cause instanceof AppError && ['sessionNotFound', 'credentialsRequired', 'configInvalid', 'apiKeyInvalid', 'apiKeyRequired'].includes(cause.errorCode ?? '')) break;
+          if (cause instanceof AppError && ['browserSessionRequired', 'sessionNotFound', 'credentialsRequired', 'configInvalid', 'apiKeyInvalid', 'apiKeyRequired'].includes(cause.errorCode ?? '')) break;
         }
       }
       if (!current()) return;

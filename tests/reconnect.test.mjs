@@ -22,7 +22,8 @@ mock.module('react', { exports: {
     if (!(index in rendering.slots)) rendering.slots[index] = effect();
   },
 } });
-mock.module('../src/lib/api.ts', { exports: { SOCKET_URL: 'wss://example.invalid/ws', api: {} } });
+let bootstrap = async () => {};
+mock.module('../src/lib/api.ts', { exports: { ensureBrowserSession: () => bootstrap(), SOCKET_URL: 'wss://example.invalid/ws', api: {} } });
 mock.module('../src/lib/bailian-credentials.ts', { exports: { readBrowserCredentials: () => ({ apiKey: 'test-private-key' }) } });
 class Audio {
   static instances = [];
@@ -156,4 +157,17 @@ test('resume retries are bounded and leave saved history available when ownershi
   assert.equal(h.current().state, 'error');
   assert.equal(h.current().session.id, session.id);
   assert.equal(h.current().errorDetails.errorCode, 'sessionOtherPage');
+});
+
+test('initial WebSocket waits until the anonymous browser cookie bootstrap finishes', async t => {
+  let release;
+  bootstrap = () => new Promise(resolve => { release = resolve; });
+  t.after(() => { bootstrap = async () => {}; });
+  const starting = harness(t, false);
+  await nextTick();
+  assert.equal(Socket.instances.length, 0);
+  release();
+  const h = await starting;
+  assert.equal(Socket.instances.length, 1);
+  assert.equal(h.current().active, true);
 });

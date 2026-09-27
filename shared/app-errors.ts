@@ -1,5 +1,5 @@
 export const APP_ERROR_MESSAGES = {
-  accessRequired: "アクセス認証が必要です。ページを再読み込みしてログインしてください。",
+  browserSessionRequired: "ブラウザーの保存を有効にして、ページを再読み込みしてください。",
   serviceRequestFailed: "ローカルサービスでリクエストを完了できませんでした。",
   serviceUnavailable: "ローカルサービスに接続できません。アプリが起動していることを確認して、もう一度お試しください。",
   serviceFailure: "ローカルサービスでエラーが発生しました。再試行してください",

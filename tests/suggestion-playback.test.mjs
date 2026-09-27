@@ -45,7 +45,7 @@ mock.module('react', { exports: {
 
 const requests = [];
 let respond;
-mock.module('../src/lib/api.ts', { exports: {
+mock.module('../src/lib/api.ts', { exports: { ensureBrowserSession: async () => {},
   SOCKET_URL: 'ws://example.invalid',
   api: {
     suggestionAudio(messageId, index, signal) {

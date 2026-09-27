@@ -1,13 +1,14 @@
 import { AppError } from '../shared/app-errors.js';
 import { resolve } from 'node:path';
 import type { BrowserBailianCredentials, ServiceStatus } from '../shared/protocol.js';
-import { accessSecret, isCloudDeployment } from '../shared/cloud-access.js';
+import { isCloudDeployment } from '../shared/cloud-access.js';
+
+import { loadBrowserSecret } from './browser-secret.js';
 
 const cloud = isCloudDeployment();
 const cloudPort = Number(process.env.PORT || 8080);
 const publicOrigin = (process.env.KAIWA_TALK_PUBLIC_ORIGIN ?? process.env.KAIWA_LAB_PUBLIC_ORIGIN ?? process.env.VIRTUALMAID_PUBLIC_ORIGIN)?.trim() ?? '';
 if (cloud) {
-  accessSecret();
   if (!Number.isInteger(cloudPort) || cloudPort < 1 || cloudPort > 65535) throw new Error('PORT must be an integer between 1 and 65535.');
   const origin = new URL(publicOrigin);
   if (origin.protocol !== 'https:' || origin.origin !== publicOrigin) throw new Error('KAIWA_TALK_PUBLIC_ORIGIN must be an HTTPS origin without a trailing slash.');
@@ -57,6 +58,7 @@ export const config = Object.freeze({
   chatModel: process.env.BAILIAN_CHAT_MODEL?.trim() || 'qwen3.8-flash',
   asrModel: process.env.BAILIAN_ASR_MODEL?.trim() || 'fun-asr-realtime',
   ttsModel: process.env.BAILIAN_TTS_MODEL?.trim() || 'qwen3-tts-flash-realtime',
+  browserSecret: loadBrowserSecret(cloud, resolve(process.cwd(), 'data')),
   dataDir: resolve(process.cwd(), 'data'),
 });
 

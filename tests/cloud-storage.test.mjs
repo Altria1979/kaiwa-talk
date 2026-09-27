@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,31 +14,34 @@ function setup(t, driver = 'libsql') {
   const stores = [];
   const options = { dataDir: join(dir, 'local'), ...(driver === 'libsql' ? { databaseUrl: url } : {}) };
   const client = driver === 'libsql' ? createClient({ url }) : null;
-  const open = () => {
+  const ownerId = randomUUID();
+  const openRoot = () => {
     const store = createStore(options);
     stores.push(store);
     return store;
   };
+  const open = () => openRoot().forOwner(ownerId);
   t.after(async () => {
     for (const store of stores) await store.close();
     client?.close();
     rmSync(dir, { recursive: true, force: true });
   });
-  return { open, client, options };
+  return { open, openRoot, ownerId, client, options };
 }
 const review = { topic: '旅行', expressions: [], improvement: 'もう一度話しましょう', memorySuggestions: [] };
 const input = (sessionId, content = '京都に行きたいです。') => ({ sessionId, turnId: 'turn', role: 'user', content, delivery: 'text' });
 
 test('Turso adapter persists settings, conversation, auxiliary results and memories across fresh clients', async t => {
-  const { open } = setup(t);
-  const first = open();
+  const { open, openRoot, ownerId } = setup(t);
+  const firstRoot = openRoot();
+  const first = firstRoot.forOwner(ownerId);
   await first.updateSettings({ voice: 'Serena', persona: 'ユーザーが書いた設定' });
   const session = await first.createSession();
   const message = await first.addMessage(input(session.id));
   await first.updateMessage(message.id, { translation: '我想去京都。', interrupted: true });
   const memory = await first.addMemory('京都が好き');
   await first.endSession(session.id, review);
-  await first.close();
+  await firstRoot.close();
 
   const second = open();
   assert.equal((await second.getSettings()).voice, 'Serena');
@@ -60,7 +64,7 @@ test('database initialization is lazy and Vercel fails closed without complete r
     const dataDir = join(dir, 'must-not-create');
     const store = createStore({ dataDir, deployment: 'vercel', ...extra });
     assert.equal(existsSync(dataDir), false);
-    await assert.rejects(store.getSettings(), /Vercel requires/);
+    await assert.rejects(store.forOwner(randomUUID()).getSettings(), /Vercel requires/);
     assert.equal(existsSync(dataDir), false);
     await store.close();
   }
@@ -72,7 +76,7 @@ test('remote transactions roll back failed message writes and leave the connecti
   await store.getSettings();
   const session = await store.createSession();
   // Simulate a failed second statement: the message INSERT must also be rolled back.
-  await client.execute("CREATE TRIGGER reject_title BEFORE UPDATE ON sessions BEGIN SELECT RAISE(ABORT, 'test write failure'); END");
+  await client.execute("CREATE TRIGGER reject_title BEFORE UPDATE ON browser_sessions BEGIN SELECT RAISE(ABORT, 'test write failure'); END");
   await assert.rejects(store.addMessage(input(session.id)), /test write failure/);
   assert.deepEqual(await store.listMessages(session.id), []);
   assert.equal((await store.getSession(session.id)).title, '新しい会話');
@@ -120,7 +124,7 @@ test('expired leases cannot be resurrected and stale owners cannot mutate after 
   const nextGuard = { sessionId: session.id, ownerId: 'next-owner' };
   await first.acquireSessionLease(session.id, oldGuard.ownerId, 60_000);
   const message = await first.addMessage(input(session.id), oldGuard);
-  await client.execute('UPDATE session_lease SET expires_at = 0');
+  await client.execute('UPDATE browser_session_lease SET expires_at = 0');
   assert.equal(await first.getActiveSessionId(), null);
   assert.equal(await first.renewSessionLease(session.id, oldGuard.ownerId, 60_000), false);
   await assert.rejects(first.addMessage(input(session.id), oldGuard), SessionLeaseLostError);

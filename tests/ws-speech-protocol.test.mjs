@@ -20,7 +20,7 @@ mock.module('ws', {
     },
   },
 });
-mock.module('../server/storage.ts', { exports: { store: {} } });
+mock.module('../server/storage.ts', { exports: { store: { forOwner: () => ({}) } } });
 mock.module('../server/session.ts', {
   exports: { RealtimeSession: class { async handle(event) { handled.push(event); } async dispose() {} }, getActiveSessionId: () => null },
 });

@@ -30,7 +30,7 @@ const message = (turnId = 'turn', extra = {}) => ({
 });
 const emotion = (value = 'happy', turnId = 'turn', extra = {}) => ({ type: 'avatar.emotion', turnId, messageId: `${turnId}-assistant`, emotion: value, ...extra });
 
-mock.module('../src/lib/api.ts', { exports: {
+mock.module('../src/lib/api.ts', { exports: { ensureBrowserSession: async () => {},
   api: { session: async id => ({ session: { ...session, id, endedAt: 'yesterday' }, messages: [] }) },
   SOCKET_URL: 'ws://example.invalid',
 } });

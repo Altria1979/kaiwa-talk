@@ -4,5 +4,7 @@ export function serviceAddress(location?: Pick<Location, 'protocol' | 'hostname'
     return { serviceUrl: '', socketUrl: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws` };
   }
   const port = location ? Number(location.port || 3000) + 1 : 3001;
-  return { serviceUrl: `http://127.0.0.1:${port}`, socketUrl: `ws://127.0.0.1:${port}/ws` };
+  const hostname = location?.hostname ?? '127.0.0.1';
+  const secure = location?.protocol === 'https:';
+  return { serviceUrl: `${secure ? 'https:' : 'http:'}//${hostname}:${port}`, socketUrl: `${secure ? 'wss:' : 'ws:'}//${hostname}:${port}/ws` };
 }

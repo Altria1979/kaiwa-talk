@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { BlobNotFoundError, copy, del, get, head, issueSignedToken, list, presignUrl } from '@vercel/blob';
@@ -34,19 +34,20 @@ export function validateVrm(data: Buffer) {
   }
 }
 
-export async function saveLocalAvatar(data: Buffer): Promise<string> {
+export async function saveLocalAvatar(browserId: string, data: Buffer): Promise<string> {
+  avatarId(browserId);
   validateVrm(data);
   const id = randomUUID();
-  await mkdir(join(config.dataDir, 'avatars'), { recursive: true, mode: 0o700 });
-  await writeFile(join(config.dataDir, 'avatars', `${id}.vrm`), data, { mode: 0o600, flag: 'wx' });
+  await mkdir(join(config.dataDir, 'avatars', browserId), { recursive: true, mode: 0o700 });
+  await writeFile(join(config.dataDir, 'avatars', browserId, `${id}.vrm`), data, { mode: 0o600, flag: 'wx' });
   return `/api/avatars/${id}.vrm`;
 }
 
-export async function prepareAvatarUpload() {
+export async function prepareAvatarUpload(browserId: string) {
   // Bounded, opportunistic collection: closing the tab may abandon a staging object.
-  await cleanupAbandonedUploads().catch(() => {});
+  await cleanupAbandonedUploads(avatarId(browserId)).catch(() => {});
   const id = randomUUID();
-  const pathname = `avatar-uploads/${id}.vrm`;
+  const pathname = `avatar-uploads/${browserId}/${id}.vrm`;
   const token = await generateClientTokenFromReadWriteToken({
     ...blobOptions(), pathname, maximumSizeInBytes: MAX_MODEL_BYTES,
     allowedContentTypes: ['application/octet-stream'], validUntil: Date.now() + 10 * 60_000,
@@ -55,8 +56,8 @@ export async function prepareAvatarUpload() {
   return { id, pathname, token };
 }
 
-export async function cleanupAbandonedUploads() {
-  const { blobs } = await list({ ...blobOptions(), prefix: 'avatar-uploads/', limit: 1000 });
+export async function cleanupAbandonedUploads(browserId: string) {
+  const { blobs } = await list({ ...blobOptions(), prefix: `avatar-uploads/${avatarId(browserId)}/`, limit: 1000 });
   const cutoff = Date.now() - 24 * 60 * 60_000;
   const abandoned = blobs.filter(blob => blob.uploadedAt.getTime() < cutoff).map(blob => blob.url);
   if (abandoned.length) await del(abandoned, blobOptions());
@@ -67,10 +68,11 @@ async function finalizedAvatarExists(pathname: string): Promise<boolean> {
   catch (error) { if (error instanceof BlobNotFoundError) return false; throw error; }
 }
 
-export async function completeAvatarUpload(value: unknown): Promise<string> {
+export async function completeAvatarUpload(browserId: string, value: unknown): Promise<string> {
+  avatarId(browserId);
   const id = avatarId(value);
-  const staging = `avatar-uploads/${id}.vrm`;
-  const destination = `avatars/${id}.vrm`;
+  const staging = `avatar-uploads/${browserId}/${id}.vrm`;
+  const destination = `avatars/${browserId}/${id}.vrm`;
   const avatarUrl = `/api/avatars/${id}.vrm`;
   // A previous completion may have succeeded before its HTTP response was lost.
   if (await finalizedAvatarExists(destination)) return avatarUrl;
@@ -109,15 +111,30 @@ export async function completeAvatarUpload(value: unknown): Promise<string> {
   return avatarUrl;
 }
 
-export async function readAvatar(value: string): Promise<Buffer | string> {
+export async function readAvatar(browserId: string, value: string): Promise<Buffer | string> {
+  avatarId(browserId);
   const id = avatarId(value);
   if (config.cloud) {
-    const pathname = `avatars/${id}.vrm`;
+    const pathname = `avatars/${browserId}/${id}.vrm`;
+    await assertAvatarOwner(browserId, id);
     const validUntil = Date.now() + 5 * 60_000;
     const token = await issueSignedToken({ ...blobOptions(), pathname, operations: ['get'], validUntil });
     const { presignedUrl } = await presignUrl(token, { pathname, operation: 'get', access: 'private', validUntil });
     return presignedUrl;
   }
-  try { return await readFile(join(config.dataDir, 'avatars', `${id}.vrm`)); }
+  try { return await readFile(join(config.dataDir, 'avatars', browserId, `${id}.vrm`)); }
   catch { throw new AvatarError(404, 'アバターファイルが見つかりません。もう一度読み込んでください'); }
+}
+
+/** Reject selecting an avatar that is absent from this browser's namespace. */
+export async function assertAvatarOwner(browserId: string, value: string): Promise<void> {
+  avatarId(browserId);
+  const id = avatarId(value);
+  if (config.cloud) {
+    if (await finalizedAvatarExists(`avatars/${browserId}/${id}.vrm`)) return;
+  } else {
+    try { if ((await stat(join(config.dataDir, 'avatars', browserId, `${id}.vrm`))).isFile()) return; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  }
+  throw new AvatarError(404, 'アバターファイルが見つかりません。もう一度読み込んでください');
 }

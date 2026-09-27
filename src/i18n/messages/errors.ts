@@ -1,7 +1,7 @@
 import type { Locale } from '../locales';
 
 const ja = {
-  "errors.accessRequired": "アクセス認証が必要です。ページを再読み込みしてログインしてください。",
+  "errors.browserSessionRequired": "ブラウザーの保存を有効にして、ページを再読み込みしてください。",
   "errors.serviceRequestFailed": "サーバーでリクエストを完了できませんでした。",
   "errors.serviceUnavailable": "サーバーに接続できません。ネットワーク接続とサービスの状態を確認して、もう一度お試しください。",
   "errors.serviceFailure": "サーバーでエラーが発生しました。再試行してください",
@@ -134,7 +134,7 @@ const ja = {
 } as const;
 
 const zh = {
-  "errors.accessRequired": "需要访问认证。请刷新页面并登录。",
+  "errors.browserSessionRequired": "请允许浏览器保存网站数据，然后刷新页面。",
   "errors.serviceRequestFailed": "服务端未能完成请求。",
   "errors.serviceUnavailable": "无法连接服务端。请检查网络连接和服务状态后重试。",
   "errors.serviceFailure": "服务端发生错误，请重试。",
@@ -267,7 +267,7 @@ const zh = {
 } satisfies Record<keyof typeof ja, string>;
 
 const en = {
-  "errors.accessRequired": "Authentication is required. Reload the page and sign in.",
+  "errors.browserSessionRequired": "Allow your browser to save site data, then reload the page.",
   "errors.serviceRequestFailed": "The server could not complete the request.",
   "errors.serviceUnavailable": "Cannot connect to the server. Check your connection and the service status, then try again.",
   "errors.serviceFailure": "The server encountered an error. Please try again.",
