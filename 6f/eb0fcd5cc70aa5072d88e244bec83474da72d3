@@ -1,0 +1,14 @@
+docs/development.md
+  h_04d8bae17367b3 77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6feb0fcd5cc70aa5072d88e244bec83474da72d3",
+  "prompts": {},
+  "humans": {
+    "h_04d8bae17367b3": {
+      "author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
