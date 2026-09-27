@@ -1,0 +1,21 @@
+src/components/companion.module.css
+  s_9380ea6f153c2f::t_b617de1e6a3fb5 48
+src/app/globals.css
+  s_9380ea6f153c2f::t_b617de1e6a3fb5 32-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6e4ddcad4e310594f1ef6a6c2075078dc21e9401",
+  "prompts": {},
+  "sessions": {
+    "s_9380ea6f153c2f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e300-3e29-71b3-9d81-8322bd4bd9b4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
