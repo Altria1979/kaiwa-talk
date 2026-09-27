@@ -1,0 +1,75 @@
+tests/conversation-reading-aid.test.mjs
+  s_679768e86b41e2::t_66fd032b337643 39-40
+tests/browser-audio.test.mjs
+  s_679768e86b41e2::t_a6122f5a621fe7 549-651
+  s_679768e86b41e2::t_d5c8040305de1a 17-19,37-41
+tests/conversation-captions.test.mjs
+  s_679768e86b41e2::t_66fd032b337643 59-60
+README.md
+  s_679768e86b41e2::t_9a5d87b3e9d7cb 53,55,68
+src/components/icon.tsx
+  s_679768e86b41e2::t_1bb70fee651333 3,24
+src/components/companion.module.css
+  s_679768e86b41e2::t_1bb70fee651333 22-26
+tests/conversation-speech.test.mjs
+  s_679768e86b41e2::t_66fd032b337643 32-33
+src/components/conversation-audio-export.tsx
+  s_679768e86b41e2::t_1bb70fee651333 1-12,15-27,29-36
+  s_679768e86b41e2::t_540b231c02e8e7 13-14,28
+tests/reconnect.test.mjs
+  s_679768e86b41e2::t_66fd032b337643 35-36
+tests/suggestion-playback.test.mjs
+  s_679768e86b41e2::t_66fd032b337643 77-78
+src/lib/conversation-recorder.ts
+  s_679768e86b41e2::t_9c5f73efd37d83 1-123
+tests/conversation-emotion.test.mjs
+  s_679768e86b41e2::t_66fd032b337643 42-43
+tests/browser-capture.test.mjs
+  s_679768e86b41e2::t_7c8ab43681a07d 144,150-152,154-156,162-164,166-170,173-185,193-198,213-217,270-314
+src/lib/download-conversation-audio.ts
+  s_679768e86b41e2::t_1bb70fee651333 1-19
+src/components/companion.tsx
+  s_679768e86b41e2::t_1bb70fee651333 20,233
+src/i18n/messages/companion.ts
+  s_679768e86b41e2::t_66fd032b337643 37-46,185-194,331-340
+  s_679768e86b41e2::t_27ddd3e6010f4c 47,195,341
+src/hooks/use-conversation.ts
+  s_679768e86b41e2::t_4c8cd94c8a00a2 657,663
+  s_679768e86b41e2::t_101074e6c74945 246,546-547
+  s_679768e86b41e2::t_6d87b06f6e15eb 677-678
+  s_679768e86b41e2::t_1bb70fee651333 866
+  s_679768e86b41e2::t_e18af98361cf39 10,20,42,47-48,129,131-147,233-234,244-245,247,548,844-845
+tests/download-conversation-audio.test.mjs
+  s_679768e86b41e2::t_bf5c123e7713fd 1-30
+src/lib/browser-audio.ts
+  s_679768e86b41e2::t_9c5f73efd37d83 5,95-98,134-149,186,224,262,454-455,457,463-472
+tests/conversation-recording.test.mjs
+  s_679768e86b41e2::t_e71573f96f19a7 1-165,187-262,295-321
+  s_679768e86b41e2::t_2687990bc8c2f6 263-277,293-294
+  s_679768e86b41e2::t_07eab8e8a2d0e6 166-186,278-292
+tests/conversation-recorder.test.mjs
+  s_679768e86b41e2::t_7648200ae58ec7 1-187
+  s_679768e86b41e2::t_08c2b0163e04a8 188-199
+README.en.md
+  s_679768e86b41e2::t_9a5d87b3e9d7cb 53,55,68
+README.ja.md
+  s_679768e86b41e2::t_9a5d87b3e9d7cb 53,55,68
+tests/companion-i18n.test.mjs
+  s_679768e86b41e2::t_bf5c123e7713fd 83,96-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a84d87d51f385a3a9a16f44be7f37e55a3964f49",
+  "prompts": {},
+  "sessions": {
+    "s_679768e86b41e2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e35e-cc93-73b1-b9f5-350951f23d47",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
