@@ -45,7 +45,7 @@
 .shell :global(.reading-switch-track::after) { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
 .shell :global(.reading-switch input:checked + .reading-switch-track) { border-color: var(--success); background: var(--success); }
 .shell :global(.reading-switch input:checked + .reading-switch-track::after) { transform: translateX(12px); background: var(--surface); }
-.shell :global(.reading-switch input:focus-visible + .reading-switch-track) { outline: 2px solid var(--blue); outline-offset: 4px; }
+.shell :global(.reading-switch input:focus-visible + .reading-switch-track) { outline: 2px solid var(--blue); outline-offset: -2px; }
 .shell :global(.reading-settings) { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .shell :global(.reading-settings h3) { margin: 0; font: 400 21px var(--font-serif); }
 .shell :global(.reading-settings .reading-controls) { gap: 24px; }
