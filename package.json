@@ -2,6 +2,7 @@
   "name": "kaiwa-talk",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@9.9.0",
   "engines": {

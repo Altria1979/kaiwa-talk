@@ -150,6 +150,6 @@ Please include your browser and operating system versions, steps to reproduce th
 
 ## 5. Licensing and third-party assets
 
-This repository does not currently specify a separate licence for the application source code. Making the repository public and granting permission to use third-party assets are separate matters. Do not assume that another project's licence applies to this project.
+The application source code is licensed under the [MIT License](LICENSE). Copyright © 2026 Altria1979. Third-party assets and dependencies are covered by the licences described below.
 
 The default VRM character is subject to its embedded VRM Public License 1.0 and the official VRoidPreset A–Z terms. It is **not CC0**. Dependencies and bundled resources remain subject to their respective licences. See the [third-party asset and code notices](THIRD_PARTY_NOTICES.md) for details.

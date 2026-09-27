@@ -150,6 +150,6 @@ pnpm build
 
 ## 5. 许可与第三方素材
 
-当前仓库尚未单独指定应用源码许可证。仓库公开与第三方素材的使用授权是两回事，请勿将其他项目的许可证直接套用于本项目。
+本项目的应用源码采用 [MIT License](LICENSE)，版权归属 © 2026 Altria1979。第三方素材及依赖的许可见下文。
 
 默认 VRM 角色适用其内嵌 VRM Public License 1.0 与 VRoidPreset A–Z 官方条件，**不是 CC0**；依赖和随附资源继续遵循各自许可证。详见[第三方素材与代码声明](THIRD_PARTY_NOTICES.md)。
