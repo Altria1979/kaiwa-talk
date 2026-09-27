@@ -10,7 +10,7 @@
 
 | 请求 | 服务 | 构建方式 |
 | --- | --- | --- |
-| `/api`、`/api/**`、`/ws` | `backend` | `docker/backend.Dockerfile` |
+| `/api`、`/api/**`、`/ws` | `backend` | `docker/Dockerfile` |
 | 页面、`/_next/**`、`/models/**`、`/vad/**` | `frontend` | `pnpm build:web`，Next.js 原生部署 |
 
 服务路由保留请求原路径，所以后端收到的仍是 `/api/status`、`/ws`。前端在线上使用当前域名的 HTTPS/WSS，不再请求访问者电脑的 `127.0.0.1`。[Services 路由规则](https://vercel.com/docs/services/routing)
@@ -110,7 +110,7 @@ pnpm build
 如果本机已经安装并运行 Docker，可以单独构建后端镜像；构建上下文必须是仓库根目录：
 
 ```sh
-docker build --file docker/backend.Dockerfile --tag virtualmaid-backend .
+docker build --file docker/Dockerfile --tag virtualmaid-backend .
 ```
 
 镜像不需要云端凭据即可构建。启动容器时才注入 Turso、Blob、访问密码和公开域名等变量。不要在 Dockerfile 中写入密钥，也不要将本地 `data/` 挂载方案当成 Vercel 上的持久存储方案。

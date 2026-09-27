@@ -10,7 +10,7 @@
     "backend": {
       "root": ".",
       "runtime": "container",
-      "entrypoint": "docker/backend.Dockerfile",
+      "entrypoint": "docker/Dockerfile",
       "functions": {
         "**": { "maxDuration": 300 }
       }
