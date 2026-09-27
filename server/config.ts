@@ -5,19 +5,19 @@ import { accessSecret, isCloudDeployment } from '../shared/cloud-access.js';
 
 const cloud = isCloudDeployment();
 const cloudPort = Number(process.env.PORT || 8080);
-const publicOrigin = process.env.VIRTUALMAID_PUBLIC_ORIGIN?.trim() ?? '';
+const publicOrigin = (process.env.KAIWA_TALK_PUBLIC_ORIGIN ?? process.env.KAIWA_LAB_PUBLIC_ORIGIN ?? process.env.VIRTUALMAID_PUBLIC_ORIGIN)?.trim() ?? '';
 if (cloud) {
   accessSecret();
   if (!Number.isInteger(cloudPort) || cloudPort < 1 || cloudPort > 65535) throw new Error('PORT must be an integer between 1 and 65535.');
   const origin = new URL(publicOrigin);
-  if (origin.protocol !== 'https:' || origin.origin !== publicOrigin) throw new Error('VIRTUALMAID_PUBLIC_ORIGIN must be an HTTPS origin without a trailing slash.');
+  if (origin.protocol !== 'https:' || origin.origin !== publicOrigin) throw new Error('KAIWA_TALK_PUBLIC_ORIGIN must be an HTTPS origin without a trailing slash.');
   for (const key of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BLOB_READ_WRITE_TOKEN']) {
     if (!process.env[key]?.trim()) throw new Error(`${key} is required for cloud deployment.`);
   }
 }
 
-const webPort = Number(process.env.KOHARU_WEB_PORT || 3000);
-if (!Number.isInteger(webPort) || webPort < 1024 || webPort > 65534) throw new Error('KOHARU_WEB_PORT は 1024～65534 の整数で指定してください');
+const webPort = Number(process.env.KAIWA_TALK_WEB_PORT ?? process.env.KAIWA_LAB_WEB_PORT ?? (process.env.KOHARU_WEB_PORT || 3000));
+if (!Number.isInteger(webPort) || webPort < 1024 || webPort > 65534) throw new Error('KAIWA_TALK_WEB_PORT（旧 KAIWA_LAB_WEB_PORT・KOHARU_WEB_PORT）は 1024～65534 の整数で指定してください');
 const publicHosts: Readonly<Record<string, string>> = Object.freeze({
   'dashscope.aliyuncs.com': 'cn-beijing',
   'dashscope-intl.aliyuncs.com': 'ap-southeast-1',

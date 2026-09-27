@@ -1,4 +1,4 @@
-# 部署到 Vercel
+# 部署 Kaiwa Talk 到 Vercel
 
 本项目可以作为一个 Vercel 项目部署，无需自备后端服务器。页面由原生 Next.js 服务运行，HTTP API 和实时语音由 Node.js 24 容器运行，Turso 保存设置、历史和记忆，私有 Vercel Blob 保存上传的 VRM。
 
@@ -41,13 +41,15 @@ Preview 和 Production 建议连接不同的数据库和 Blob store，以免预�
 
 | 变量 | 配置 |
 | --- | --- |
-| `VIRTUALMAID_DEPLOYMENT` | `vercel`；启用云端模式和强制访问保护 |
-| `VIRTUALMAID_PUBLIC_ORIGIN` | 实际访问地址，如 `https://your-project.vercel.app`；不包含路径 |
-| `VIRTUALMAID_ACCESS_PASSWORD` | 至少 24 个字符的随机密码，供浏览器登录使用 |
+| `KAIWA_TALK_DEPLOYMENT` | `vercel`；启用云端模式和强制访问保护 |
+| `KAIWA_TALK_PUBLIC_ORIGIN` | 实际访问地址，如 `https://your-project.vercel.app`；不包含路径 |
+| `KAIWA_TALK_ACCESS_PASSWORD` | 至少 24 个字符的随机密码，供浏览器登录使用 |
 | `PORT` | **`8080`**，让 Vercel 的容器路由端口与非 root 后端一致 |
 | `TURSO_DATABASE_URL` | Turso 数据库连接 URL |
 | `TURSO_AUTH_TOKEN` | Turso 数据库令牌 |
 | `BLOB_READ_WRITE_TOKEN` | 上一步私有 Blob store 的读写令牌 |
+
+已有部署可以继续使用对应的 `KAIWA_LAB_*`、`VIRTUALMAID_*` 变量；按 Kaiwa Talk → Kaiwa Lab → VirtualMaid 的顺序取第一个已设置值，包括显式空值。升级包名无需重建 Vercel 项目、Turso 数据库或 Blob store。
 
 模型名称可按需使用仓库 `.env.example` 中的配置。百炼 API Key 和接入域名由用户登录后在「练习设置」中填写，保存在当前网站的浏览器中；未配置时页面会提示配置，不使用服务器环境变量兜底。旧的百炼密钥、地域、工作空间和端点环境变量可以删除，数据库、Blob 和访问密码仍需保留。不要给任何密钥添加 `NEXT_PUBLIC_` 前缀。
 
@@ -59,7 +61,9 @@ openssl rand -hex 32
 
 `PORT=8080` 必须在 Vercel 项目中设置；Dockerfile 中的 `EXPOSE` 和 `ENV` 不能代替平台的路由端口配置。Vercel 默认将容器请求发往 80，官方允许用项目环境变量 `PORT` 修改。[容器端口说明](https://vercel.com/docs/functions/container-images#port-resolution)
 
-`VIRTUALMAID_PUBLIC_ORIGIN` 必须和浏览器访问的域名一致。使用自定义域名时填自定义域名；Preview 使用固定的分支预览域名并单独设置对应值。不要把生产域名用于预览站点，也不要配置通配符来源。
+`KAIWA_TALK_PUBLIC_ORIGIN` 必须和浏览器访问的域名一致。使用自定义域名时填自定义域名；Preview 使用固定的分支预览域名并单独设置对应值。不要把生产域名用于预览站点，也不要配置通配符来源。
+
+当前生产项目为 `kaiwa-talk`，域名为 `kaiwa-talk.vercel.app`，沿用原项目 ID、数据库和 Blob store。生产环境变量已统一为 `KAIWA_TALK_*`，其中 `KAIWA_TALK_PUBLIC_ORIGIN=https://kaiwa-talk.vercel.app`。修改域名时须同步更新实际生效的 origin 变量并重新部署，确保 WebSocket 来源校验通过。新域名需要重新登录、填写浏览器保存的百炼 API Key / API Host 并设置个人偏好，云端历史和设置不受影响。
 
 ## 3. 发布并登录
 
@@ -67,8 +71,10 @@ openssl rand -hex 32
 
 首次打开网站时，浏览器会显示 HTTP Basic 登录框：
 
-- 用户名：`virtualmaid`
-- 密码：`VIRTUALMAID_ACCESS_PASSWORD` 的值
+- 用户名：`kaiwa-talk`
+- 密码：`KAIWA_TALK_ACCESS_PASSWORD` 的值
+
+旧用户名 `kaiwa-lab`、`virtualmaid` 仍可登录；已有授权 Cookie 沿用原名称与签名格式，在相同域名且密码不变时继续有效。
 
 登录后使用 `HttpOnly`、`Secure` Cookie 授权同域 API、WebSocket 和模型访问。密码不会作为 URL 参数传递。更换访问密码会使原有授权失效。
 
@@ -97,7 +103,7 @@ Services、容器和 WebSocket 仍处于 Beta。容器不是永久运行的服�
 ```sh
 nvm use
 pnpm install --frozen-lockfile
-KOHARU_WEB_PORT=13000 pnpm dev
+KAIWA_TALK_WEB_PORT=13000 pnpm dev
 ```
 
 检查源码和生产构建：
@@ -112,9 +118,9 @@ pnpm build
 如果本机已经安装并运行 Docker，可以单独构建后端镜像；构建上下文必须是仓库根目录：
 
 ```sh
-docker build --file Dockerfile --tag virtualmaid-backend .
+docker build --file Dockerfile --tag kaiwa-talk-backend .
 ```
 
 镜像不需要云端凭据即可构建。启动容器时才注入 Turso、Blob、访问密码和公开域名等变量。不要在 Dockerfile 中写入密钥，也不要将本地 `data/` 挂载方案当成 Vercel 上的持久存储方案。
 
-独立脚本 `pnpm build:server` / `pnpm start:server` 用于后端，`pnpm build:web` 用于前端。`NEXT_PUBLIC_VIRTUALMAID_SAME_ORIGIN=1` 仅在本地模拟同域代理的验收环境中需要；Vercel 正常线上域名无需此变量。
+独立脚本 `pnpm build:server` / `pnpm start:server` 用于后端，`pnpm build:web` 用于前端。`NEXT_PUBLIC_KAIWA_TALK_SAME_ORIGIN=1` 仅在本地模拟同域代理的验收环境中需要；Vercel 正常线上域名无需此变量。

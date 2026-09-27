@@ -2,7 +2,7 @@ import type { Locale } from '../locales';
 
 const ja = {
   validChatEndpoint: '有効な会話エンドポイント', validAsrEndpoint: '有効な ASR inference エンドポイント', validTtsEndpoint: '有効な TTS realtime エンドポイント',
-  navigation: 'メインナビゲーション', home: 'VRoid Avatar A のホーム', closeMenu: 'ナビゲーションメニューを閉じる', openMenu: 'ナビゲーションメニューを開く', menu: 'メニュー', practice: '会話の練習', history: '履歴', memories: '思い出', settings: '設定',
+  navigation: 'メインナビゲーション', home: 'Kaiwa Talk のホーム', closeMenu: 'ナビゲーションメニューを閉じる', openMenu: 'ナビゲーションメニューを開く', menu: 'メニュー', practice: '会話の練習', history: '履歴', memories: '思い出', settings: '設定',
   bailianTitle: 'Alibaba Cloud Bailian API キー', getApiKey: 'API キーを取得', apiKey: 'API キー', apiKeyPlaceholder: 'API キーを貼り付け', hideApiKey: 'API キーを隠す', showApiKey: 'API キーを表示', hide: '隠す', show: '表示',
   storageHelp: 'API キーはこのブラウザーにのみ保存され、会話時にサーバーを経由して Bailian に送信されます。会話データベースには保存されません。ご自身の端末で設定してください。',
   endpoint: '接続先（任意）', apiHost: 'Bailian API ホスト', hostHelp: '空欄の場合は北京リージョンを使用します。別のリージョンやワークスペースを使う場合は、Bailian コンソールの API ホストを入力してください。ドメインのみを指定します（例：dashscope-intl.aliyuncs.com）。API キーと接続先のリージョンを合わせてください。',
@@ -27,7 +27,7 @@ export type ControlsMessageKey = keyof typeof ja;
 
 const en: Record<ControlsMessageKey, string> = {
   validChatEndpoint: 'Valid conversation endpoint', validAsrEndpoint: 'Valid ASR inference endpoint', validTtsEndpoint: 'Valid TTS realtime endpoint',
-  navigation: 'Main navigation', home: 'VRoid Avatar A home', closeMenu: 'Close navigation menu', openMenu: 'Open navigation menu', menu: 'Menu', practice: 'Conversation practice', history: 'History', memories: 'Memories', settings: 'Settings',
+  navigation: 'Main navigation', home: 'Kaiwa Talk home', closeMenu: 'Close navigation menu', openMenu: 'Open navigation menu', menu: 'Menu', practice: 'Conversation practice', history: 'History', memories: 'Memories', settings: 'Settings',
   bailianTitle: 'Alibaba Cloud Bailian API key', getApiKey: 'Get an API key', apiKey: 'API key', apiKeyPlaceholder: 'Paste your API key', hideApiKey: 'Hide API key', showApiKey: 'Show API key', hide: 'Hide', show: 'Show',
   storageHelp: 'Your API key is saved only in this browser and sent to Bailian through the server during conversations. It is not saved in the conversation database. Configure it on your own device.',
   endpoint: 'Endpoint (optional)', apiHost: 'Bailian API host', hostHelp: 'Leave blank to use the Beijing region. For another region or workspace, enter the API host shown in the Bailian console. Enter only the domain (for example, dashscope-intl.aliyuncs.com). Use the same region for your API key and endpoint.',
@@ -50,7 +50,7 @@ const en: Record<ControlsMessageKey, string> = {
 
 const zh: Record<ControlsMessageKey, string> = {
   validChatEndpoint: '有效的会话接入地址', validAsrEndpoint: '有效的 ASR inference 接入地址', validTtsEndpoint: '有效的 TTS realtime 接入地址',
-  navigation: '主导航', home: 'VRoid Avatar A 首页', closeMenu: '关闭导航菜单', openMenu: '打开导航菜单', menu: '菜单', practice: '会话练习', history: '历史', memories: '记忆', settings: '设置',
+  navigation: '主导航', home: 'Kaiwa Talk 首页', closeMenu: '关闭导航菜单', openMenu: '打开导航菜单', menu: '菜单', practice: '会话练习', history: '历史', memories: '记忆', settings: '设置',
   bailianTitle: '阿里云百炼 API Key', getApiKey: '获取 API Key', apiKey: 'API Key', apiKeyPlaceholder: '粘贴 API Key', hideApiKey: '隐藏 API Key', showApiKey: '显示 API Key', hide: '隐藏', show: '显示',
   storageHelp: 'API Key 仅保存在当前浏览器中，会话时通过服务端发送给百炼，不会保存在会话数据库中。请在自己的设备上设置。',
   endpoint: '连接地址（可选）', apiHost: '百炼 API 域名', hostHelp: '留空时使用北京地域。如使用其他地域或工作空间，请填写百炼控制台中的 API 域名。仅填写域名（例如 dashscope-intl.aliyuncs.com），并确保 API Key 与连接地址的地域一致。',

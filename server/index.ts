@@ -311,7 +311,7 @@ wss.on('connection', socket => {
   socket.on('close', () => { clearInterval(heartbeat); sessions.delete(session); void session.dispose().catch(() => {}); });
 });
 server.on('error', () => { console.error(`ローカルサービスを起動できません。ポート ${config.servicePort} が使用可能か確認してください。`); process.exitCode = 1; });
-server.listen(config.servicePort, config.cloud ? '0.0.0.0' : '127.0.0.1', () => console.info(`VRoid Avatar A のローカルサービスが起動しました：http://127.0.0.1:${config.servicePort}（設定状況は Web の設定画面で確認できます）`));
+server.listen(config.servicePort, config.cloud ? '0.0.0.0' : '127.0.0.1', () => console.info(`Kaiwa Talk のサービスが起動しました（ポート ${config.servicePort}）。設定状況は Web の設定画面で確認できます。`));
 let closing = false;
 async function shutdown() {
   if (closing) return;

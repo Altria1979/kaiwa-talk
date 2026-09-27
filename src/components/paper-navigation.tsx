@@ -42,7 +42,7 @@ export function PaperNavigation({ panel, onChange }: { panel: Panel; onChange: (
 
   return <div className={styles.slot}>
     <nav ref={navigation} className={styles.navigation} aria-label={t('controls.navigation')}>
-      <Link className={styles.brand} href="/" aria-label={t('controls.home')}><span className={styles.mark} aria-hidden="true">A</span><span><strong>VRoid Avatar A</strong></span></Link>
+      <Link className={styles.brand} href="/" aria-label={t('controls.home')}><span className={styles.mark} aria-hidden="true">K</span><span><strong>Kaiwa Talk</strong></span></Link>
       <button ref={toggle} className={styles.toggle} aria-label={t(expanded ? 'controls.closeMenu' : 'controls.openMenu')} aria-expanded={expanded} aria-controls="main-navigation" onClick={() => setExpanded(current => !current)}>{expanded ? <Icon name="close" /> : <span className={styles.menuIcon} aria-hidden="true" />}<span>{t('controls.menu')}</span></button>
       <div id="main-navigation" className={`${styles.links} ${expanded ? styles.expanded : ''}`}>
         <button className={panel === null ? styles.selected : ''} aria-current={panel === null ? 'page' : undefined} aria-label={t('controls.practice')} onClick={() => select(null)}><Icon name="headphones" size={17} />{t('controls.practice')}</button>

@@ -3,7 +3,7 @@ import { MAX_MODEL_BYTES, type BrowserBailianCredentials, type ChatMessage, type
 import { browserCredentialHeaders, readBrowserCredentials } from './bailian-credentials';
 import { serviceAddress } from './service-address';
 
-const address = serviceAddress(typeof window === 'undefined' ? undefined : window.location, process.env.NEXT_PUBLIC_VIRTUALMAID_SAME_ORIGIN === '1');
+const address = serviceAddress(typeof window === 'undefined' ? undefined : window.location, (process.env.NEXT_PUBLIC_KAIWA_TALK_SAME_ORIGIN ?? process.env.NEXT_PUBLIC_KAIWA_LAB_SAME_ORIGIN ?? process.env.NEXT_PUBLIC_VIRTUALMAID_SAME_ORIGIN) === '1');
 export const SERVICE_URL = address.serviceUrl;
 export const SOCKET_URL = address.socketUrl;
 

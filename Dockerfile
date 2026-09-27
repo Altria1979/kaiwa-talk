@@ -18,7 +18,7 @@ RUN pnpm build:server && pnpm prune --prod
 FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production \
     PORT=8080 \
-    VIRTUALMAID_DEPLOYMENT=vercel
+    KAIWA_TALK_DEPLOYMENT=vercel
 
 WORKDIR /app
 COPY --from=build --chown=node:node /app/package.json ./package.json

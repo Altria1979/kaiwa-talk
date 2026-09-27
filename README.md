@@ -1,6 +1,6 @@
-# VRoid Avatar A · 虚拟日语伙伴
+# Kaiwa Talk · AI 日语对练
 
-在本机浏览器里，和 3D 动漫人物练习日语。默认面向初学者，用简短日语交流；中文求助、按需解释、重听与慢放帮助你继续说下去。
+Kaiwa Talk（`kaiwa-talk`）是一个 AI 日语口语对练项目，通过 LLM、语音识别（ASR）、语音合成（TTS）和 3D 虚拟角色，实现实时日语对话。默认面向初学者，用简短日语交流；中文求助、按需解释、重听与慢放帮助你继续说下去。
 
 也可部署到 **Vercel Services + Turso + private Vercel Blob**，无需自备服务器。云端为个人访问模式，使用密码保护，共享一份历史与设置；部署步骤、所需环境变量和本地数据说明见 [Vercel 部署指南](docs/vercel-deployment.md)。普通本地启动仍使用 SQLite 和磁盘文件。
 
@@ -16,7 +16,7 @@ pnpm dev
 
 打开 <http://localhost:3000>。启动器同时运行 Next.js 网页和端口 3001 的 Node 服务，两者仅监听 `127.0.0.1`，退出时同时关闭。
 
-如果默认端口已被其他项目占用，可运行 `KOHARU_WEB_PORT=13000 pnpm dev`，网页使用 13000，服务自动使用 13001。生产启动同样支持 `KOHARU_WEB_PORT=13000 pnpm start`，无需按端口重新构建。端口通过命令环境变量设置。
+如果默认端口已被其他项目占用，可运行 `KAIWA_TALK_WEB_PORT=13000 pnpm dev`，网页使用 13000，服务自动使用 13001。生产启动同样支持 `KAIWA_TALK_WEB_PORT=13000 pnpm start`，无需按端口重新构建。端口通过命令环境变量设置；旧的 `KAIWA_LAB_WEB_PORT`、`KOHARU_WEB_PORT` 仍可使用，同时设置时按此顺序回退，以 `KAIWA_TALK_WEB_PORT` 优先。
 
 未配置模型服务时，可以查看人物、修改设置、导入模型和管理记忆；聊天入口显示缺少的配置，不生成模拟回复。
 
@@ -79,6 +79,16 @@ BAILIAN_TTS_MODEL=qwen3-tts-flash-realtime
 人物说话时，嘴巴下方会逐字显示当前句子的字幕，并跟随头部与人物大小调整位置。字幕最多两行，长句自动滚动到最新文字；播完保留 2 秒后淡出，停止或插话后立即清除。实时回复、重听、慢放和示范音频共用字幕。字幕按实际音频播放进度推进，缓冲期间暂停；流式合成尚未完成时先按每秒 6 个可见字符估算，收齐该句音频后按剩余时长校正，不额外等待整句音频。当前是句内近似同步，汉字读音、停顿等可能造成文字与发音的少量偏差；纯文字聊天仍在聊天区显示。
 
 全新部署使用仓库随附的 `public/models/default.vrm`，内容为原来的 Avatar A 第一版，作者与许可见 [第三方素材声明](THIRD_PARTY_NOTICES.md)。`artifacts/` 中的制作资料、黑发角色原型及 Blender 源文件不随代码发布；Avatar A 的运行资源已随默认模型发布，无需在新网站重新导入。已有自定义模型的选择会保留；已有设置中的旧默认名“小春”会显示为 VRoid Avatar A，其他自定义名字和历史内容保留。
+
+## 从旧名称升级
+
+包名统一为 `kaiwa-talk`，页面品牌为 **Kaiwa Talk**。新配置使用 `KAIWA_TALK_*` / `NEXT_PUBLIC_KAIWA_TALK_*`，旧 `KAIWA_LAB_*`、`VIRTUALMAID_*` 及对应 `NEXT_PUBLIC_` 变量仍兼容，网页端口继续兼容 `KOHARU_WEB_PORT`；优先级为 Kaiwa Talk → Kaiwa Lab → 最初的旧配置，显式空值不会回退。云端登录用户名为 `kaiwa-talk`，旧用户名 `kaiwa-lab`、`virtualmaid` 仍可使用。
+
+名称升级沿用现有数据库、模型路径、浏览器存储键及授权 Cookie。在相同网站来源下，聊天记录、API Key、语言与阅读偏好、角色大小和已有登录状态继续保留。`virtualmaid-*`、`avatar-a.*` 等内部存储名是兼容标识；默认角色与第三方素材仍称为 **VRoid Avatar A**。
+
+GitHub 仓库已更名为 [Altria1979/kaiwa-talk](https://github.com/Altria1979/kaiwa-talk)，本地工程目录和 WebStorm 模块名同步为 `kaiwa-talk`。已有 Git 克隆可执行 `git remote set-url origin https://github.com/Altria1979/kaiwa-talk.git` 更新远程地址。
+
+Vercel 项目已更名为 `kaiwa-talk`，沿用原项目、Turso 数据库和私有 Blob store。网站地址为 [kaiwa-talk.vercel.app](https://kaiwa-talk.vercel.app)，原 `virtualmaid.vercel.app` 和 `kaiwa-lab-hakusais-projects.vercel.app` 自动跳转到新域名。首次访问新域名需要重新登录、填写百炼 API Key（以及自定义 API Host），并重新选择语言、阅读辅助和角色取景偏好；浏览器中的这些数据按网站来源隔离，不会自动从旧域名迁移。云端历史和设置继续使用原数据。
 
 ## 仓库与发布边界
 

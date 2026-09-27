@@ -14,7 +14,7 @@
 
 浏览器直接访问 http://127.0.0.1:3001；仅允许 localhost:3000 / 127.0.0.1:3000 来源。
 
-可选 KOHARU_WEB_PORT 修改网页端口，服务端口始终为网页端口 + 1，来源校验同步调整。默认端口不变。
+可选 KAIWA_TALK_WEB_PORT（兼容旧 KAIWA_LAB_WEB_PORT / KOHARU_WEB_PORT）修改网页端口，服务端口始终为网页端口 + 1，来源校验同步调整。默认端口不变。
 
 - GET /api/status → ServiceStatus
 - GET /api/settings → Settings；PUT /api/settings，body Partial<Settings> → Settings

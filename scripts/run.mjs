@@ -8,9 +8,9 @@ if (Number(process.versions.node.split('.')[0]) !== 24) {
 }
 const require = createRequire(import.meta.url);
 const production = process.argv[2] === 'start';
-const webPort = Number(process.env.KOHARU_WEB_PORT || 3000);
+const webPort = Number(process.env.KAIWA_TALK_WEB_PORT ?? process.env.KAIWA_LAB_WEB_PORT ?? (process.env.KOHARU_WEB_PORT || 3000));
 if (!Number.isInteger(webPort) || webPort < 1024 || webPort > 65534) {
-  console.error('KOHARU_WEB_PORT 必须是 1024–65534 之间的整数，服务端使用紧接着的端口。');
+  console.error('KAIWA_TALK_WEB_PORT（兼容 KAIWA_LAB_WEB_PORT、KOHARU_WEB_PORT）必须是 1024–65534 之间的整数，服务端使用紧接着的端口。');
   process.exit(1);
 }
 if (production && !existsSync('dist/server/index.js')) {

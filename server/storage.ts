@@ -217,5 +217,5 @@ export const store = createStore({
   dataDir: config.dataDir,
   databaseUrl: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN,
-  deployment: config.cloud ? 'vercel' : process.env.VIRTUALMAID_DEPLOYMENT,
+  deployment: config.cloud ? 'vercel' : undefined,
 });

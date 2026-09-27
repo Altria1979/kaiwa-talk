@@ -2,11 +2,11 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export const ACCESS_COOKIE = '__Host-virtualmaid-access';
 const SESSION_SECONDS = 12 * 60 * 60;
-export const isCloudDeployment = () => process.env.VIRTUALMAID_DEPLOYMENT === 'vercel' || process.env.VERCEL === '1';
+export const isCloudDeployment = () => (process.env.KAIWA_TALK_DEPLOYMENT ?? process.env.KAIWA_LAB_DEPLOYMENT ?? process.env.VIRTUALMAID_DEPLOYMENT) === 'vercel' || process.env.VERCEL === '1';
 
 export function accessSecret(): string {
-  const secret = process.env.VIRTUALMAID_ACCESS_PASSWORD ?? '';
-  if (secret.length < 24) throw new Error('VIRTUALMAID_ACCESS_PASSWORD must contain at least 24 characters.');
+  const secret = process.env.KAIWA_TALK_ACCESS_PASSWORD ?? process.env.KAIWA_LAB_ACCESS_PASSWORD ?? process.env.VIRTUALMAID_ACCESS_PASSWORD ?? '';
+  if (secret.length < 24) throw new Error('KAIWA_TALK_ACCESS_PASSWORD must contain at least 24 characters.');
   return secret;
 }
 
@@ -35,7 +35,8 @@ export function validBasicAuthorization(header: string | undefined, secret = acc
   if (!header?.startsWith('Basic ') || header.length > 2048) return false;
   const encoded = header.slice(6);
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) return false;
-  return equal(Buffer.from(encoded, 'base64').toString('utf8'), `virtualmaid:${secret}`);
+  const credentials = Buffer.from(encoded, 'base64').toString('utf8');
+  return equal(credentials, `kaiwa-talk:${secret}`) || equal(credentials, `kaiwa-lab:${secret}`) || equal(credentials, `virtualmaid:${secret}`);
 }
 
 export function accessCookie(secret = accessSecret(), now = Date.now()): string {
@@ -43,4 +44,4 @@ export function accessCookie(secret = accessSecret(), now = Date.now()): string 
   return `${ACCESS_COOKIE}=${expires}.${signature(expires, secret)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_SECONDS}`;
 }
 
-export const accessChallenge = { 'WWW-Authenticate': 'Basic realm="VirtualMaid", charset="UTF-8"', 'Cache-Control': 'no-store' };
+export const accessChallenge = { 'WWW-Authenticate': 'Basic realm="Kaiwa Talk", charset="UTF-8"', 'Cache-Control': 'no-store' };
