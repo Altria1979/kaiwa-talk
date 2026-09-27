@@ -1,0 +1,39 @@
+# Never upload credentials, personal application data, or local tools.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+data/
+*.sqlite
+*.sqlite-*
+.local/
+.vercel/
+.idea/
+.vscode/
+.omx/
+.git/
+AGENTS.md
+CLAUDE.md
+.DS_Store
+*.log
+*.pid
+
+# Rebuild dependencies and output in Vercel.
+node_modules/
+.next/
+dist/
+out/
+coverage/
+*.tsbuildinfo
+public/vad/
+
+# Keep source and tests in GitHub; omit these from deployment uploads.
+tests/
+docs/characters/
+artifacts/
+scripts/avatar/
+__pycache__/
+*.py[cod]
+pelican-bike.html

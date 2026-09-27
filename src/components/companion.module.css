@@ -1,0 +1,327 @@
+.shell { min-width: 0; min-height: 100svh; }
+.shell :global(.workspace) { width: min(100%, 1440px); margin: 0 auto; padding: 30px 56px 24px; }
+.shell :global(.chat-layout) { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 31vw, 420px); gap: 48px; align-items: start; }
+.shell :global(.conversation-panel) { min-width: 0; height: calc(100svh - 126px); min-height: 570px; display: flex; flex-direction: column; }
+.shell :global(.conversation-body) { position: relative; flex: 1; min-height: clamp(120px, 24svh, 220px); }
+.shell :global(.conversation-scroll) { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.shell :global(.conversation-content) { min-height: 100%; padding: 16px 8px 8px 0; }
+.shell :global(.conversation-content > .message) { max-width: 90%; }
+.shell :global(.conversation-content > .user-message) { margin-left: auto; width: fit-content; min-width: 80px; }
+.shell :global(.conversation-empty) { min-height: 100%; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: clamp(46px, 10svh, 100px) 0; }
+.shell :global(.empty-symbol) { display: block; margin-bottom: 14px; color: var(--accent); font: 48px/1.1 var(--font-japanese); }
+.shell :global(.conversation-empty h2) { font: 400 clamp(28px, 3vw, 40px)/1.5 var(--font-japanese); letter-spacing: -.04em; margin: 0 0 14px; }
+.shell :global(.conversation-empty p) { margin: 0 0 30px; color: var(--subtle); font-size: 14px; line-height: 1.8; }
+.shell :global(.conversation-starters) { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.shell :global(.conversation-starters button) { display: flex; align-items: center; gap: 14px; padding: 10px 16px; min-height: 44px; border: 1px solid var(--line); border-radius: 30px; background: transparent; color: var(--muted); font-size: 12px; }
+.shell :global(.conversation-starters button:hover:not(:disabled)) { background: var(--wash); }
+.shell :global(.latest-message) { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); border: 1px solid var(--line-strong); border-radius: 24px; padding: 8px 14px; background: var(--surface); color: var(--muted); font-size: 12px; box-shadow: 0 3px 12px #20251f0a; }
+.shell :global(.listening-dot) { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.shell :global(.transcript-preview .message-bubble) { border-bottom: 1px dashed var(--line-strong); }
+.shell :global(.conversation-footer) { flex-shrink: 0; padding-top: 18px; }
+.shell :global(.composer) { display: flex; align-items: flex-end; gap: 16px; width: 100%; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 15px 16px 15px 20px; box-shadow: 0 4px 18px #20251f04; transition: border-color .16s; }
+.shell :global(.composer:focus-within) { border-color: var(--ink); }
+/* The form carries the textarea focus ring so the input has one clear boundary. */
+.shell :global(.composer:has(textarea:focus-visible)) { border-color: transparent; outline: 2px solid var(--blue); outline-offset: -1px; }
+.shell :global(.composer textarea:focus-visible) { outline: none; }
+.shell :global(.composer textarea) { flex: 1; min-width: 0; min-height: 44px; max-height: 120px; padding: 0; resize: vertical; border: 0; background: transparent; color: var(--ink); font-size: 14px; line-height: 1.8; }
+.shell :global(.composer textarea::placeholder) { color: var(--subtle); }
+.shell :global(.composer .send-button) { flex-shrink: 0; }
+.shell :global(.main-controls) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.shell :global(.main-controls .primary-button) { min-height: 44px; padding: 9px 18px; gap: 7px; font-size: 12px; }
+.shell :global(.main-controls .round-control) { width: 44px; height: 44px; border-color: transparent; }
+.shell :global(.main-controls .primary-button.end-button) { border-color: transparent; background: transparent; }
+.shell :global(.main-controls .primary-button.end-button:hover) { background: var(--error-wash); }
+.shell :global(.composer-hint) { margin-left: auto; color: var(--subtle); font-size: 10px; }
+.shell :global(.reply-suggestions) { display: flex; flex-direction: column; flex-shrink: 1; min-width: 0; min-height: 45px; padding-top: 8px; border-top: 1px solid var(--line); }
+.shell :global(.reply-suggestions-header) { display: flex; flex-wrap: wrap; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+.shell :global(.reply-suggestions-header h3) { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 12px; font-weight: 500; color: var(--muted); }
+.shell :global(.reply-suggestions-header h3 svg) { color: var(--accent); }
+.shell :global(.reply-suggestions-toggle) { min-height: 36px; border: 0; background: none; color: var(--subtle); font-size: 11px; padding: 5px 4px 5px 12px; }
+.shell :global(.reply-suggestions-tools) { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 14px; margin-left: auto; }
+.shell :global(.reading-controls) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+.shell :global(.reading-switch) { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 11px; color: var(--muted); cursor: pointer; }
+.shell :global(.reading-switch input) { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.shell :global(.reading-switch-track) { display: inline-flex; align-items: center; width: 28px; height: 16px; padding: 2px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--wash); }
+.shell :global(.reading-switch-track::after) { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.shell :global(.reading-switch input:checked + .reading-switch-track) { border-color: var(--success); background: var(--success); }
+.shell :global(.reading-switch input:checked + .reading-switch-track::after) { transform: translateX(12px); background: var(--surface); }
+.shell :global(.reading-switch input:focus-visible + .reading-switch-track) { outline: 2px solid var(--blue); outline-offset: 4px; }
+.shell :global(.reading-settings) { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.shell :global(.reading-settings h3) { margin: 0; font: 400 21px var(--font-serif); }
+.shell :global(.reading-settings .reading-controls) { gap: 24px; }
+.shell :global(.reading-settings .reading-switch) { min-height: 44px; font-size: 13px; }
+.shell :global(.reply-suggestions-content) { min-height: 0; max-height: min(250px, 29svh); overflow-y: auto; padding: 0 4px 4px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; overscroll-behavior: contain; }
+.shell :global(.reply-suggestions.is-practicing .reply-option-body) { grid-template-columns: minmax(0, 1fr) auto; }
+.shell :global(.reply-suggestions.is-practicing .reply-option-text) { font-size: 22px; }
+.shell :global(.reply-suggestions.is-practicing .reply-option-reading) { font-size: 14px; color: var(--muted); }
+.shell :global(.reply-suggestions.is-practicing .reply-option-meaning) { grid-column: 1; grid-row: 2; margin-top: 4px; }
+.shell :global(.reply-suggestions.is-practicing .reply-option-actions) { grid-column: 2; grid-row: 1 / 3; flex-wrap: wrap; justify-content: flex-end; }
+.shell :global(.companion-stage) { min-width: 0; padding-top: 14px; display: flex; flex-direction: column; align-items: center; }
+.shell :global(.stage-heading) { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.shell :global(.stage-heading h2) { margin: 0; font: 400 24px/1.3 var(--font-japanese); letter-spacing: -.015em; overflow-wrap: anywhere; text-align: center; }
+.shell :global(.presence-badge) { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.shell :global(.presence-badge i) { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
+.shell :global(.state-thinking i) { background: var(--accent); }
+.shell :global(.state-speaking i) { background: var(--blue); }
+.shell :global(.state-error i) { background: var(--error); }
+.shell :global(.character-stage) { position: relative; height: clamp(320px, 52svh, 520px); width: 100%; margin: 16px 0 8px; isolation: isolate; }
+.shell :global(.scene-wash) { position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse at 50% 44%, #e9c6ad65, #e9c6ad18 48%, transparent 72%); pointer-events: none; }
+.shell :global(.avatar-render), .shell :global(.avatar-canvas) { position: absolute; inset: 0; }
+.shell :global(.avatar-render) { pointer-events: none; }
+.shell :global(.avatar-canvas) { pointer-events: auto; touch-action: pan-y; }
+.shell :global(.avatar-canvas canvas) { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+.shell :global(.avatar-controls) { width: min(100%, 340px); margin: 0 0 14px; }
+.shell :global(.avatar-control-tabs) { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 30px; }
+.shell :global(.avatar-control-tabs button) { flex: 1; min-height: 40px; border: 0; border-radius: 24px; background: transparent; color: var(--subtle); font-size: 12px; }
+.shell :global(.avatar-control-tabs button[aria-selected="true"]) { background: var(--ink); color: var(--paper); }
+.shell :global(.avatar-control-panel) { padding: 12px 2px 0; min-height: 133px; }
+.shell :global(.avatar-control-options) { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.shell :global(.avatar-control-options button) { min-height: 44px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 24px; color: var(--muted); background: transparent; font-size: 12px; }
+.shell :global(.avatar-control-options button:hover:not(:disabled)) { border-color: var(--line-strong); background: var(--wash); color: var(--ink); }
+.shell :global(.avatar-control-options button[aria-pressed="true"]) { border-color: var(--ink); background: var(--wash); color: var(--ink); }
+.shell :global(.avatar-control-hint) { min-height: 30px; margin: 9px 0 0; text-align: center; font-size: 10px; line-height: 1.7; color: var(--subtle); }
+.shell :global(.avatar-speech-anchor) { position: absolute; top: 0; left: 0; z-index: 3; width: min(300px, calc(100% - 24px)); visibility: hidden; pointer-events: none; }
+.shell :global(.avatar-speech-anchor:empty) { display: none; }
+.shell :global(.avatar-speech-caption) { padding: 9px 14px; border: 1px solid var(--line); border-radius: 14px; background: #f8f5edeb; color: var(--ink); box-shadow: 0 3px 14px #302c2110; backdrop-filter: blur(6px); opacity: 1; transition: opacity .2s ease; }
+.shell :global(.avatar-speech-caption[data-fading="true"]) { opacity: 0; }
+.shell :global(.avatar-speech-text) { display: block; max-height: 3.5em; overflow-y: auto; scrollbar-width: none; overflow-wrap: anywhere; white-space: pre-wrap; text-align: center; font: 400 16px/1.75 var(--font-japanese); }
+.shell :global(.avatar-speech-text::-webkit-scrollbar) { display: none; }
+.shell :global(.companion-settings) { min-height: 44px; color: var(--subtle); }
+.shell :global(.avatar-size-control) { width: min(100%, 290px); padding: 0 4px; color: var(--muted); }
+.shell :global(.avatar-size-heading) { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; }
+.shell :global(.avatar-size-heading button) { min-height: 36px; padding: 6px 0 6px 12px; font-size: 11px; }
+.shell :global(.avatar-size-control input) { display: block; width: 100%; height: 32px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.shell :global(.avatar-size-labels) { display: flex; justify-content: space-between; font-size: 10px; color: var(--subtle); }
+.shell :global(.history-detail-heading) { display: flex; align-items: center; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.shell :global(.history-detail-heading > span) { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+.shell :global(.history-detail .chat-scroll) { max-height: calc(100svh - 260px); min-height: 100px; overflow-y: auto; padding: 18px 6px 0; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.shell :global(.icon-button) { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; width: 40px; height: 40px; background: transparent; color: var(--muted); flex-shrink: 0; }
+.shell :global(.icon-button:hover) { color: var(--ink); background: var(--wash); }
+.shell :global(.config-banner), .shell :global(.error-banner) { display: flex; align-items: center; gap: 11px; border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 10px 14px; font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+.shell :global(.config-banner > svg), .shell :global(.error-banner > svg) { flex-shrink: 0; }
+.shell :global(.config-banner > span), .shell :global(.error-banner > span) { flex: 1; }
+.shell :global(.config-banner > button) { display: flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--muted); background: none; border: 0; font-size: 12px; }
+.shell :global(.error-banner) { background: var(--error-wash); color: var(--error); border-color: var(--error); }
+.shell :global(.avatar-loading), .shell :global(.avatar-error) { position: absolute; z-index: 6; left: 50%; top: 49%; transform: translate(-50%, -50%); padding: 18px 24px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; min-width: 170px; max-width: 80%; pointer-events: auto; }
+.shell :global(.avatar-error) { color: var(--muted); }
+.shell :global(.avatar-error p) { margin: 0; line-height: 1.7; }
+.shell :global(.loading-ring) { width: 22px; height: 22px; border: 2px solid var(--line); border-top-color: var(--success); border-radius: 50%; animation: spin 1s linear infinite; }
+.shell :global(.message) { margin: 0 0 30px; }
+.shell :global(.message-meta) { display: flex; gap: 8px; align-items: center; color: var(--subtle); font-size: 11px; margin-bottom: 10px; }
+.shell :global(.message-meta small) { color: var(--muted); font-size: 11px; }
+.shell :global(.message-avatar) { color: var(--accent); display: grid; place-items: center; font: 20px/1 var(--font-japanese); }
+.shell :global(.message-bubble) { padding: 0; }
+.shell :global(.message-bubble > p) { font-size: 16px; line-height: 1.95; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.shell :global(.assistant-message > .message-bubble > p) { font: 400 20px/1.9 var(--font-japanese); }
+.shell :global(.user-message) { margin-left: 36px; }
+.shell :global(.user-message .message-meta) { justify-content: flex-end; }
+.shell :global(.user-message .message-bubble) { background: #e4e7db8c; padding: 11px 18px; border-radius: 18px 18px 4px 18px; }
+.shell :global(.message-actions) { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 9px; }
+.shell :global(.message-actions button) { display: flex; align-items: center; gap: 5px; min-height: 36px; background: none; border: none; font-size: 11px; color: var(--subtle); padding: 0; }
+.shell :global(.message-actions button:hover) { color: var(--success); }
+.shell :global(.message-translation) { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.8; color: var(--muted); border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 12px; white-space: pre-wrap; }
+.shell :global(.message-translation svg) { margin-top: 4px; flex-shrink: 0; }
+.shell :global(.send-button) { width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--primary); color: var(--surface); }
+.shell :global(.send-button:hover:not(:disabled)) { background: var(--success); }
+.shell :global(.reply-options) { list-style: none; margin: 0; padding: 0; }
+.shell :global(.reply-option) { display: flex; gap: 14px; padding: 10px 0; }
+.shell :global(.reply-option + .reply-option) { border-top: 1px solid #d3cec470; }
+.shell :global(.reply-option.is-selected) { background: linear-gradient(90deg, #e9eee280, transparent); }
+.shell :global(.reply-option.is-selected .reply-option-number) { color: var(--success); box-shadow: inset 2px 0 var(--success); }
+.shell :global(.reply-option-number) { flex-shrink: 0; width: 22px; padding-left: 6px; margin-top: 5px; color: var(--subtle); font: 12px/1.5 Georgia, serif; }
+.shell :global(.reply-option-body) { min-width: 0; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, .6fr) auto; column-gap: 24px; overflow-wrap: anywhere; }
+.shell :global(.reply-option-copy) { grid-column: 1; min-width: 0; }
+.shell :global(.reply-option-text) { grid-column: 1; margin: 0; font: 16px/1.7 var(--font-japanese); color: var(--ink); }
+.shell :global(.reply-option-romaji),
+.shell :global(.reply-option-reading) { grid-column: 1; margin: 2px 0 0; font-size: 11px; line-height: 1.8; color: var(--subtle); }
+.shell :global(.reply-option-romaji) { color: var(--accent); }
+.shell :global(.reply-option-romaji > span),
+.shell :global(.reply-option-reading > span) { margin-right: 7px; font-size: 11px; color: var(--muted); }
+.shell :global(.reply-option-meaning) { grid-column: 2; grid-row: 1; align-self: center; margin: 0; font-size: 12px; line-height: 1.7; color: var(--subtle); }
+.shell :global(.reply-option-actions) { grid-column: 3; grid-row: 1; align-self: center; display: flex; align-items: center; gap: 16px; }
+.shell :global(.reply-option-actions button) { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 3px 2px; border: 0; background: none; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.shell :global(.reply-option-actions button:last-child) { color: var(--success); }
+.shell :global(.reply-option-actions .suggestion-listen) { color: var(--accent); }
+.shell :global(.reply-option-actions .suggestion-listen[aria-pressed="true"]) { text-decoration: underline; text-underline-offset: 4px; }
+.shell :global(.reply-option-actions button:hover:not(:disabled)) { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+.shell :global(.reply-practice-hint) { margin: 8px 0 0; color: var(--subtle); font-size: 10px; line-height: 1.8; }
+.shell :global(.reply-suggestions-status) { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 11px; line-height: 1.8; color: var(--muted); }
+.shell :global(.reply-suggestions-status svg) { flex-shrink: 0; }
+.shell :global(.reply-reference) { margin-top: 10px; font-size: 11px; color: var(--muted); }
+.shell :global(.reply-reference summary) { cursor: pointer; width: fit-content; }
+.shell :global(.reply-reference ul) { list-style: none; padding: 0 10px; border-left: 2px solid var(--line); margin: 10px 0; }
+.shell :global(.reply-reference li + li) { margin-top: 12px; }
+.shell :global(.reply-reference p) { margin: 0 0 3px; font-size: 12px; line-height: 1.8; }
+.shell :global(.reply-reference small) { display: block; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
+.shell :global(.round-control) { display: grid; place-items: center; height: 46px; width: 46px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); }
+.shell :global(.round-control:hover:not(:disabled)) { background: var(--paper); }
+.shell :global(.round-control.is-muted) { color: var(--muted); background: var(--paper); border-color: var(--muted); }
+.shell :global(.primary-button) { display: inline-flex; justify-content: center; align-items: center; gap: 12px; min-height: 46px; border: 1px solid var(--primary); border-radius: 30px; background: var(--primary); color: var(--surface); padding: 12px 25px; font-size: 13px; font-weight: 500; }
+.shell :global(.primary-button:hover:not(:disabled)) { background: var(--success); border-color: var(--success); }
+.shell :global(.primary-button.end-button) { background: var(--paper); color: var(--error); border-color: var(--error); }
+.shell :global(.primary-button.end-button:hover) { background: var(--paper); }
+.shell :global(.text-button) { display: inline-flex; justify-content: center; align-items: center; gap: 5px; font-size: 12px; border: 0; background: none; color: var(--success); padding: 3px; white-space: nowrap; }
+.shell :global(.text-button:hover) { color: var(--muted); }
+.shell :global(.secondary-button) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 8px 15px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); border-radius: 30px; font-size: 12px; white-space: nowrap; }
+.shell :global(.secondary-button:hover:not(:disabled)) { background: var(--paper); border-color: var(--muted); }
+.shell :global(dialog) { margin: auto; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--paper) var(--paper-texture); background-blend-mode: overlay; color: var(--ink); padding: 0; width: min(650px, calc(100vw - 48px)); max-height: calc(100svh - 48px); overflow: hidden; }
+.shell :global(dialog::backdrop) { background: #20251f66; backdrop-filter: blur(5px); }
+.shell :global(.panel-header) { display: flex; justify-content: space-between; align-items: center; padding: 20px 26px; border-bottom: 1px solid var(--line); gap: 12px; }
+.shell :global(.panel-header h2) { font: 400 28px/1.25 var(--font-serif); margin: 0; }
+.shell :global(.panel-header > div:first-child) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.shell :global(.panel-header > .icon-button) { flex-shrink: 0; }
+.shell :global(.panel-body) { padding: 20px 26px 26px; overflow-y: auto; max-height: calc(100svh - 165px); overscroll-behavior: contain; }
+.shell :global(.panel-intro) { color: var(--muted); font-size: 13px; line-height: 1.9; margin: 0 0 23px; }
+.shell :global(.bailian-heading) { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.shell :global(.bailian-heading h3) { font: 400 21px var(--font-serif); margin: 0; }
+.shell :global(.bailian-heading a) { font-size: 11px; text-decoration: none; }
+.shell :global(.bailian-form) { margin-top: 18px; }
+.shell :global(.secret-input) { position: relative; }
+.shell :global(.secret-input input) { padding-right: 65px; }
+.shell :global(.secret-input button) { position: absolute; top: 0; right: 8px; height: 100%; font-size: 12px; padding: 0 8px; }
+.shell :global(.bailian-advanced) { margin: -4px 0 18px; }
+.shell :global(.bailian-advanced summary), .shell :global(.bailian-models summary) { cursor: pointer; font-size: 11px; line-height: 1.8; }
+.shell :global(.bailian-advanced .field) { margin: 14px 0 0; }
+.shell :global(.bailian-actions) { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; margin-bottom: 18px; }
+.shell :global(.bailian-actions .text-button) { font-size: 12px; }
+.shell :global(.bailian-feedback) { font-size: 12px; color: var(--success); line-height: 1.7; }
+.shell :global(.connection-card) { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px; color: var(--muted); }
+.shell :global(.connection-card.is-ready) { background: var(--success-wash); border-color: var(--line); color: var(--success); }
+.shell :global(.connection-heading) { display: flex; align-items: center; gap: 8px; }
+.shell :global(.connection-heading strong) { font-size: 12px; font-weight: 600; flex: 1; }
+.shell :global(.connection-heading button) { font-size: 11px; }
+.shell :global(.connection-dot) { width: 6px; height: 6px; border-radius: 50%; background: var(--paper); }
+.shell :global(.is-ready .connection-dot) { background: var(--paper); }
+.shell :global(.connection-card > p) { font-size: 11px; line-height: 1.8; margin: 10px 0; }
+.shell :global(.config-details) { display: grid; gap: 6px; font-size: 11px; line-height: 1.6; margin-top: 15px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.shell :global(.config-details > span) { display: grid; grid-template-columns: 44px 1fr; gap: 8px; }
+.shell :global(.config-details b) { font-weight: 400; overflow-wrap: anywhere; }
+.shell :global(.settings-section) { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+.shell :global(.settings-section h3) { font: 400 21px var(--font-serif); margin: 0 0 18px; }
+.shell :global(.settings-section h3 > span) { color: var(--muted); font-size: 11px; margin-right: 10px; }
+.shell :global(.avatar-setting) { display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); }
+.shell :global(.avatar-setting-symbol) { display: grid; place-items: center; width: 39px; height: 39px; border-radius: 12px; background: var(--paper); color: var(--muted); font: 26px serif; }
+.shell :global(.avatar-setting > div) { flex: 1; min-width: 0; }
+.shell :global(.avatar-setting strong) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
+.shell :global(.avatar-setting p) { font-size: 11px; color: var(--muted); margin: 5px 0 0; }
+.shell :global(.field) { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--ink); margin: 0 0 18px; }
+.shell :global(.field input), .shell :global(.field select), .shell :global(.field textarea), .shell :global(.memory-item textarea) { width: 100%; min-height: 44px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 7px; color: var(--ink); font-size: 13px; line-height: 1.7; }
+.shell :global(.field select) { min-height: 42px; }
+.shell :global(.field textarea::placeholder) { color: var(--muted); }
+.shell :global(.field-help) { font-size: 11px; color: var(--muted); line-height: 1.7; font-weight: 400; margin-top: 8px; }
+.shell :global(.field > .field-help) { margin: 0; }
+.shell :global(.field-grid) { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+.shell :global(.panel-save) { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 20px; margin-top: 23px; }
+.shell :global(.panel-save > span) { font-size: 11px; color: var(--muted); }
+.shell :global(.panel-save .primary-button) { padding: 11px 18px; font-size: 12px; }
+.shell :global(.form-error) { color: var(--error); background: var(--error-wash); border-radius: 7px; padding: 10px 12px; font-size: 12px; line-height: 1.7; }
+.shell :global(.inline-info) { padding: 11px 13px; border: 1px dashed var(--line); background: var(--paper); color: var(--muted); font-size: 11px; border-radius: 9px; line-height: 1.7; margin: 14px 0; }
+.shell :global(.panel-empty) { text-align: center; color: var(--muted); padding: 45px 20px; }
+.shell :global(.panel-empty > svg) { margin: auto; }
+.shell :global(.panel-empty h3) { font-size: 16px; font-weight: 500; margin: 17px 0 10px; color: var(--muted); }
+.shell :global(.panel-empty p) { font-size: 11px; line-height: 1.8; }
+.shell :global(.history-item) { width: 100%; display: flex; align-items: center; gap: 15px; text-align: left; padding: 20px 4px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; color: var(--muted); }
+.shell :global(.history-item:hover:not(:disabled)), .shell :global(.history-item.current) { background: var(--paper); }
+.shell :global(.history-symbol) { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; color: var(--muted); background: var(--paper); }
+.shell :global(.history-item-content) { flex: 1; min-width: 0; }
+.shell :global(.history-item-content strong) { display: block; font: 19px var(--font-serif); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shell :global(.history-item-content small) { display: block; margin-top: 6px; font-size: 11px; color: var(--muted); }
+.shell :global(.history-item-content p) { font-size: 11px; color: var(--muted); margin: 7px 0 0; line-height: 1.6; }
+.shell :global(.memory-form) { padding: 18px; background: var(--wash); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-end; }
+.shell :global(.memory-form .field) { align-self: stretch; }
+.shell :global(.memory-list) { margin-top: 20px; display: grid; gap: 13px; }
+.shell :global(.memory-item) { padding: 18px 4px; border: 0; border-bottom: 1px solid var(--line); }
+.shell :global(.memory-content) { display: flex; gap: 10px; align-items: flex-start; }
+.shell :global(.memory-content svg) { color: var(--muted); flex-shrink: 0; margin-top: 3px; }
+.shell :global(.memory-content p) { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+.shell :global(.memory-item-footer) { display: flex; align-items: center; justify-content: space-between; margin-top: 11px; }
+.shell :global(.memory-item-footer > span) { font-size: 11px; color: var(--muted); }
+.shell :global(.memory-item-footer > div), .shell :global(.memory-edit-actions) { display: flex; gap: 8px; align-items: center; }
+.shell :global(.memory-edit-actions) { justify-content: flex-end; margin-top: 9px; }
+.shell :global(.delete-button:hover) { color: var(--muted); background: var(--paper); }
+.shell :global(.learning-review) { padding: 20px; background: var(--success-wash); border: 1px solid var(--line); border-radius: 10px; margin: 25px 0 5px; }
+.shell :global(.review-title) { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.shell :global(.review-title h3) { font-size: 13px; font-weight: 600; margin: 0; }
+.shell :global(.review-topic) { font-size: 12px; color: var(--muted); line-height: 1.8; margin: 12px 0 21px; }
+.shell :global(.learning-review h4) { font-size: 11px; font-weight: 500; letter-spacing: .5px; color: var(--muted); margin: 0 0 12px; }
+.shell :global(.learning-review ol) { list-style: none; padding: 0; margin: 0; }
+.shell :global(.learning-review li) { display: flex; align-items: flex-start; gap: 11px; margin: 14px 0; }
+.shell :global(.learning-review li > span) { font: 11px Georgia, serif; color: var(--muted); margin-top: 3px; }
+.shell :global(.learning-review li strong) { font-size: 12px; color: var(--muted); font-weight: 500; line-height: 1.7; }
+.shell :global(.learning-review li p) { font-size: 11px; color: var(--muted); line-height: 1.8; margin: 4px 0 0; }
+.shell :global(.improvement) { padding-top: 14px; margin-top: 19px; border-top: 1px dashed var(--line); }
+.shell :global(.improvement > span) { font-size: 11px; color: var(--muted); }
+.shell :global(.improvement > p) { font-size: 12px; line-height: 1.8; color: var(--muted); margin: 6px 0 0; }
+.shell :global(.memory-suggestions) { padding-top: 20px; margin-top: 18px; border-top: 1px dashed var(--line); }
+.shell :global(.memory-suggestions > div) { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.shell :global(.memory-suggestions p) { color: var(--muted); font-size: 11px; line-height: 1.8; }
+.shell :global(.memory-suggestions button) { font-size: 11px; }
+.shell :global(.review-pending) { display: flex; align-items: flex-start; gap: 9px; font-size: 11px; line-height: 1.8; color: var(--muted); padding: 16px 3px; }
+.shell :global(.review-pending > svg) { flex-shrink: 0; margin-top: 3px; }
+.shell :global(.toast) { position: fixed; z-index: 100; bottom: 28px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 48px); width: max-content; padding: 14px 22px; border-radius: 30px; color: var(--surface); background: var(--primary); font-size: 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1150px) {
+  .shell :global(.workspace) { padding: 24px 32px; }
+  .shell :global(.chat-layout) { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
+  .shell :global(.conversation-panel) { height: calc(100svh - 120px); }
+  .shell :global(.composer-hint) { display: none; }
+  .shell :global(.reply-option-body) { grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; }
+  .shell :global(.reply-option-meaning) { grid-column: 1; grid-row: 2; margin-top: 2px; font-size: 11px; }
+  .shell :global(.reply-option-actions) { grid-column: 2; grid-row: 1 / 3; gap: 6px 10px; flex-wrap: wrap; justify-content: flex-end; max-width: 190px; }
+  .shell :global(.reply-suggestions-content) { max-height: 210px; }
+}
+@media (max-width: 900px) {
+  .shell :global(.workspace) { padding: 12px 24px 18px; }
+  .shell :global(.chat-layout) { display: flex; flex-direction: column; gap: 12px; }
+  .shell :global(.conversation-panel) { width: 100%; height: calc(100svh - 120px); min-height: 450px; }
+  .shell :global(.companion-stage) { order: -1; width: 100%; padding: 8px 0 16px; border-bottom: 1px solid var(--line); }
+  .shell :global(.stage-heading) { gap: 6px; }
+  .shell :global(.stage-heading h2) { font-size: 21px; }
+  .shell :global(.character-stage) { max-width: 420px; height: clamp(220px, 32svh, 320px); margin: 10px 0 4px; }
+}
+@media (max-width: 560px) {
+  .shell :global(.workspace) { padding: 12px 20px 16px; }
+  .shell :global(.conversation-panel) { height: calc(100svh - 180px); }
+  .shell :global(.conversation-content) { padding: 14px 4px 4px 0; }
+  .shell :global(.conversation-content > .message) { max-width: 96%; }
+  .shell :global(.message) { margin-bottom: 24px; }
+  .shell :global(.assistant-message > .message-bubble > p) { font-size: 18px; }
+  .shell :global(.message-actions) { gap: 12px; }
+  .shell :global(.conversation-footer) { padding-top: 14px; }
+  .shell :global(.composer) { padding: 12px 12px 12px 14px; gap: 10px; border-radius: 16px; }
+  .shell :global(.reply-option) { gap: 6px; }
+  .shell :global(.reply-option-body) { column-gap: 10px; }
+  .shell :global(.reply-option-text) { font-size: 15px; }
+  .shell :global(.reply-option-actions) { flex-direction: column; align-items: flex-end; gap: 0; max-width: 110px; }
+  .shell :global(.reply-suggestions-content) { max-height: 180px; }
+  .shell :global(.reply-option-actions button) { min-height: 40px; }
+  .shell :global(.reply-suggestions.is-practicing .reply-option-body) { grid-template-columns: minmax(0, 1fr); }
+  .shell :global(.reply-suggestions.is-practicing .reply-option-text) { font-size: 19px; }
+  .shell :global(.reply-suggestions.is-practicing .reply-option-actions) { grid-column: 1; grid-row: 3; flex-direction: row; justify-content: flex-start; max-width: none; gap: 0 12px; }
+  .shell :global(.main-controls) { gap: 6px; flex-wrap: wrap; }
+  .shell :global(.main-controls .primary-button) { padding-inline: 14px; }
+  .shell :global(.conversation-empty) { padding: 36px 0; }
+  .shell :global(.conversation-empty h2) { font-size: 29px; }
+  .shell :global(.conversation-empty p) { font-size: 13px; }
+  .shell :global(.conversation-starters) { gap: 6px; }
+  .shell :global(.conversation-starters button) { padding: 8px 12px; font-size: 11px; gap: 7px; }
+  .shell :global(.config-banner), .shell :global(.error-banner) { flex-wrap: wrap; padding: 10px 12px; }
+  .shell :global(.config-banner > span), .shell :global(.error-banner > span) { min-width: 0; overflow-wrap: anywhere; }
+  .shell :global(dialog) { width: calc(100vw - 28px); max-height: calc(100svh - 28px); border-radius: 12px; }
+  .shell :global(.panel-header) { padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+  .shell :global(.panel-header h2) { font-size: 25px; }
+  .shell :global(.panel-header > div:first-child) { grid-column: 1; grid-row: 1; }
+  .shell :global(.panel-header > .icon-button) { grid-column: 2; grid-row: 1; }
+  .shell :global(.panel-header > .language-switcher) { grid-column: 1 / -1; grid-row: 2; }
+  .shell :global(.panel-body) { padding: 18px; max-height: calc(100svh - 116px); }
+  .shell :global(.history-detail .chat-scroll) { max-height: calc(100svh - 205px); }
+  .shell :global(.field-grid) { grid-template-columns: 1fr; gap: 0; }
+  .shell :global(.panel-save) { align-items: flex-start; flex-direction: column; }
+  .shell :global(.field input), .shell :global(.field select), .shell :global(.field textarea), .shell :global(.memory-item textarea), .shell :global(.composer textarea) { font-size: 16px; }
+  .shell :global(.memory-suggestions > div) { align-items: flex-start; }
+}
+@media (max-height: 500px) and (min-width: 561px) {
+  .shell :global(.history-detail .chat-scroll) { max-height: calc(100svh - 210px); }
+  .shell :global(.panel-header) { padding-block: 12px; }
+  .shell :global(.panel-body) { padding-block: 14px; max-height: calc(100svh - 130px); }
+}

@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f4f1eb;
+  --surface: #fffdf8;
+  --paper-texture: url('/paper-grain.png');
+  --ink: #111111;
+  --muted: #514e48;
+  --subtle: #716c62;
+  --line: #d3cec4;
+  --line-strong: #ada79b;
+  --primary: #20251f;
+  --accent: #ac481e;
+  --blue: #1e5fce;
+  --success: #235c34;
+  --error: #a13729;
+  --wash: #eae5da;
+  --success-wash: #e9eee2;
+  --blue-wash: #eaf0f8;
+  --error-wash: #f7e8df;
+  --font-serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --font-japanese: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 100px; }
+body { margin: 0; background: var(--paper) var(--paper-texture); background-blend-mode: overlay; color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+button, input, textarea, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; transition: background-color .16s, color .16s, border-color .16s; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+:where(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+button svg { flex-shrink: 0; }
+a { color: inherit; text-decoration: none; }
+textarea { resize: vertical; }
+.language-switcher { display: inline-flex; flex-shrink: 0; max-width: 100%; }
+.language-switcher select { min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 24px; background: var(--paper); color: var(--ink); font-size: 13px; cursor: pointer; }
+::selection { background: #dfc8ae; color: var(--ink); }
+[hidden] { display: none !important; }
+.page-notice { min-height: 100dvh; display: grid; align-content: center; justify-items: center; gap: 16px; padding: 32px; text-align: center; }
+.page-notice h1 { margin: 0; font-family: var(--font-serif); font-size: clamp(24px, 5vw, 36px); }
+.page-notice p { margin: 0; color: var(--muted); }
+.page-notice a, .page-notice button { margin-top: 12px; padding: 12px 24px; border: 1px solid var(--line-strong); border-radius: 30px; background: transparent; color: var(--ink); }
+html:lang(zh-CN) { --font-serif: "Songti SC", "STSong", "Noto Serif CJK SC", serif; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

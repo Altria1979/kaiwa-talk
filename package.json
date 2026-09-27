@@ -1,0 +1,53 @@
+{
+  "name": "koharu-language-companion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.9.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "node scripts/prepare-vad-assets.mjs && node scripts/run.mjs dev",
+    "start": "node scripts/run.mjs start",
+    "test": "node --import tsx --experimental-test-module-mocks --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.server.json --noEmit",
+    "lint": "eslint .",
+    "build": "node scripts/prepare-vad-assets.mjs && tsc --project tsconfig.server.json && next build",
+    "build:web": "node scripts/prepare-vad-assets.mjs && next build",
+    "build:server": "tsc --project tsconfig.server.json",
+    "start:server": "node --env-file-if-exists=.env.local dist/server/index.js"
+  },
+  "dependencies": {
+    "@libsql/client": "0.18.0",
+    "@pixiv/three-vrm": "3.5.5",
+    "@ricky0123/vad-web": "0.0.31",
+    "@vercel/blob": "2.8.0",
+    "better-sqlite3": "13.0.3",
+    "next": "16.3.6",
+    "onnxruntime-web": "1.22.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "three": "0.186.1",
+    "ws": "8.21.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "onnxruntime-web": "1.22.0"
+    }
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "^24.19.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0",
+    "@types/ws": "8.18.1",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

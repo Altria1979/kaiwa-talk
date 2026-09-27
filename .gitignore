@@ -1,0 +1,40 @@
+# Dependencies and generated output
+node_modules/
+.next/
+dist/
+out/
+coverage/
+*.tsbuildinfo
+public/vad/
+
+# Credentials and local application data
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+data/
+.vercel/
+.local/
+*.sqlite
+*.sqlite-*
+
+# Editor, agent, and workstation files
+.DS_Store
+.idea/
+.vscode/
+.omx/
+AGENTS.md
+CLAUDE.md
+__pycache__/
+*.py[cod]
+
+# Local design work, acceptance evidence, and unrelated prototype
+artifacts/
+docs/characters/
+scripts/avatar/
+pelican-bike.html
+*.log
+*.pid

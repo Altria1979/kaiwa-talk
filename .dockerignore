@@ -1,0 +1,25 @@
+# The backend image needs only its source, shared contracts, and locked packages.
+**
+!package.json
+!pnpm-lock.yaml
+!tsconfig.server.json
+!server/
+!server/**/
+!server/**/*.ts
+!shared/
+!shared/**/
+!shared/**/*.ts
+!docker/
+!docker/backend.Dockerfile
+!.dockerignore
+
+# Never send local secrets or personal data to the image builder.
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/node_modules
+**/data
+**/.git
+**/.omx
+**/artifacts

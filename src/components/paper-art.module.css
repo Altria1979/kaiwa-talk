@@ -1,0 +1,101 @@
+.art {
+  --ink-x: 0px;
+  --ink-y: 0px;
+  --light-x: 50%;
+  --light-y: 50%;
+  --light-radius: 89.6px;
+  --light-stop: 55%;
+  position: relative;
+  isolation: isolate;
+  width: 280px;
+  max-width: 100%;
+  aspect-ratio: 7 / 4;
+  flex-shrink: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: var(--paper, #f4f1eb);
+}
+
+.layers {
+  position: absolute;
+  inset: 0;
+}
+
+.layers span {
+  position: absolute;
+  height: 31%;
+  border-radius: 999px;
+  transform: translate(
+      calc(var(--ink-x) * var(--depth, -1)),
+      calc(var(--ink-y) * var(--depth, -1))
+    )
+    rotate(var(--rotation, 0deg));
+}
+
+.blue {
+  top: 5%;
+  right: 4%;
+  width: 76%;
+  background: linear-gradient(90deg, #1e5fce, #235c34);
+  z-index: 3;
+}
+
+.orange {
+  --depth: -0.7;
+  --rotation: -35deg;
+  top: 22%;
+  right: 14%;
+  width: 72%;
+  background: linear-gradient(135deg, #235c34, #ed6727 60%, #f9ca47);
+  z-index: 2;
+}
+
+.pink {
+  --depth: -1.2;
+  top: 42%;
+  left: 2%;
+  width: 92%;
+  background: linear-gradient(90deg, #ed6727, #ef93ac 50%, #9b69e5);
+  z-index: 4;
+}
+
+.violet {
+  --depth: -0.8;
+  --rotation: 35deg;
+  top: 58%;
+  left: 19%;
+  width: 75%;
+  background: linear-gradient(-45deg, #9b69e5, #1e5fce 70%, #ed6727);
+  z-index: 3;
+}
+
+.ink {
+  --depth: -0.9;
+  bottom: 0;
+  right: 7%;
+  width: 84%;
+  background: linear-gradient(90deg, #ed6727, #111 40%, var(--paper, #f4f1eb) 80%);
+  z-index: 5;
+}
+
+/* Fade the colored shapes into paper first; grain stays above that composite. */
+.art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle var(--light-radius) at var(--light-x) var(--light-y),
+    transparent 0%,
+    var(--paper, #f4f1eb) var(--light-stop)
+  );
+  z-index: 6;
+}
+
+.art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--paper-texture);
+  mix-blend-mode: overlay;
+  z-index: 7;
+}
