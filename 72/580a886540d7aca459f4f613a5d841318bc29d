@@ -1,0 +1,19 @@
+src/app/icon.svg
+  s_1b70c6e0e1886d::t_9df28f35a9202c 1-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "72580a886540d7aca459f4f613a5d841318bc29d",
+  "prompts": {},
+  "sessions": {
+    "s_1b70c6e0e1886d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e542-647f-7490-bd61-2f03de2a59f5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
