@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { getRequestLocale } from '../i18n/request';
 import { translate } from '../i18n/messages';
 import { I18nProvider } from '../i18n/provider';
@@ -11,5 +12,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getRequestLocale();
-  return <html lang={locale}><body><I18nProvider initialLocale={locale}>{children}</I18nProvider></body></html>;
+  return <html lang={locale}><body><I18nProvider initialLocale={locale}>{children}</I18nProvider><Analytics /></body></html>;
 }
