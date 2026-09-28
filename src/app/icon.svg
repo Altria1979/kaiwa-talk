@@ -1,1 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#f4f1eb"/><circle cx="32" cy="32" r="29" fill="none" stroke="#ada79b"/><text x="32" y="44" text-anchor="middle" fill="#ac481e" font-family="serif" font-size="42">K</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="16" fill="#A64B32"/>
+  <path d="M17 15H26V30L39.5 16.5C40.5 15.5 41.7 15 43.1 15H50L33 32L50 49H41.5C40.2 49 39 48.5 38.1 47.6L26 35.5V41C26 44.4 24.3 47.6 21.5 49.5L17 52.5V15Z" fill="#F7F2E9"/>
+</svg>
