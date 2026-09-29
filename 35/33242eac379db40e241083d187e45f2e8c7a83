@@ -1,0 +1,22 @@
+src/components/paper-navigation.module.css
+  s_219f7f175400e9::t_b0e262b8800b7c 16
+  s_219f7f175400e9::t_063e877b8c40b1 5-7,25-26
+src/components/paper-navigation.tsx
+  s_219f7f175400e9::t_063e877b8c40b1 4,13-29,64,72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3533242eac379db40e241083d187e45f2e8c7a83",
+  "prompts": {},
+  "sessions": {
+    "s_219f7f175400e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0eb9f-9d87-7133-9d1f-f62e14d2fb33",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
