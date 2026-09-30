@@ -1,0 +1,61 @@
+docs/SUGGESTION-AUDIO.md
+  s_afca248dfe3e0b::t_12532ad805e2b5 1,3,9,22,24
+src/components/reply-suggestions.tsx
+  s_afca248dfe3e0b::t_15087b9dfdc271 30,32,35,43,48,50-51,61
+  s_afca248dfe3e0b::t_be33eed7497a4a 6,42,47,49
+src/i18n/messages/controls.ts
+  s_afca248dfe3e0b::t_2632e447dcc35e 16-19,42-45,66-69
+server/reply-suggestions.ts
+  s_afca248dfe3e0b::t_06906ae3c88494 24-27
+src/hooks/use-reading-preferences.ts
+  s_afca248dfe3e0b::t_06906ae3c88494 20,25-26,28-29,34
+src/lib/reading-preferences.ts
+  s_afca248dfe3e0b::t_06906ae3c88494 5
+src/components/reading-aids.tsx
+  s_afca248dfe3e0b::t_be33eed7497a4a 21-28,35
+  s_afca248dfe3e0b::t_15087b9dfdc271 11,29,36
+tests/companion-i18n.test.mjs
+  s_afca248dfe3e0b::t_2632e447dcc35e 49
+README.en.md
+  s_afca248dfe3e0b::t_12532ad805e2b5 22,31
+  s_afca248dfe3e0b::t_d5fb811fd89aaa 51
+src/i18n/messages/companion.ts
+  s_afca248dfe3e0b::t_12532ad805e2b5 95,243,389
+README.md
+  s_afca248dfe3e0b::t_12532ad805e2b5 22,31,51
+README.ja.md
+  s_afca248dfe3e0b::t_12532ad805e2b5 22,31,51
+tests/reply-suggestions.test.mjs
+  s_afca248dfe3e0b::t_06906ae3c88494 7-8,10,13,15-16,55,58-61,66,68,71
+tests/reading-preferences.test.mjs
+  s_afca248dfe3e0b::t_06906ae3c88494 14,20-27,30,37,39-42,46-57,64
+tests/reading-aids.test.mjs
+  s_afca248dfe3e0b::t_5005766adcf239 11-24,26-32,37-38,40-43,46,49,52,54-57,61-77,79-81,83-84,88-97,99,103-116,120-124
+  s_afca248dfe3e0b::t_eb5b127c202e61 125-136
+src/components/companion.module.css
+  s_a02f90d145dd0a::t_f1fa24e1379c95 150-151,153-155,161,305
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "01b298997a8a52444dcc91a13888232855e547cb",
+  "prompts": {},
+  "sessions": {
+    "s_a02f90d145dd0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f169-6dc9-7553-b536-548f04eb8dac",
+        "model": "unknown"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_afca248dfe3e0b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f1f1-0f50-7f31-9f3d-2800d462fea6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
