@@ -1,0 +1,31 @@
+src/hooks/use-conversation.ts
+  s_30d167fa5f1680::t_a8944bcd63ff58 349,721
+  s_30d167fa5f1680::t_724bde3137a7ba 19-27,116-127,139-145,147,310,329,341,348,350-355,386-388,430,582,680,683,695,720,722-724,743,748-750,875-879,969
+  s_30d167fa5f1680::t_6c39e3e6106d89 682
+src/components/reply-suggestions.tsx
+  s_30d167fa5f1680::t_e1455a6e889625 20,55
+src/components/companion.tsx
+  s_30d167fa5f1680::t_e1455a6e889625 190-199
+tests/suggestion-playback.test.mjs
+  s_30d167fa5f1680::t_f8e13b345774f3 285,292,319,340-368
+  s_30d167fa5f1680::t_ddaaabfb155b84 73,90-94,103,108-110
+  s_30d167fa5f1680::t_829812cbea6563 111,239-284,286-291,293-318,320-339,369-461
+tests/companion-i18n.test.mjs
+  s_30d167fa5f1680::t_7ee85a7df3f7ad 302,305,309,321-323
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fb7e94e5056e997072aca2f356f55359ebfba17c",
+  "prompts": {},
+  "sessions": {
+    "s_30d167fa5f1680": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f21e-90c8-7b60-a586-2879abd75f65",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
