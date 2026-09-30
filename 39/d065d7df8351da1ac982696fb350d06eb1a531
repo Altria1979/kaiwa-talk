@@ -1,0 +1,26 @@
+src/components/companion.module.css
+  s_a02f90d145dd0a::t_af3a557b2622e0 335-342,349,363
+  s_a02f90d145dd0a::t_ff0b62ffe9397f 278-279,343-344,348
+  s_a02f90d145dd0a::t_851042e8451eaf 286-287,351,361-362
+  s_a02f90d145dd0a::t_81b0ad580403c5 87
+  s_a02f90d145dd0a::t_46ecd2715484d4 345-347
+  s_a02f90d145dd0a::t_d8f2b2fcd65f04 353-356
+  s_a02f90d145dd0a::t_ff77218a9af9ba 79
+  s_a02f90d145dd0a::t_e281e398f4b611 62,70,76-78,84-85,101-102,281,284-285,350,352,357-360
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "39d065d7df8351da1ac982696fb350d06eb1a531",
+  "prompts": {},
+  "sessions": {
+    "s_a02f90d145dd0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f169-6dc9-7553-b536-548f04eb8dac",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
