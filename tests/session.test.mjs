@@ -13,6 +13,7 @@ let syntheses;
 let asrCallbacks;
 let asrInstances;
 let finishAsr;
+let connectAsrReply;
 let streamReply;
 let synthesizeReply;
 let completionPrompts;
@@ -102,9 +103,9 @@ mock.module('../server/providers/asr.ts', {
         asrCallbacks = callbacks;
         asrInstances.push(this);
       }
-      async connect() {}
+      async connect(silenceMs, timeoutMs) { await connectAsrReply(this, silenceMs, timeoutMs); }
       append(audio) { this.time += Buffer.from(audio, 'base64').length / 32; }
-      close() {}
+      close() { this.closed = true; }
       async finish() { await finishAsr(this); }
     },
   },
@@ -149,6 +150,7 @@ beforeEach(() => {
   asrCallbacks = undefined;
   asrInstances = [];
   finishAsr = async () => {};
+  connectAsrReply = async () => {};
   streamReply = async function* () { yield '大丈夫です。'; };
   synthesizeReply = async ({ onAudio }) => { onAudio('AAA='); };
   completionPrompts = [];
@@ -407,6 +409,7 @@ test('ASR fallback stops speech without changing the in-flight reply language or
   await session.handle({ type: 'text', text: 'こんにちは' });
   await waitFor(() => last(events, 'audio.end'));
   asrCallbacks.onError(new Error('ASR disconnected'));
+  assert.equal(asrInstances.length, 1, 'an established audio stream is not silently restarted');
   continuation.resolve();
   await waitFor(() => last(events, 'turn.done'));
   assert.equal(last(events, 'reply.done').message.delivery, 'voice');
@@ -421,6 +424,91 @@ test('ASR fallback stops speech without changing the in-flight reply language or
   assert.equal(last(events, 'reply.done').message.delivery, 'text');
   assert.ok(prompts[1][0].content.includes(japaneseHelpRule));
   assert.equal(syntheses.length, 1);
+});
+
+test('a transient ASR startup failure retries with a new stream and ignores late old callbacks', async t => {
+  let calls = 0;
+  connectAsrReply = async () => {
+    if (++calls === 1) throw new ProviderError('temporary connection failure', { errorCode: 'asrUnavailable' });
+  };
+  const { session, events } = await startSession(t, true);
+  assert.equal(asrInstances.length, 2);
+  assert.equal(asrInstances[0].closed, true);
+  assert.notEqual(asrInstances[0].streamId, asrInstances[1].streamId);
+  assert.equal(last(events, 'session.started').voice, true);
+  assert.equal(last(events, 'session.started').asrStreamId, asrInstances[1].streamId);
+  assert.equal(events.filter(event => event.type === 'error').length, 0);
+  asrInstances[0].callbacks.onError(new ProviderError('late old error', { errorCode: 'asrUnavailable' }));
+  assert.equal(events.filter(event => event.type === 'error').length, 0);
+  assert.equal(session.sessionId, lease.sessionId);
+});
+
+test('ASR startup retries share one twelve-second connection budget', async t => {
+  t.mock.timers.enable({ apis: ['Date'], now: 1_000_000 });
+  const budgets = [];
+  connectAsrReply = async (asr, silenceMs, timeoutMs) => {
+    budgets.push(timeoutMs);
+    if (budgets.length === 1) {
+      t.mock.timers.tick(5000);
+      throw new ProviderError('temporary connection failure', { errorCode: 'asrUnavailable' });
+    }
+  };
+  const { events } = await startSession(t, true);
+  assert.deepEqual(budgets, [12_000, 7000]);
+  assert.equal(last(events, 'session.started').voice, true);
+});
+
+test('ASR connection failure near its deadline does not start another handshake', async t => {
+  t.mock.timers.enable({ apis: ['Date'], now: 1_000_000 });
+  let calls = 0;
+  connectAsrReply = async () => {
+    calls++;
+    t.mock.timers.tick(11_500);
+    throw new ProviderError('temporary connection failure', { errorCode: 'asrUnavailable' });
+  };
+  const { events } = await startSession(t, true);
+  assert.equal(calls, 1);
+  assert.equal(last(events, 'session.started').voice, false);
+});
+
+test('ASR authentication, quota, timeout and cancelled starts fall back without retrying', async t => {
+  for (const errorCode of ['authenticationFailed', 'modelAccessDenied', 'quotaExceeded', 'asrTimeout', 'asrCancelled']) {
+    let calls = 0;
+    connectAsrReply = async () => { calls++; throw new ProviderError('startup failed', { errorCode }); };
+    const { session, events } = await startSession(t, true);
+    assert.equal(calls, 1, errorCode);
+    assert.equal(last(events, 'session.started').voice, false, errorCode);
+    assert.equal(last(events, 'error').errorCode, errorCode);
+    await session.dispose();
+  }
+});
+
+test('repeated ASR connection failures retry once and keep the same text session usable', async t => {
+  let calls = 0;
+  connectAsrReply = async () => { calls++; throw new ProviderError('startup failed', { errorCode: 'asrUnavailable' }); };
+  const { session, events } = await startSession(t, true);
+  assert.equal(calls, 2);
+  assert.equal(last(events, 'session.started').voice, false);
+  assert.equal(events.filter(event => event.type === 'error').length, 1);
+  assert.equal(last(events, 'error').source, 'asr');
+  await session.handle({ type: 'text', text: '文字で続けます' });
+  await waitFor(() => last(events, 'turn.done'));
+  assert.equal(messages.at(-1).delivery, 'text');
+  assert.equal(session.sessionId, lease.sessionId);
+});
+
+test('disposing an ASR start prevents a late unavailable failure from creating another stream', async t => {
+  let rejectConnection;
+  connectAsrReply = () => new Promise((resolve, reject) => { rejectConnection = reject; });
+  const session = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send() {}, close() {} }, store);
+  t.after(() => session.dispose());
+  const starting = session.handle({ type: 'start', voice: true });
+  await waitFor(() => rejectConnection);
+  await session.dispose();
+  rejectConnection(new ProviderError('late connection failure', { errorCode: 'asrUnavailable' }));
+  await starting;
+  assert.equal(asrInstances.length, 1);
+  assert.equal(lease, null);
 });
 
 test('cancelling a voice turn aborts active synthesis and skips queued sentences', async (t) => {
@@ -757,6 +845,44 @@ test('socket loss suspends and resumes the same session without a review or dupl
   await resumed.handle({ type: 'end' });
   assert.ok(sessions.get(id).endedAt);
   await waitFor(() => completionPrompts.some(prompt => prompt[0].content.includes('聊天回顾')));
+});
+
+test('socket disposal stops renewal but releases its lease only after saving the interrupted reply', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1_000_000 });
+  const { session: first } = await startSession(t, false);
+  let finishGeneration;
+  streamReply = async function* () { yield '保存する途中の返信'; await new Promise(resolve => { finishGeneration = resolve; }); };
+  await first.handle({ type: 'text', text: '話してください' });
+  await waitFor(() => finishGeneration);
+  const id = first.sessionId;
+  const updateMessage = store.updateMessage.bind(store);
+  let finishPersistence;
+  t.mock.method(store, 'updateMessage', async (...args) => {
+    await new Promise(resolve => { finishPersistence = resolve; });
+    return updateMessage(...args);
+  }, { times: 1 });
+  const renewal = t.mock.method(store, 'renewSessionLease');
+  t.after(() => { finishPersistence?.(); finishGeneration?.(); });
+  const disposing = first.dispose();
+  await waitFor(() => finishPersistence);
+  t.mock.timers.tick(10_000);
+  await nextTick();
+  assert.equal(renewal.mock.callCount(), 0);
+  assert.equal(await store.getActiveSessionId(), id);
+  const events = [];
+  const second = new RealtimeSession({ readyState: 1, bufferedAmount: 0, send: raw => events.push(JSON.parse(raw)), close() {} }, store);
+  t.after(() => second.dispose());
+  await second.handle({ type: 'start', sessionId: id, resume: true, voice: false });
+  assert.equal(last(events, 'error').errorCode, 'sessionOtherPage');
+  finishPersistence();
+  await disposing;
+  assert.equal(lease, null);
+  assert.equal(messages.at(-1).content, '保存する途中の返信');
+  assert.equal(messages.at(-1).interrupted, true);
+  await second.handle({ type: 'start', sessionId: id, resume: true, voice: false });
+  assert.equal(second.sessionId, id);
+  assert.equal(last(events, 'session.started').messages.at(-1).content, '保存する途中の返信');
+  finishGeneration();
 });
 
 test('an expired owner cannot mutate messages, renew, or release its replacement lease', async t => {

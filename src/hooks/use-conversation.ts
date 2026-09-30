@@ -43,6 +43,8 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   const [, setAudioRevision] = useState(0);
   const audioLevelRef = useRef(0);
   const socketRef = useRef<WebSocket | null>(null);
+  const sessionSocketRef = useRef<WebSocket | null>(null);
+  const connectingRef = useRef<{ cancel: () => void } | null>(null);
   const audioRef = useRef<BrowserAudio | null>(null);
   const audioSessionRef = useRef<{ sessionId: string; createdAt: string } | null>(null);
   const recordingRequestRef = useRef(0);
@@ -240,6 +242,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         setPlaybackCaption(null);
         setTranscript(''); setPendingTranscript('');
         sessionRef.current = event.session;
+        sessionSocketRef.current = socketRef.current;
         setSession(event.session);
         if (audioRef.current) {
           audioSessionRef.current = { sessionId: event.session.id, createdAt: event.session.createdAt };
@@ -267,6 +270,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         // A recap can arrive after a different history entry has been selected.
         if (sessionRef.current?.id !== event.session.id) break;
         sessionRef.current = event.session; setSession(event.session);
+        sessionSocketRef.current = null;
         activeRef.current = false; voiceRef.current = false;
         resetAvatarEmotion();
         setActive(false); setVoiceEnabled(false); setMuted(false); mutedRef.current = false;
@@ -368,12 +372,15 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         setReplySuggestions(current => current?.turnId === event.turnId && current.status !== 'ready' ? null : current);
         setAudioRevision(value => value + 1);
         break;
-      case 'error':
+      case 'error': {
+        // A suspended connection can still own its lease while its final writes drain.
+        // Keep the resume UI connecting until retries exhaust or ownership is restored.
+        const waitingForLease = event.source === 'session' && event.errorCode === 'sessionOtherPage' && !!reconnectTaskRef.current && !!pendingRef.current;
         stopSuggestionSpeech();
         resetSpeechInput();
         ++replayRequestRef.current;
         setPlaybackCaption(null);
-        setErrorDetails(describeError(event));
+        if (!waitingForLease) setErrorDetails(describeError(event));
         if (event.source === 'asr' || event.source === 'tts' || event.source === 'chat') audioRef.current?.cancelTurn();
         if (event.source === 'asr') {
           setTranscript(''); setPendingTranscript('');
@@ -387,9 +394,10 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
             pendingRef.current.reject(new AppError(event.message, event));
             pendingRef.current = null;
           }
-          setState(activeRef.current ? 'listening' : 'error');
+          setState(waitingForLease ? 'connecting' : activeRef.current ? 'listening' : 'error');
         }
         break;
+      }
     }
   }, [evaluateSpeech, releaseAudio, rememberCancellation, resetAvatarEmotion, resetSpeechInput, send, stopSuggestionSpeech]);
 
@@ -402,10 +410,28 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     const socket = new WebSocket(SOCKET_URL);
     socketRef.current = socket;
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => { socket.close(); reject(new AppError('ローカルサービスへの接続がタイムアウトしました。アプリが起動していることを確認してください。')); }, 10_000);
-      socket.onopen = () => {
+      let opened = false;
+      let settled = false;
+      const fail = (error: AppError) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
-        if (socketRef.current !== socket || !mountedRef.current) { socket.close(); reject(new AppError('接続をキャンセルしました。')); return; }
+        if (connectingRef.current === connection) connectingRef.current = null;
+        // Detach before close: neither a late open nor a late acknowledgement can own the session.
+        if (socketRef.current === socket) socketRef.current = null;
+        socket.close();
+        reject(error);
+      };
+      const connection = { cancel: () => fail(new AppError('接続をキャンセルしました。')) };
+      connectingRef.current = connection;
+      const timer = setTimeout(() => fail(new AppError('ローカルサービスへの接続がタイムアウトしました。アプリが起動していることを確認してください。')), 10_000);
+      socket.onopen = () => {
+        if (settled) return;
+        if (socketRef.current !== socket || !mountedRef.current || generation !== lifecycleRef.current) { connection.cancel(); return; }
+        opened = true;
+        settled = true;
+        clearTimeout(timer);
+        if (connectingRef.current === connection) connectingRef.current = null;
         setConnected(true); resolve();
       };
       socket.onmessage = message => {
@@ -414,14 +440,15 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         catch { setErrorDetails(describeError('会話データを正しく受信できませんでした。会話を終了して、接続し直してください。')); }
       };
       socket.onerror = () => {
-        clearTimeout(timer);
-        reject(new AppError('ローカルサービスに接続できません。アプリが起動していることを確認してください。'));
+        if (socketRef.current !== socket || !mountedRef.current) return;
+        if (!opened) fail(new AppError('ローカルサービスに接続できません。アプリが起動していることを確認してください。'));
+        else socket.close();
       };
       socket.onclose = () => {
-        clearTimeout(timer);
-        reject(new AppError('ローカルサービスとの接続が切断されました。'));
+        if (!opened) { fail(new AppError('ローカルサービスとの接続が切断されました。')); return; }
         if (socketRef.current !== socket || !mountedRef.current) return;
         socketRef.current = null;
+        sessionSocketRef.current = null;
         if (pendingRef.current) {
           clearTimeout(pendingRef.current.timer);
           pendingRef.current.reject(new AppError('接続が切断されました。会話を開始し直してください。'));
@@ -450,7 +477,6 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
           setState('connecting');
           queueMicrotask(() => { void reconnectRef.current?.().catch(() => {}); });
         } else {
-          ++lifecycleRef.current;
           activeRef.current = false; voiceRef.current = false;
           mutedRef.current = false; setMuted(false);
           setActive(false); setVoiceEnabled(false);
@@ -559,23 +585,35 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     const task = (async () => {
       const deadline = Date.now() + 90_000;
       let lastError: unknown;
-      for (let attempt = 0; attempt < 12 && Date.now() < deadline && current(); attempt++) {
+      for (let attempt = 0; attempt < 20 && Date.now() < deadline && current(); attempt++) {
         if (attempt) await new Promise<void>(resolve => {
           const timer = setTimeout(() => { reconnectWaitRef.current = null; resolve(); }, Math.min(500 * 2 ** (attempt - 1), 5000));
           reconnectWaitRef.current = { timer, resolve };
         });
         if (!current()) return;
+        if (Date.now() >= deadline) break;
         try {
           setState('connecting');
+          setErrorDetails(null);
           await connect();
           if (!current()) return;
           let voice = voiceRef.current;
           if (voice) {
             const audio = getAudio();
-            try { await audio.prepare(); await audio.startMicrophone(vadSilenceMs); }
-            catch { voice = false; audio.stopMicrophone(); setErrorDetails(describeError('マイクを使用できないため、テキストでの会話に切り替えました。ブラウザーのサイト設定でマイクを許可すると、音声での会話を再開できます。')); }
+            try {
+              await audio.prepare();
+              if (!current()) { audio.stopMicrophone(); return; }
+              await audio.startMicrophone(vadSilenceMs);
+              if (!current()) { audio.stopMicrophone(); return; }
+            }
+            catch {
+              audio.stopMicrophone();
+              if (!current()) return;
+              voice = false;
+              setErrorDetails(describeError('マイクを使用できないため、テキストでの会話に切り替えました。ブラウザーのサイト設定でマイクを許可すると、音声での会話を再開できます。'));
+            }
           }
-          if (!current()) { audioRef.current?.stopMicrophone(); return; }
+          if (!current()) return;
           await new Promise<void>((resolve, reject) => {
             const timer = setTimeout(() => {
               pendingRef.current = null;
@@ -585,7 +623,6 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
             try { send({ type: 'start', sessionId, resume: true, voice, credentials: credentialsRef.current }); }
             catch (cause) { clearTimeout(timer); pendingRef.current = null; reject(cause); }
           });
-          if (current()) setErrorDetails(null);
           return;
         } catch (cause) {
           if (!current()) return;
@@ -707,7 +744,6 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         await new Promise<void>((resolve, reject) => {
           const timer = setTimeout(() => {
             pendingRef.current = null;
-            socketRef.current?.close(1000, '接続がタイムアウトしました。');
             reject(new AppError('会話の開始がタイムアウトしました。サービス設定を確認して、もう一度お試しください。'));
           }, 20_000);
           pendingRef.current = { resolve, reject, timer };
@@ -718,7 +754,20 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
         if (mountedRef.current && generation === lifecycleRef.current) {
           setErrorDetails(describeError(caught instanceof Error ? caught : '会話を開始できませんでした。もう一度お試しください。'));
           setState(activeRef.current ? 'listening' : 'error');
-          if (!activeRef.current) releaseAudio();
+          if (activeRef.current && options.voice && !voiceRef.current) {
+            audioRef.current?.stopMicrophone();
+            resetSpeechInput(); vadStatusRef.current = 'idle'; setVadStatus('idle');
+            // Cancel an unacknowledged voice upgrade before a late ASR startup can enable it.
+            if (caught instanceof AppError && caught.errorCode === 'sessionStartTimeout' && socketRef.current?.readyState === WebSocket.OPEN) {
+              try { send({ type: 'voice.stop' }); } catch { /* Socket lifecycle handles disconnects. */ }
+            }
+          } else if (!activeRef.current) {
+            const socket = socketRef.current;
+            socketRef.current = null;
+            socket?.close(1000, 'Session start failed');
+            setConnected(false);
+            releaseAudio();
+          }
         }
         throw caught;
       }
@@ -729,8 +778,10 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   }, [connect, getAudio, reconnect, releaseAudio, resetAvatarEmotion, resetSpeechInput, send, stopSuggestionSpeech, vadSilenceMs]);
 
   const end = useCallback(async () => {
+    const awaitingResume = !!reconnectTaskRef.current && sessionSocketRef.current !== socketRef.current;
     ++lifecycleRef.current;
     endingRef.current = true;
+    connectingRef.current?.cancel();
     if (reconnectWaitRef.current) { clearTimeout(reconnectWaitRef.current.timer); reconnectWaitRef.current.resolve(); reconnectWaitRef.current = null; }
     resetAvatarEmotion();
     setReplySuggestions(null);
@@ -748,7 +799,15 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       activeRef.current = false; setActive(false);
       setErrorDetails(describeError('接続が切断されました。会話履歴は保存されています。会話の開始ボタンを押して接続し直してください。'));
     }
-    if (!activeRef.current) { setState('idle'); endingRef.current = false; }
+    // A resume attempt may have no server session yet, so end cannot receive an acknowledgement.
+    if (awaitingResume) { activeRef.current = false; setActive(false); }
+    if (!activeRef.current) {
+      const socket = socketRef.current;
+      socketRef.current = null;
+      socket?.close(1000, 'Session start cancelled');
+      setConnected(false);
+      setState('idle'); endingRef.current = false;
+    }
   }, [releaseAudio, rememberCancellation, resetAvatarEmotion, send]);
 
   const sendText = useCallback(async (text: string) => {
@@ -853,6 +912,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     return () => {
       mountedRef.current = false;
       ++lifecycle.current;
+      connectingRef.current?.cancel();
       if (reconnectWaitRef.current) { clearTimeout(reconnectWaitRef.current.timer); reconnectWaitRef.current.resolve(); reconnectWaitRef.current = null; }
       if (pendingRef.current) { clearTimeout(pendingRef.current.timer); pendingRef.current.reject(new AppError('ページを閉じました。')); pendingRef.current = null; }
       const socket = socketRef.current; socketRef.current = null;

@@ -9,7 +9,7 @@ class Socket extends EventEmitter {
   readyState = 1;
   bufferedAmount = 0;
   sent = [];
-  constructor() { super(); Socket.instances.push(this); queueMicrotask(() => this.emit('open')); }
+  constructor(url, options) { super(); this.options = options; Socket.instances.push(this); queueMicrotask(() => this.emit('open')); }
   send(raw, options, callback) {
     this.sent.push(Buffer.isBuffer(raw) ? raw : JSON.parse(raw));
     (typeof options === 'function' ? options : callback)?.();
@@ -104,4 +104,34 @@ test('ASR forwards refined begin times and tolerates sub-millisecond PCM endpoin
   assert.equal(events.at(-1).beginMs, 17);
   assert.equal(events.at(-1).endMs, 257);
   assert.equal(events.at(-1).final, true);
+});
+
+test('ASR initial failure closes its socket and recovery uses a fresh task', async t => {
+  const errors = [];
+  const first = new AsrClient({ onSpeechStarted() {}, onTranscript() {}, onError: error => errors.push(error) }, runtime);
+  t.after(() => first.close());
+  const rejected = assert.rejects(first.connect(1600), { errorCode: 'asrUnavailable' });
+  await setImmediate();
+  const socket = Socket.instances.at(-1);
+  socket.emit('error', new Error('private upstream failure'));
+  await rejected;
+  assert.equal(socket.readyState, 3);
+  assert.deepEqual(errors, [], 'initial errors reject connect without also emitting an active-stream error');
+  await assert.rejects(first.connect(1600), { errorCode: 'asrNotReusable' });
+  const recovered = await connect(t);
+  assert.notEqual(recovered.asr.streamId, first.streamId);
+  assert.notEqual(recovered.socket, socket);
+});
+
+test('ASR handshake and task-start timeout obey the remaining connection budget', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const asr = new AsrClient({ onSpeechStarted() {}, onTranscript() {}, onError() {} }, runtime);
+  t.after(() => asr.close());
+  const connected = asr.connect(1600, 3500).catch(error => error);
+  await setImmediate();
+  const socket = Socket.instances.at(-1);
+  assert.equal(socket.options.handshakeTimeout, 3500);
+  t.mock.timers.tick(3500);
+  assert.equal((await connected).errorCode, 'asrTimeout');
+  assert.equal(socket.readyState, 3);
 });

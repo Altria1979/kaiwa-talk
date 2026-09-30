@@ -380,7 +380,7 @@ export class RealtimeSession {
     } finally { this.starting = false; this.scheduleIdleTimeout(); }
   }
 
-  private async connectAsr(generation: number): Promise<void> {
+  private async connectAsr(generation: number, retry = true, deadline = Date.now() + 12_000): Promise<void> {
     const sessionId = this.session?.id;
     const runtime = this.providers?.runtime;
     if (!sessionId || !runtime) return;
@@ -431,7 +431,9 @@ export class RealtimeSession {
     }, runtime);
     this.asr = asr;
     try {
-      await asr.connect((await this.store.getSettings()).vadSilenceMs);
+      const settings = await this.store.getSettings();
+      if (!isActive()) { asr.close(); return; }
+      await asr.connect(settings.vadSilenceMs, Math.max(1, deadline - Date.now()));
       if (!isActive()) { asr.close(); return; }
       this.voice = true;
     } catch (error) {
@@ -439,7 +441,13 @@ export class RealtimeSession {
       if (!isActive()) return;
       this.clearSpeech();
       this.asr = null;
-      this.error('asr', providerError(error, '音声認識を有効にできなかったため、テキストチャットに切り替えました。'));
+      const failure = providerError(error, '音声認識を有効にできなかったため、テキストチャットに切り替えました。');
+      // Only a startup transport failure can retry; both streams share one deadline.
+      if (retry && failure.errorCode === 'asrUnavailable' && deadline - Date.now() >= 1000) {
+        await this.connectAsr(generation, false, deadline);
+        return;
+      }
+      this.error('asr', failure);
     }
   }
 

@@ -330,9 +330,9 @@ wss.on('connection', (socket, browserId: string) => {
   let since = Date.now();
   let alive = true;
   const heartbeat = setInterval(() => {
-    if (!alive) { socket.terminate(); return; }
+    if (!alive) { void session.dispose().catch(() => {}); socket.terminate(); return; }
     alive = false; socket.ping();
-  }, 30_000);
+  }, 10_000);
   socket.on('pong', () => { alive = true; });
   socket.on('message', (data, binary) => {
     if (Date.now() - since > 1000) { since = Date.now(); count = 0; }

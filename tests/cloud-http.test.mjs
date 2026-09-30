@@ -11,6 +11,7 @@ const id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 let handler, server, wss;
 let upgrades = 0, reads = 0;
 const boundOwners = [];
+const realtimeSessions = [];
 const settings = new Map();
 mock.module('node:http', { exports: { createServer(fn) { handler = fn; server = new EventEmitter(); server.listen = () => server; return server; } } });
 mock.module('ws', { exports: {
@@ -24,7 +25,15 @@ mock.module('ws', { exports: {
     }
     handleUpgrade(req, transport, head, callback) {
       upgrades++;
-      const ws = Object.assign(new EventEmitter(), { ping() {}, terminate() { this.emit('close'); } });
+      const ws = Object.assign(new EventEmitter(), {
+        pings: 0, terminations: 0,
+        ping() { this.pings++; },
+        terminate() {
+          this.terminations++;
+          this.disposedBeforeTermination = realtimeSessions.find(session => session.socket === this)?.disposed;
+          this.emit('close');
+        },
+      });
       this.clients.add(ws); ws.once('close', () => this.clients.delete(ws)); callback(ws);
     }
   },
@@ -44,8 +53,8 @@ mock.module('../server/storage.ts', { exports: { store: { forOwner(owner) { retu
   async listSessions() { throw new Error('private-database-token'); },
 }; } } } });
 mock.module('../server/session.ts', { exports: { RealtimeSession: class {
-  constructor(socket, store) { boundOwners.push(store.owner); }
-  async dispose() {}
+  constructor(socket, store) { this.socket = socket; this.disposed = false; realtimeSessions.push(this); boundOwners.push(store.owner); }
+  async dispose() { this.disposed = true; }
 } } });
 mock.module('../server/avatars.ts', { exports: {
   AvatarError: class extends Error {}, prepareAvatarUpload() {}, completeAvatarUpload() {}, saveLocalAvatar() {}, readAvatar() {},
@@ -114,4 +123,40 @@ test('bootstrap, writes and sockets reject foreign origins; sockets bind separat
   assert.equal(upgrades, 4);
   upgrade({ origin, cookie: cookie(b) }); assert.equal(upgrades, 5);
   assert.deepEqual(boundOwners, [a, a, a, a, b]);
+});
+
+test('healthy sockets answer each ten-second heartbeat without losing their session', t => {
+  for (const ws of wss.clients) ws.emit('close');
+  t.mock.timers.enable({ apis: ['setInterval'] });
+  server.emit('upgrade', { url: '/ws', headers: { origin, cookie: cookie() } }, { write() {}, destroy() {} }, Buffer.alloc(0));
+  const ws = [...wss.clients].at(-1);
+  t.after(() => ws.emit('close'));
+  t.mock.timers.tick(9999);
+  assert.equal(ws.pings, 0);
+  t.mock.timers.tick(1);
+  assert.equal(ws.pings, 1);
+  for (let beat = 2; beat <= 4; beat++) {
+    ws.emit('pong');
+    t.mock.timers.tick(10_000);
+    assert.equal(ws.pings, beat);
+    assert.equal(ws.terminations, 0);
+  }
+  assert.equal(realtimeSessions.find(session => session.socket === ws).disposed, false);
+});
+
+test('a missing heartbeat disposes ownership before terminating the stale socket', t => {
+  for (const ws of wss.clients) ws.emit('close');
+  t.mock.timers.enable({ apis: ['setInterval'] });
+  server.emit('upgrade', { url: '/ws', headers: { origin, cookie: cookie() } }, { write() {}, destroy() {} }, Buffer.alloc(0));
+  const ws = [...wss.clients].at(-1);
+  t.after(() => ws.emit('close'));
+  t.mock.timers.tick(10_000);
+  assert.equal(ws.pings, 1);
+  assert.equal(ws.terminations, 0);
+  t.mock.timers.tick(10_000);
+  assert.equal(ws.terminations, 1);
+  assert.equal(ws.disposedBeforeTermination, true);
+  assert.equal(wss.clients.has(ws), false);
+  t.mock.timers.tick(30_000);
+  assert.equal(ws.terminations, 1);
 });

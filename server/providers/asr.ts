@@ -33,17 +33,18 @@ export class AsrClient {
 
   get time(): number { return this.sentSamples / 16; }
 
-  async connect(silenceMs: number): Promise<void> {
+  async connect(silenceMs: number, timeoutMs = 12_000): Promise<void> {
     if (this.socket || this.stopped) throw new ProviderError('音声認識の接続は再利用できません。再接続してください。');
     if (!this.runtime.asrUrl || !this.runtime.apiKey) throw new ProviderError('音声認識が設定されていません。Bailian API キーと接続先ドメインを確認してください。');
+    const connectionTimeout = Number.isFinite(timeoutMs) ? Math.max(1, Math.min(12_000, Math.round(timeoutMs))) : 12_000;
     const socket = new WebSocket(this.runtime.asrUrl, {
       headers: { Authorization: `Bearer ${this.runtime.apiKey}` },
-      handshakeTimeout: 10_000,
+      handshakeTimeout: Math.min(10_000, connectionTimeout),
       maxPayload: 1024 * 1024,
     });
     this.socket = socket;
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => fail(new ProviderError('音声認識の接続がタイムアウトしました。テキストで会話を続けられます。')), 12_000);
+      const timer = setTimeout(() => fail(new ProviderError('音声認識の接続がタイムアウトしました。テキストで会話を続けられます。')), connectionTimeout);
       const fail = (error: ProviderError) => {
         clearTimeout(timer);
         this.connectReject = undefined;
