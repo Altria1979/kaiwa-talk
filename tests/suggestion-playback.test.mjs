@@ -70,6 +70,7 @@ class FakeAudio {
   sentence = null;
   registrations = [];
   pushes = [];
+  operations = [];
   replays = [];
   completed = new Set();
   disposed = false;
@@ -86,8 +87,11 @@ class FakeAudio {
     this.busy = value;
     this.callbacks.onBusy(value);
   }
-  beginTurn(turnId) { this.cancelTurn(); this.currentTurn = turnId; }
-  registerSentence(turnId, sentenceId, text) { this.registrations.push({ turnId, sentenceId, text }); }
+  beginTurn(turnId) { this.cancelTurn(); this.currentTurn = turnId; this.operations.push({ type: 'begin', turnId }); }
+  registerSentence(turnId, sentenceId, text) {
+    this.registrations.push({ turnId, sentenceId, text });
+    this.operations.push({ type: 'sentence', turnId, sentenceId, text });
+  }
   caption(status = 'playing') {
     const sentence = this.registrations.findLast(item => item.turnId === this.currentTurn && item.sentenceId === this.sentence);
     if (sentence) this.callbacks.onCaption?.({ ...sentence, visibleCharacters: status === 'ended' ? Array.from(sentence.text).length : 1, status });
@@ -96,11 +100,15 @@ class FakeAudio {
     if (turnId !== this.currentTurn) return;
     assert.ok(this.registrations.some(item => item.turnId === turnId && item.sentenceId === sentenceId), 'register sentence text before its first audio');
     this.pushes.push({ turnId, sentenceId, audio });
+    this.operations.push({ type: 'audio', turnId, sentenceId, audio });
     this.sentence = sentenceId;
     this.caption();
     this.setBusy(true);
   }
-  finishSentence(turnId) { this.completed.add(turnId); }
+  finishSentence(turnId, sentenceId, text) {
+    this.completed.add(turnId);
+    this.operations.push({ type: 'end', turnId, sentenceId, text });
+  }
   complete() {
     if (this.currentTurn && this.sentence) this.callbacks.onPlayed(this.currentTurn, this.sentence);
     this.caption('ended');
@@ -226,6 +234,229 @@ test('listening to a suggested reply prepares playback without microphone access
   assert.equal(current().playbackCaption.text, suggestions[1].text);
   assert.deepEqual(current().messages, before);
   assert.equal(socket.sent.some(event => event.type === 'text' || event.type === 'played'), false);
+});
+
+function beginSuggestedReply(receive, index = 0) {
+  receive({ type: 'message', message: { ...assistant, id: 'sent-user', turnId: 'sent-user-turn', role: 'user', content: suggestions[index].text } });
+  const message = { ...assistant, id: 'following-assistant', turnId: 'following-reply', content: '', replySuggestions: undefined };
+  receive({ type: 'reply.start', turnId: message.turnId, message });
+  return message;
+}
+
+function replyAudio(receive, message, sentenceId = 'answer', text = '読書は楽しいですね。', audio = 'AgADAA==') {
+  receive({ type: 'audio.sentence', turnId: message.turnId, sentenceId, text });
+  receive({ type: 'audio', turnId: message.turnId, sentenceId, audio, sampleRate: 24000 });
+  receive({ type: 'audio.end', turnId: message.turnId, sentenceId, text });
+}
+
+test('sending a suggestion submits its text immediately once and starts its example without microphone access', async t => {
+  const { current, socket } = await conversation(t);
+  const response = deferred();
+  respond = () => response.promise;
+  const sent = current().sendSuggestion(assistant.id, 1);
+  assert.deepEqual(socket.sent.filter(event => event.type === 'text'), [{ type: 'text', text: suggestions[1].text }], 'submission must not wait for audio synthesis');
+  await nextTick();
+  assert.deepEqual(current().suggestionSpeech, { messageId: assistant.id, index: 1, status: 'loading' });
+  await current().sendSuggestion(assistant.id, 1);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].index, 1);
+  assert.equal(requests[0].messageId, assistant.id);
+  assert.equal(requests[0].signal.aborted, false, 'a duplicate send must leave the original example alive');
+  response.resolve(pcm);
+  await sent;
+  const audio = FakeAudio.latest;
+  assert.equal(audio.microphoneStarts, 0);
+  assert.equal(current().voiceEnabled, false);
+  assert.ok(audio.prepared > 0);
+  assert.equal(current().suggestionSpeech.status, 'playing');
+  assert.equal(current().playbackCaption.text, suggestions[1].text);
+  await current().sendSuggestion(assistant.id, 1);
+  assert.equal(audio.busy, true);
+  assert.equal(audio.pushes.length, 1);
+  assert.equal(socket.sent.filter(event => event.type === 'text').length, 1);
+  assert.equal(requests.length, 1);
+  audio.complete();
+  await nextTick();
+  assert.equal(current().suggestionSpeech, null);
+  assert.equal(socket.sent.some(event => event.type === 'played'), false, 'example playback must not acknowledge an AI sentence');
+});
+
+test('sent examples survive their user echo while AI text streams and ordered reply audio waits for completion', async t => {
+  const { current, socket, receive } = await conversation(t, { voice: true });
+  const response = deferred();
+  respond = () => response.promise;
+  const sent = current().sendSuggestion(assistant.id, 0);
+  await nextTick();
+  const message = beginSuggestedReply(receive);
+  const audio = FakeAudio.latest;
+  assert.equal(audio.muted, true);
+  assert.deepEqual(current().suggestionSpeech, { messageId: assistant.id, index: 0, status: 'loading' });
+  assert.equal(requests[0].signal.aborted, false);
+  const text = '読書は楽しいですね。どんな本ですか？';
+  receive({ type: 'reply.delta', turnId: message.turnId, delta: text });
+  assert.equal(current().messages.find(item => item.id === message.id).content, text, 'AI text stays readable while the example is loading');
+  receive({ type: 'reply.done', turnId: message.turnId, message: { ...message, content: text } });
+  receive({ type: 'state', state: 'speaking' });
+  const first = '読書は楽しいですね。';
+  const second = 'どんな本ですか？';
+  receive({ type: 'audio.sentence', turnId: message.turnId, sentenceId: 'first', text: first });
+  receive({ type: 'audio', turnId: message.turnId, sentenceId: 'first', audio: 'AgADAA==', sampleRate: 24000 });
+  receive({ type: 'audio', turnId: message.turnId, sentenceId: 'first', audio: 'BAAFAA==', sampleRate: 24000 });
+  receive({ type: 'audio.end', turnId: message.turnId, sentenceId: 'first', text: first });
+  replyAudio(receive, message, 'second', second, 'BgAHAA==');
+  receive({ type: 'turn.done', turnId: message.turnId });
+  assert.deepEqual(audio.operations.filter(event => event.turnId === message.turnId), [], 'sentence metadata and PCM both wait for the example');
+  response.resolve(pcm);
+  await sent;
+  assert.equal(current().suggestionSpeech.status, 'playing');
+  assert.equal(audio.pushes.length, 1);
+  assert.equal(current().playbackCaption.text, suggestions[0].text);
+  replyAudio(receive, assistant, 'stale', '古い返信', 'CAAJAA==');
+  assert.equal(audio.pushes.length, 1, 'late audio from the cancelled original turn is ignored');
+  audio.complete();
+  await nextTick();
+  assert.equal(current().suggestionSpeech, null);
+  assert.equal(audio.muted, false);
+  assert.equal(audio.currentTurn, message.turnId);
+  assert.deepEqual(audio.operations.filter(event => event.turnId === message.turnId), [
+    { type: 'begin', turnId: message.turnId },
+    { type: 'sentence', turnId: message.turnId, sentenceId: 'first', text: first },
+    { type: 'audio', turnId: message.turnId, sentenceId: 'first', audio: 'AgADAA==' },
+    { type: 'audio', turnId: message.turnId, sentenceId: 'first', audio: 'BAAFAA==' },
+    { type: 'end', turnId: message.turnId, sentenceId: 'first', text: first },
+    { type: 'sentence', turnId: message.turnId, sentenceId: 'second', text: second },
+    { type: 'audio', turnId: message.turnId, sentenceId: 'second', audio: 'BgAHAA==' },
+    { type: 'end', turnId: message.turnId, sentenceId: 'second', text: second },
+  ]);
+  assert.equal(socket.sent.some(event => event.type === 'played'), false);
+  assert.equal(current().playbackCaption.text, second);
+  assert.equal(current().state, 'speaking');
+  audio.callbacks.onPlayed(message.turnId, 'first');
+  audio.complete();
+  assert.deepEqual(socket.sent.filter(event => event.type === 'played'), [
+    { type: 'played', turnId: message.turnId, sentenceId: 'first' },
+    { type: 'played', turnId: message.turnId, sentenceId: 'second' },
+  ]);
+});
+
+test('sending a newly available suggestion replaces the earlier sent sample and discards its queued reply', async t => {
+  const { current, socket, receive } = await conversation(t, { voice: true });
+  await current().sendSuggestion(assistant.id, 0);
+  const audio = FakeAudio.latest;
+  const firstSample = audio.currentTurn;
+  const firstRequest = requests[0];
+  const message = beginSuggestedReply(receive);
+  replyAudio(receive, message, 'obsolete');
+  const nextSuggestions = [{ ...suggestions[0], text: '最近は小説を読みます。' }];
+  receive({ type: 'reply.suggestions', turnId: message.turnId, messageId: message.id, status: 'ready', suggestions: nextSuggestions });
+  await current().sendSuggestion(message.id, 0);
+  assert.deepEqual(socket.sent.filter(event => event.type === 'text'), [
+    { type: 'text', text: suggestions[0].text },
+    { type: 'text', text: nextSuggestions[0].text },
+  ]);
+  assert.equal(firstRequest.signal.aborted, true);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].messageId, message.id);
+  assert.notEqual(audio.currentTurn, firstSample);
+  assert.equal(current().playbackCaption.text, nextSuggestions[0].text);
+  assert.deepEqual(current().suggestionSpeech, { messageId: message.id, index: 0, status: 'playing' });
+  replyAudio(receive, message, 'late-obsolete');
+  audio.complete();
+  await nextTick();
+  assert.deepEqual(audio.operations.filter(event => event.turnId === message.turnId), []);
+  assert.equal(audio.pushes.length, 2, 'only the two selected examples reach playback');
+  assert.equal(socket.sent.some(event => event.type === 'played'), false);
+});
+
+test('a sent example synthesis failure still sends once and resumes queued and future AI audio', async t => {
+  const { current, socket, receive } = await conversation(t, { voice: true });
+  const response = deferred();
+  respond = () => response.promise;
+  const sent = current().sendSuggestion(assistant.id, 0);
+  await nextTick();
+  const audio = FakeAudio.latest;
+  const message = beginSuggestedReply(receive);
+  const text = '読書は楽しいですね。';
+  receive({ type: 'reply.delta', turnId: message.turnId, delta: text });
+  replyAudio(receive, message, 'queued', text);
+  assert.equal(audio.pushes.length, 0);
+  response.reject(new Error('音声の生成に失敗しました'));
+  await sent;
+  assert.equal(current().suggestionSpeech, null);
+  assert.match(current().error, /音声の生成に失敗/);
+  assert.equal(audio.muted, false);
+  assert.equal(audio.currentTurn, message.turnId);
+  assert.equal(current().messages.find(item => item.id === message.id).content, text);
+  assert.deepEqual(audio.pushes, [{ turnId: message.turnId, sentenceId: 'queued', audio: 'AgADAA==' }]);
+  replyAudio(receive, message, 'future', 'どんな本ですか？', 'BAAFAA==');
+  assert.deepEqual(audio.pushes.at(-1), { turnId: message.turnId, sentenceId: 'future', audio: 'BAAFAA==' });
+  assert.equal(socket.sent.filter(event => event.type === 'text').length, 1);
+  assert.equal(requests.length, 1);
+  audio.complete();
+  assert.deepEqual(socket.sent.filter(event => event.type === 'played'), [{ type: 'played', turnId: message.turnId, sentenceId: 'future' }]);
+});
+
+test('explicit lifecycle changes discard a sent example and its buffered old reply audio', async t => {
+  for (const phase of ['loading', 'playing']) {
+    for (const scenario of ['cancel', 'typed send', 'end', 'server end', 'disconnect']) {
+      await t.test(`${scenario} during ${phase}`, async t => {
+        const { current, receive, socket } = await conversation(t);
+        const response = deferred();
+        respond = () => response.promise;
+        const sent = current().sendSuggestion(assistant.id, 0);
+        await nextTick();
+        const audio = FakeAudio.latest;
+        if (phase === 'playing') { response.resolve(pcm); await sent; }
+        const message = beginSuggestedReply(receive);
+        replyAudio(receive, message, 'queued');
+        switch (scenario) {
+          case 'cancel': current().cancel(); break;
+          case 'typed send': await current().sendText('別の話をしましょう。'); break;
+          case 'end': await current().end(); break;
+          case 'server end': receive({ type: 'session.ended', session: { ...session, endedAt: 'now' } }); break;
+          case 'disconnect': socket.close(); break;
+        }
+        assert.equal(requests[0].signal.aborted, true);
+        assert.equal(current().suggestionSpeech, null);
+        response.resolve(pcm);
+        await sent;
+        await nextTick();
+        replyAudio(receive, message, 'late');
+        audio.callbacks.onPlayed(message.turnId, 'queued');
+        assert.deepEqual(audio.operations.filter(event => event.turnId === message.turnId), [], 'neither buffered nor late audio may reach the cancelled reply');
+        assert.equal(audio.pushes.length, phase === 'playing' ? 1 : 0);
+        assert.equal(audio.busy, false);
+        assert.equal(socket.sent.filter(event => event.type === 'text' && event.text === suggestions[0].text).length, 1);
+        assert.equal(socket.sent.some(event => event.type === 'played'), false);
+      });
+    }
+  }
+});
+
+test('sending a previously heard suggestion reuses its sample and restores the microphone preference', async t => {
+  for (const muted of [false, true]) await t.test(`initial muted=${muted}`, async t => {
+    const { current, socket, receive } = await conversation(t, { voice: true, muted });
+    await current().listenSuggestion(assistant.id, 0);
+    const audio = FakeAudio.latest;
+    const sampleTurn = audio.currentTurn;
+    audio.complete();
+    await nextTick();
+    await current().sendSuggestion(assistant.id, 0);
+    assert.equal(requests.length, 1, 'sending reuses the completed demonstration');
+    assert.equal(audio.pushes.length, 1);
+    assert.deepEqual(audio.replays, [{ turnId: sampleTurn, slow: false }]);
+    assert.equal(audio.microphoneStarts, 1);
+    assert.equal(audio.muted, true);
+    assert.equal(current().muted, muted);
+    beginSuggestedReply(receive);
+    audio.complete();
+    await nextTick();
+    assert.equal(audio.muted, muted);
+    assert.equal(current().muted, muted);
+    assert.equal(current().suggestionSpeech, null);
+    assert.deepEqual(socket.sent.filter(event => event.type === 'text'), [{ type: 'text', text: suggestions[0].text }]);
+    assert.equal(socket.sent.some(event => event.type === 'played'), false);
+  });
 });
 
 test('read-aloud suggestions survive recognition until the user message is committed', async t => {

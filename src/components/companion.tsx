@@ -187,7 +187,16 @@ export function Companion() {
         busy={busy}
         speech={conversation.suggestionSpeech}
         onListen={(index) => conversation.listenSuggestion(message.id, index)}
-        onSend={sendText}
+        onSend={async (index) => {
+          if (busy || !ready) return;
+          await perform(async () => {
+            const sending = conversation.sendSuggestion(message.id, index);
+            scrollToLatest();
+            setInput('');
+            composer.current?.focus();
+            await sending;
+          });
+        }}
       /> : savedSuggestions && <ReplySuggestions
         key={message.id}
         readOnly

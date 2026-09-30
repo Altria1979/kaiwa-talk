@@ -17,7 +17,7 @@ type Props = BaseProps & ({ readOnly: true } | {
   busy: boolean;
   speech: SuggestionSpeech | null;
   onListen: (index: number) => Promise<void>;
-  onSend: (text: string) => Promise<void>;
+  onSend: (index: number) => Promise<void>;
 });
 
 export function ReplySuggestions(props: Props) {
@@ -52,7 +52,7 @@ export function ReplySuggestions(props: Props) {
               </div>
               {!props.readOnly && <div className="reply-option-actions">
                 <button type="button" className="suggestion-listen" disabled={props.busy} aria-pressed={!!playback} aria-label={t(playback === 'loading' ? 'controls.cancelSample' : playback ? 'controls.stopSample' : 'controls.listenSampleLabel', { text: suggestion.text })} onClick={() => void props.onListen(index)}><Icon name={playback ? 'pause' : 'volume'} size={14} />{t(playback === 'loading' ? 'controls.preparing' : playback ? 'controls.stop' : 'controls.listenSample')}</button>
-                <button type="button" disabled={props.busy} aria-label={t('controls.sendReplyLabel', { text: suggestion.text })} onClick={() => void props.onSend(suggestion.text)}><Icon name="send" size={13} />{t('controls.send')}</button>
+                <button type="button" disabled={props.busy} aria-label={t('controls.sendReplyLabel', { text: suggestion.text })} onClick={() => void props.onSend(index)}><Icon name="send" size={13} />{t('controls.send')}</button>
               </div>}
             </div>
           </li>;

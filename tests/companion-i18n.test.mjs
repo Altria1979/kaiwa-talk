@@ -299,12 +299,14 @@ test('a failed topic startup preserves the draft and allows a successful retry w
   }
 });
 
-test('ordinary text and reply suggestions send without enabling voice', async () => {
+test('ordinary text sends normally and selected replies use automatic reading without enabling the microphone', async () => {
   const originalConversation = { ...conversation };
   const started = [];
+  const suggested = [];
   sent = [];
   conversation.voiceEnabled = false;
   conversation.start = async options => { started.push(options); };
+  conversation.sendSuggestion = async (messageId, index) => { suggested.push({ messageId, index }); };
   conversation.canReplay = () => false;
   try {
     const render = harness(Companion);
@@ -316,8 +318,9 @@ test('ordinary text and reply suggestions send without enabling voice', async ()
     conversation.messages = [{ id: 'reply', turnId: 'turn', role: 'assistant', content: '元気ですか？' }];
     conversation.replySuggestions = { type: 'reply.suggestions', messageId: 'reply', turnId: 'turn', status: 'ready', suggestions: [suggestion] };
     const recommendations = find(render(), node => node.props.value?.messageId === 'reply');
-    await recommendations.props.onSend(suggestion.text);
-    assert.deepEqual(sent, ['A typed message', suggestion.text]);
+    await recommendations.props.onSend(0);
+    assert.deepEqual(suggested, [{ messageId: 'reply', index: 0 }]);
+    assert.deepEqual(sent, ['A typed message']);
     assert.deepEqual(started, []);
   } finally {
     Object.assign(conversation, originalConversation);
