@@ -5,12 +5,10 @@ import { DEFAULT_READING_PREFERENCES, loadReadingPreferences, saveReadingPrefere
 
 export interface ReadingPreferencesControls extends ReadingPreferences {
   setShowKana: (value: boolean) => void;
-  setShowRomaji: (value: boolean) => void;
 }
 
 export function useReadingPreferences(): ReadingPreferencesControls {
   const [preferences, setPreferences] = useState(DEFAULT_READING_PREFERENCES);
-  const current = useRef(DEFAULT_READING_PREFERENCES);
   const restored = useRef(false);
 
   useEffect(() => {
@@ -18,24 +16,21 @@ export function useReadingPreferences(): ReadingPreferencesControls {
     // Match the server render, then restore the browser's saved choices.
     queueMicrotask(() => {
       if (disposed || restored.current) return;
-      current.current = loadReadingPreferences();
       restored.current = true;
-      setPreferences(current.current);
+      setPreferences(loadReadingPreferences());
     });
     return () => { disposed = true; };
   }, []);
 
-  const updatePreference = (key: keyof ReadingPreferences, value: boolean) => {
-    const previous = restored.current ? current.current : loadReadingPreferences();
+  const setShowKana = (value: boolean) => {
+    const next = { showKana: value };
     restored.current = true;
-    current.current = { ...previous, [key]: value };
-    setPreferences(current.current);
-    saveReadingPreferences(current.current);
+    setPreferences(next);
+    saveReadingPreferences(next);
   };
 
   return {
     ...preferences,
-    setShowKana: value => updatePreference('showKana', value),
-    setShowRomaji: value => updatePreference('showRomaji', value),
+    setShowKana,
   };
 }

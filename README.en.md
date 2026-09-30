@@ -19,7 +19,7 @@ No registration or website password is required. Bring your own Alibaba Cloud Mo
 | Feature | What you can do |
 | --- | --- |
 | Voice and text practice | Speak Japanese, or start a conversation and ask questions through text. Stop replies, mute the microphone, and turn voice back on |
-| Help with replies | View 2 suggested responses with Simplified Chinese translations and kana or romaji hints. Choose “Read aloud” to practise, send a suggestion directly, or listen to a sample on demand |
+| Help with replies | View 2 suggested responses with kana and Simplified Chinese translations on the same supporting line. Listen to a sample or send a suggestion directly |
 | Replay and slow playback | Listen again to complete sentences already synthesised in the current conversation, or play them at 0.8× speed while preserving pitch |
 | Japanese explanations and recaps | Request a brief Japanese explanation. After a conversation, receive a topic summary, three useful expressions, and one suggestion for improvement |
 | 3D companion | Mouth movements, expressions, and captions alongside speech; actions such as waving, nodding, and bowing; and interactions by clicking the head, body, or hands |
@@ -28,7 +28,7 @@ No registration or website password is required. Bring your own Alibaba Cloud Mo
 | Browser isolation | Keep history, memories, character settings, and uploaded avatars separate for each browser, with access retained after refreshing the same browser |
 | Three interface languages | Switch instantly between 日本語, 简体中文, and English. Existing conversations and learning content are not translated or rewritten when you switch |
 
-Voice input is primarily intended for Japanese. Use text to ask for help in Chinese or practise other languages. Explanations, meanings in suggested replies, and learning recaps are currently in Japanese. AI output may contain mistakes; this project does not score pronunciation or certify exam proficiency.
+Voice input is primarily intended for Japanese. Use text to ask for help in Chinese or practise other languages. Suggested replies have Simplified Chinese translations; additional explanations and learning recaps are in Japanese. AI output may contain mistakes; this project does not score pronunciation or certify exam proficiency.
 
 ## 2. How to use it
 
@@ -48,7 +48,7 @@ Your API key is stored only in the current browser's localStorage. When making a
 1. Click “Start conversation” and allow microphone access, or begin by typing. Text chat remains available if you deny microphone access.
 2. Start with a simple topic, such as 「こんにちは」, 「自己紹介をしたいです」, or ordering at a café.
 3. Pause briefly when you finish speaking. By default, the app waits **1.6 seconds** before submitting your utterance; you can adjust this in settings. Recognised speech, your companion's response, and playback status appear on the page.
-4. If you are unsure how to respond, open the suggested replies to see the Japanese text, reading hints, and Japanese meanings. “Read aloud” enables the microphone or unmutes it; it does not automatically send the sentence for you.
+4. If you are unsure how to respond, consult the Japanese suggestions with kana and Chinese translations on the same supporting line. Choose “Listen to sample” to hear the sentence or “Send” to reply directly. You can toggle kana in settings.
 5. Use “Listen again” or “Listen slowly” to hear a response again, or request a Japanese explanation. To interrupt generation and playback immediately, click “Stop current reply”.
 6. Click “End conversation” to release the microphone and wait for the learning recap. Choose “Export audio” under “This conversation’s audio” to save your voice and the companion audio actually played, including replays and examples. Only memory suggestions you explicitly save will be used in future conversations.
 

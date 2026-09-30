@@ -4,16 +4,16 @@ import { DEFAULT_SETTINGS } from '../shared/protocol.ts';
 import { parseReplySuggestions, replySuggestionPrompt } from '../server/reply-suggestions.ts';
 
 const suggestions = [
-  { text: '本を読みます。', reading: 'ほんを よみます。', meaning: '我会看书。', romaji: 'Hon o yomimasu.' },
-  { text: '音楽を聴きます。', reading: 'おんがくを ききます。', meaning: '我会听音乐。', romaji: 'Ongaku o kikimasu.' },
+  { text: '本を読みます。', reading: 'ほんを よみます。', meaning: '我会看书。' },
+  { text: '音楽を聴きます。', reading: 'おんがくを ききます。', meaning: '我会听音乐。' },
 ];
+const legacySuggestions = suggestions.map((suggestion, index) => ({ ...suggestion, romaji: ['Hon o yomimasu.', 'Ongaku o kikimasu.'][index] }));
 const parse = items => parseReplySuggestions(JSON.stringify({ suggestions: items }));
 
-test('accepts new romaji and legacy suggestions without adding an absent field', () => {
+test('accepts three-field suggestions and optional romaji from legacy responses', () => {
   assert.deepEqual(parse(suggestions), suggestions);
-  const legacy = suggestions.map(({ text, reading, meaning }) => ({ text, reading, meaning }));
-  assert.deepEqual(parse(legacy), legacy);
-  assert.deepEqual(parse([suggestions[0], legacy[1]]), [suggestions[0], legacy[1]]);
+  assert.deepEqual(parse(legacySuggestions), legacySuggestions);
+  assert.deepEqual(parse([suggestions[0], legacySuggestions[1]]), [suggestions[0], legacySuggestions[1]]);
 });
 
 test('preserves bounded Hepburn macrons, apostrophes and digits while trimming surrounding spaces', () => {
@@ -52,21 +52,21 @@ test('requests exactly two distinct replies with Chinese translations regardless
   }
 });
 
-test('asks Japanese suggestions for contextual Hepburn with particles and four fields', () => {
+test('asks Japanese suggestions for kana and a three-field schema without romaji', () => {
   for (const learningLanguage of ['日本語', '日语', 'Japanese', 'ja']) {
     const [system, user] = replySuggestionPrompt({ ...DEFAULT_SETTINGS, learningLanguage }, [], '次は何をしますか？');
-    assert.match(system.content, /Hepburn/);
-    assert.match(system.content, /は→wa、へ→e、を→o/);
-    assert.match(system.content, /按词加空格/);
-    assert.match(system.content, /这四个非空字符串字段/);
+    assert.match(system.content, /完整假名读音/);
+    assert.match(system.content, /平假名或片假名/);
+    assert.match(system.content, /这三个非空字符串字段/);
+    assert.doesNotMatch(system.content, /romaji|Hepburn|罗马音|这四个非空字符串字段/);
     assert.equal(JSON.parse(user.content).latestCompanionReply, '次は何をしますか？');
   }
 });
 
-test('keeps non-Japanese suggestions on the original schema without romaji', () => {
+test('keeps non-Japanese suggestions on the same three-field schema', () => {
   const [system] = replySuggestionPrompt({ ...DEFAULT_SETTINGS, learningLanguage: '英語' }, [], 'What are you doing?');
-  assert.match(system.content, /非日语学习不要输出 romaji 字段/);
+  assert.match(system.content, /常见发音辅助/);
   assert.match(system.content, /这三个非空字符串字段/);
   assert.match(system.content, /自然、准确的简体中文翻译/);
-  assert.doesNotMatch(system.content, /"romaji":/);
+  assert.doesNotMatch(system.content, /romaji|Hepburn|这四个非空字符串字段/);
 });

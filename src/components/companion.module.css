@@ -143,25 +143,22 @@
 .shell :global(.reply-options) { list-style: none; margin: 0; padding: 0; }
 .shell :global(.reply-option) { display: flex; gap: 8px; padding: 10px 0; }
 .shell :global(.reply-option + .reply-option) { border-top: 1px solid #d3cec470; }
-.shell :global(.reply-option.is-selected) { background: linear-gradient(90deg, #e9eee280, transparent); }
-.shell :global(.reply-option.is-selected .reply-option-number) { color: var(--success); box-shadow: inset 2px 0 var(--success); }
 .shell :global(.reply-option-number) { flex-shrink: 0; width: 16px; padding-left: 3px; margin-top: 5px; color: var(--subtle); font: 12px/1.5 Georgia, serif; }
 .shell :global(.reply-option-body) { min-width: 0; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; overflow-wrap: anywhere; }
 .shell :global(.reply-option-copy) { grid-column: 1; min-width: 0; }
 .shell :global(.reply-option-text) { grid-column: 1; margin: 0; font: 16px/1.7 var(--font-japanese); color: var(--ink); }
-.shell :global(.reply-option-romaji),
-.shell :global(.reply-option-reading) { grid-column: 1; margin: 2px 0 0; font-size: 11px; line-height: 1.8; color: var(--subtle); }
-.shell :global(.reply-option-romaji) { color: var(--accent); }
-.shell :global(.reply-option-romaji > span),
+.shell :global(.reply-option-details) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 3px; }
+.shell :global(.reply-option-reading) { margin: 0; font-size: 11px; line-height: 1.8; color: var(--subtle); }
 .shell :global(.reply-option-reading > span) { margin-right: 7px; font-size: 11px; color: var(--muted); }
-.shell :global(.reply-option-meaning) { grid-column: 1; grid-row: 2; margin: 4px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); }
-.shell :global(.reply-option-actions) { grid-column: 2; grid-row: 1 / 3; align-self: center; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0 10px; max-width: 190px; }
+.shell :global(.reply-option-meaning) { margin: 0; font-size: 12px; line-height: 1.8; color: var(--muted); }
+.shell :global(.reply-option-reading + .reply-option-meaning) { padding-left: 12px; border-left: 1px solid var(--line); }
+.shell :global(.reply-option-actions) { grid-column: 2; grid-row: 1; align-self: center; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0 10px; max-width: 190px; }
 .shell :global(.reply-option-actions button) { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 3px 2px; border: 0; background: none; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .shell :global(.reply-option-actions button:last-child) { color: var(--success); }
 .shell :global(.reply-option-actions .suggestion-listen) { color: var(--accent); }
 .shell :global(.reply-option-actions .suggestion-listen[aria-pressed="true"]) { text-decoration: underline; text-underline-offset: 4px; }
 .shell :global(.reply-option-actions button:hover:not(:disabled)) { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
-.shell :global(.reply-practice-hint) { margin: 8px 0 0; color: var(--subtle); font-size: 10px; line-height: 1.8; }
+.shell :global(.reply-sample-hint) { margin: 8px 0 0; color: var(--subtle); font-size: 10px; line-height: 1.8; }
 .shell :global(.reply-suggestions-status) { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 11px; line-height: 1.8; color: var(--muted); }
 .shell :global(.reply-suggestions-status svg) { flex-shrink: 0; }
 .shell :global(.round-control) { display: grid; place-items: center; height: 46px; width: 46px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); }
@@ -305,7 +302,7 @@
   .shell :global(.reply-option) { gap: 6px; }
   .shell :global(.reply-option-body) { grid-template-columns: minmax(0, 1fr); }
   .shell :global(.reply-option-text) { font-size: 15px; }
-  .shell :global(.reply-option-actions) { grid-column: 1; grid-row: 3; justify-content: flex-start; max-width: none; gap: 0 12px; }
+  .shell :global(.reply-option-actions) { grid-column: 1; grid-row: 2; justify-content: flex-start; max-width: none; gap: 0 12px; }
   .shell :global(.conversation-empty) { padding: 36px 0; }
   .shell :global(.conversation-empty h2) { font-size: 29px; }
   .shell :global(.conversation-empty p) { font-size: 13px; }

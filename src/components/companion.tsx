@@ -184,19 +184,10 @@ export function Companion() {
         value={currentSuggestions}
         learningLanguage={settings.learningLanguage}
         readingPreferences={readingPreferences}
-        characterName={settings.characterName}
-        voiceEnabled={conversation.voiceEnabled}
-        muted={conversation.muted}
-        userSpeaking={conversation.userSpeaking}
-        vadStatus={conversation.vadStatus}
         busy={busy}
         speech={conversation.suggestionSpeech}
         onListen={(index) => conversation.listenSuggestion(message.id, index)}
         onSend={sendText}
-        onPractice={() => perform(async () => {
-          if (conversation.muted) conversation.toggleMute();
-          await conversation.start({ voice: true, sessionId: conversation.session?.id });
-        })}
       /> : savedSuggestions && <ReplySuggestions
         key={message.id}
         readOnly

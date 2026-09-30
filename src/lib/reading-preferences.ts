@@ -1,9 +1,8 @@
 export interface ReadingPreferences {
   showKana: boolean;
-  showRomaji: boolean;
 }
 
-export const DEFAULT_READING_PREFERENCES: ReadingPreferences = { showKana: true, showRomaji: true };
+export const DEFAULT_READING_PREFERENCES: ReadingPreferences = { showKana: true };
 export const READING_PREFERENCES_STORAGE_KEY = 'avatar-a.reading-preferences.v1';
 
 export function parseReadingPreferences(value: string | null): ReadingPreferences {
@@ -13,7 +12,6 @@ export function parseReadingPreferences(value: string | null): ReadingPreference
     const preferences = saved as Partial<ReadingPreferences>;
     return {
       showKana: typeof preferences.showKana === 'boolean' ? preferences.showKana : true,
-      showRomaji: typeof preferences.showRomaji === 'boolean' ? preferences.showRomaji : true,
     };
   } catch {
     return { ...DEFAULT_READING_PREFERENCES };

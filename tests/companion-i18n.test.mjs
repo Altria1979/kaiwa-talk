@@ -46,7 +46,7 @@ const conversation = {
   sendText: async text => { sent.push(text); }, clearError() {},
 };
 mock.module('../src/hooks/use-conversation.ts', { exports: { useConversation: () => conversation } });
-mock.module('../src/hooks/use-reading-preferences.ts', { exports: { useReadingPreferences: () => ({ showKana: true, showRomaji: true }) } });
+mock.module('../src/hooks/use-reading-preferences.ts', { exports: { useReadingPreferences: () => ({ showKana: true }) } });
 let credentialsSnapshot = null;
 const credentialsListeners = new Set();
 mock.module('../src/lib/bailian-credentials.ts', { exports: {
