@@ -1,0 +1,30 @@
+src/components/companion.module.css
+  s_a02f90d145dd0a::t_9218cd067aa3d0 171
+src/components/paper-navigation.module.css
+  s_a02f90d145dd0a::t_9218cd067aa3d0 2,28
+src/components/paper-art.module.css
+  s_a02f90d145dd0a::t_9218cd067aa3d0 98
+scripts/generate-paper-grain.mjs
+  s_a02f90d145dd0a::t_9218cd067aa3d0 4-5,7-8,11,19-24,48-58
+src/app/globals.css
+  s_a02f90d145dd0a::t_9218cd067aa3d0 6-7,28
+tests/paper-texture.test.mjs
+  s_a02f90d145dd0a::t_a55d36e3bb793a 1-11,13-38,41-59
+  s_a02f90d145dd0a::t_6860350732cb17 12,39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f1bcff5d0973d88cc6e68cb78f82a7e0689c4317",
+  "prompts": {},
+  "sessions": {
+    "s_a02f90d145dd0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f169-6dc9-7553-b536-548f04eb8dac",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
