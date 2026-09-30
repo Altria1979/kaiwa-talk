@@ -258,15 +258,20 @@ export function Companion() {
               emotion={avatarEmotionMode === 'auto' ? conversation.avatarEmotion : avatarEmotionMode}
               command={avatarCommand} onCapabilities={updateAvatarCapabilities} />
           </div>
-          <AvatarControls capabilities={avatarCapabilities} emotionMode={avatarEmotionMode} onEmotionChange={setAvatarEmotionMode}
-            onAction={(action) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'action', action })}
-            onInteraction={(target) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'interaction', target })} />
-          <div className="avatar-size-control">
-            <div className="avatar-size-heading"><label htmlFor="avatar-framing">{t('companion.avatarSize')}</label><button className="text-button" type="button" onClick={() => changeAvatarFraming(DEFAULT_AVATAR_FRAMING)}>{t('companion.reset')}</button></div>
-            <input id="avatar-framing" type="range" min={0} max={100} step={1} value={Math.round(avatarFraming * 100)} aria-valuetext={avatarFraming === 0 ? t('companion.fullBody') : avatarFraming === 1 ? t('companion.bust') : t('companion.framingValue', { percent: formatNumber(avatarFraming, { style: 'percent' }) })} onChange={(event) => changeAvatarFraming(Number(event.target.value) / 100)} />
-            <div className="avatar-size-labels" aria-hidden="true"><span>{t('companion.fullBody')}</span><span>{t('companion.bust')}</span></div>
-          </div>
-          <button className="text-button companion-settings" onClick={() => setPanel('settings')}><Icon name="settings" size={14} />{t('companion.practiceSettings')}</button>
+          <details className="avatar-settings">
+            <summary><Icon name="settings" size={16} /><span>{t('controls.avatarSettings')}</span><Icon name="chevron" size={16} /></summary>
+            <div className="avatar-settings-content">
+              <AvatarControls capabilities={avatarCapabilities} emotionMode={avatarEmotionMode} onEmotionChange={setAvatarEmotionMode}
+                onAction={(action) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'action', action })}
+                onInteraction={(target) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'interaction', target })} />
+              <div className="avatar-size-control">
+                <div className="avatar-size-heading"><label htmlFor="avatar-framing">{t('companion.avatarSize')}</label><button className="text-button" type="button" onClick={() => changeAvatarFraming(DEFAULT_AVATAR_FRAMING)}>{t('companion.reset')}</button></div>
+                <input id="avatar-framing" type="range" min={0} max={100} step={1} value={Math.round(avatarFraming * 100)} aria-valuetext={avatarFraming === 0 ? t('companion.fullBody') : avatarFraming === 1 ? t('companion.bust') : t('companion.framingValue', { percent: formatNumber(avatarFraming, { style: 'percent' }) })} onChange={(event) => changeAvatarFraming(Number(event.target.value) / 100)} />
+                <div className="avatar-size-labels" aria-hidden="true"><span>{t('companion.fullBody')}</span><span>{t('companion.bust')}</span></div>
+              </div>
+              <button className="text-button companion-settings" onClick={() => setPanel('settings')}>{t('companion.practiceSettings')}<Icon name="arrow" size={14} /></button>
+            </div>
+          </details>
         </aside>
       </div>
     </main>
