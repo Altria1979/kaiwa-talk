@@ -1,0 +1,28 @@
+src/components/companion.tsx
+  s_e5e3df4f0c61b3::t_cb7c1359e1c6be 225-230
+src/i18n/messages/companion.ts
+  s_e5e3df4f0c61b3::t_6c0a08b3b1f6b0 34,182,328
+src/components/companion.module.css
+  s_e5e3df4f0c61b3::t_3d4b63a97bca37 5,327-328,384-392,395,397
+  s_e5e3df4f0c61b3::t_0b616bca9ac4d3 16,349-351,393-394,396
+  s_e5e3df4f0c61b3::t_d42eeb48e8e0d9 296,307
+  s_e5e3df4f0c61b3::t_cb7c1359e1c6be 8,11-15,17,321-323,354-355,372-373
+  s_e5e3df4f0c61b3::t_6c0a08b3b1f6b0 288-290,292,298-305,380
+  s_e5e3df4f0c61b3::t_781b30f9b3076a 297,306
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "de5017a66c7c80b187e1ea1a75cb171efc97baf1",
+  "prompts": {},
+  "sessions": {
+    "s_e5e3df4f0c61b3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f241-66b6-77b2-a000-7dd9119c8a9a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
