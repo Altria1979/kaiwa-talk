@@ -95,7 +95,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: var(--paper-texture);
+  background-image: var(--paper-art-texture);
   mix-blend-mode: overlay;
   z-index: 7;
 }

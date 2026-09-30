@@ -3,7 +3,8 @@
 :root {
   --paper: #f4f1eb;
   --surface: #fffdf8;
-  --paper-texture: url('/paper-grain.png');
+  --paper-texture: url('/paper-canvas.png');
+  --paper-art-texture: url('/paper-grain.png');
   --ink: #111111;
   --muted: #514e48;
   --subtle: #716c62;
@@ -24,7 +25,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-padding-top: 100px; }
-body { margin: 0; background: var(--paper) var(--paper-texture); background-blend-mode: overlay; color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--paper) var(--paper-texture); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; transition: background-color .16s, color .16s, border-color .16s; }

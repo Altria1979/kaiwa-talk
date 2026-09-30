@@ -168,7 +168,7 @@
 .shell :global(.text-button:hover) { color: var(--muted); }
 .shell :global(.secondary-button) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 8px 15px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); border-radius: 30px; font-size: 12px; white-space: nowrap; }
 .shell :global(.secondary-button:hover:not(:disabled)) { background: var(--paper); border-color: var(--muted); }
-.shell :global(dialog) { margin: auto; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--paper) var(--paper-texture); background-blend-mode: overlay; color: var(--ink); padding: 0; width: min(650px, calc(100vw - 48px)); max-height: calc(100svh - 48px); overflow: hidden; }
+.shell :global(dialog) { margin: auto; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--paper) var(--paper-texture); color: var(--ink); padding: 0; width: min(650px, calc(100vw - 48px)); max-height: calc(100svh - 48px); overflow: hidden; }
 .shell :global(dialog::backdrop) { background: #20251f66; backdrop-filter: blur(5px); }
 .shell :global(.panel-header) { display: flex; justify-content: space-between; align-items: center; padding: 20px 26px; border-bottom: 1px solid var(--line); gap: 12px; }
 .shell :global(.panel-header h2) { font: 400 28px/1.25 var(--font-serif); margin: 0; }
