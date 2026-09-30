@@ -1,0 +1,23 @@
+src/components/companion.tsx
+  s_a02f90d145dd0a::t_51e48042e690a9 261-274
+src/i18n/messages/controls.ts
+  s_a02f90d145dd0a::t_51e48042e690a9 23,50,75
+src/components/companion.module.css
+  s_a02f90d145dd0a::t_51e48042e690a9 77-83,282,285-286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f20a1bb45f32542ca71cb748add87a6c4bd87438",
+  "prompts": {},
+  "sessions": {
+    "s_a02f90d145dd0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f169-6dc9-7553-b536-548f04eb8dac",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
