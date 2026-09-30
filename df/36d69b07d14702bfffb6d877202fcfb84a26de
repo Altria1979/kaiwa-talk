@@ -1,0 +1,66 @@
+tests/qwen.test.mjs
+  s_333196b53f009e::t_2983e7edbc28b1 1-69,91-101,112-118,131-132,147,149-154,162-163
+  s_333196b53f009e::t_400f7f3aece980 102-111
+  s_333196b53f009e::t_ecc889265cf069 70-90,119-130,133-146,148,155-161
+tests/cloud-http.test.mjs
+  s_333196b53f009e::t_b2e0627f3ae5ac 14,28-36,56-57,127-162
+tests/reconnect.test.mjs
+  s_333196b53f009e::t_d764d99301b188 53-54,60-67,70,81,88-91,172,174,181-252
+  s_333196b53f009e::t_226516cb25a836 76,279-299
+  s_333196b53f009e::t_1e0318d7aa335f 55-56,71-72,75,83,254-278
+  s_333196b53f009e::t_097182cb5fa785 300,302,325-326,346
+  s_333196b53f009e::t_c30612d96a2b7c 303-324
+  s_333196b53f009e::t_25941c00460998 327-345
+  s_333196b53f009e::t_807d5b5a75fae6 253
+  s_333196b53f009e::t_83837c5bad7d7a 301
+  s_333196b53f009e::t_c7083707cb40df 347
+server/session.ts
+  s_333196b53f009e::t_5c443202b61466 383,434-436,444-450
+server/providers/asr.ts
+  s_333196b53f009e::t_44294f7a3af7eb 36,39,42,47
+server/index.ts
+  s_333196b53f009e::t_5c443202b61466 333,335
+tests/session.test.mjs
+  s_333196b53f009e::t_29e6bff5a07907 412,461-473,850-885
+  s_333196b53f009e::t_b2e0627f3ae5ac 16,106,108,153,429-460,474-512,886
+  s_333196b53f009e::t_c483e615be75b0 513,887
+server/providers/qwen.ts
+  s_333196b53f009e::t_44294f7a3af7eb 1,19-22,24,87,90,92-95,98-103
+  s_333196b53f009e::t_400f7f3aece980 43,91
+  s_afca248dfe3e0b::t_7fac3e24db91e0 26-38,40-42,44-81,83,85-86,88-89,96-97
+  s_333196b53f009e::t_ecc889265cf069 23,25,39
+tests/asr.test.mjs
+  s_333196b53f009e::t_44294f7a3af7eb 130,135
+  s_333196b53f009e::t_2983e7edbc28b1 12,108-129,131-134,136-137
+src/hooks/use-conversation.ts
+  s_333196b53f009e::t_4327d88a11a544 46,245,273,451,603-606,608,781
+  s_333196b53f009e::t_cc8dabc7e9e515 47,376-378,383,397,413-427,429-432,434,443-445,448,588,597,765-770,784,804-810,915
+  s_333196b53f009e::t_0e2572a6b04f47 757-764,802-803
+  s_333196b53f009e::t_2f540141235c1a 375,400,594
+  s_333196b53f009e::t_a680a6df894702 609-614
+  s_333196b53f009e::t_d38bab65ce938d 607,616
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "df36d69b07d14702bfffb6d877202fcfb84a26de",
+  "prompts": {},
+  "sessions": {
+    "s_333196b53f009e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f1ef-1125-7501-9578-554ddb9ffc87",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_afca248dfe3e0b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f1f1-0f50-7f31-9f3d-2800d462fea6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
