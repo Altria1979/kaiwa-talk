@@ -222,7 +222,12 @@ export function Companion() {
               <div className="conversation-content" ref={chatContent}>
                 {conversation.messages.map(message => renderMessage(message, message.id === latestAssistantId))}
                 <TranscriptPreview text={conversation.pendingTranscript} recognizing={Boolean(conversation.transcript)} />
-                {!conversation.messages.length && !conversation.pendingTranscript && <div className="conversation-empty"><h2>{t('companion.emptyHeading')}</h2><p>{t('companion.emptyDescription')}</p><div className="conversation-starters">{[{ id: 'greeting', label: t('companion.starterGreeting'), text: 'こんにちは！' }, { id: 'introduction', label: t('companion.starterIntroduction'), text: '日本語で自己紹介を練習したいです。' }, { id: 'cafe', label: t('companion.starterCafe'), text: 'カフェで注文する練習をしましょう。' }].map(starter => <button key={starter.id} disabled={!ready || busy} onClick={() => void sendText(starter.text, true)}>{starter.label}<Icon name="arrow" size={13} /></button>)}</div></div>}
+                {!conversation.messages.length && !conversation.pendingTranscript && <div className="conversation-empty">
+                  <span className="conversation-empty-symbol" aria-hidden="true"><Icon name="mic" size={32} /></span>
+                  <h2>{t('companion.emptyHeading')}</h2>
+                  <p>{t('companion.emptyDescription')}</p>
+                  <div className="conversation-starters">{[{ id: 'greeting', label: t('companion.starterGreeting'), text: 'こんにちは！' }, { id: 'introduction', label: t('companion.starterIntroduction'), text: '日本語で自己紹介を練習したいです。' }, { id: 'cafe', label: t('companion.starterCafe'), text: 'カフェで注文する練習をしましょう。' }].map(starter => <button key={starter.id} disabled={!ready || busy} onClick={() => void sendText(starter.text, true)}>{starter.label}<Icon name="arrow" size={13} /></button>)}</div>
+                </div>}
                 {conversation.session?.review && renderReview(conversation.session.review)}
                 {conversation.session?.endedAt && !conversation.session.review && <p className="review-pending" role="status"><Icon name="spark" size={15} />{t('companion.reviewPending')}</p>}
               </div>
