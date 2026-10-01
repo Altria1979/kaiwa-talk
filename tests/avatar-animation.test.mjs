@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as THREE from 'three';
+import { VRMUtils } from '@pixiv/three-vrm';
 import { AvatarAnimator, classifyAvatarHit, getAvatarCapabilities, getAvatarEmotionWeight, getAvatarHandRegions, isAvatarTap, sampleAvatarMotion } from '../src/lib/avatar-animation.ts';
 
 const boneNames = ['head', 'spine', 'leftUpperArm', 'leftLowerArm', 'rightUpperArm', 'rightLowerArm', 'rightHand'];
@@ -20,6 +21,75 @@ const still = { elapsed: 0, reducedMotion: true, emotion: 'neutral', speaking: f
 function advance(animator, seconds, options = still) {
   for (let frame = 0; frame < Math.ceil(seconds * 60); frame++) animator.update(1 / 60, options);
 }
+
+function facingFixture(metaVersion) {
+  const result = fixture();
+  const { vrm, bones } = result;
+  const scene = new THREE.Object3D();
+  for (const bone of bones.values()) bone.quaternion.identity();
+  const spine = bones.get('spine');
+  scene.add(spine);
+  spine.position.y = 0.9;
+  spine.add(bones.get('head'));
+  bones.get('head').position.y = 0.55;
+  for (const [side, sign] of [['left', 1], ['right', -1]]) {
+    const upper = bones.get(`${side}UpperArm`);
+    const lower = bones.get(`${side}LowerArm`);
+    spine.add(upper);
+    upper.position.set(sign * 0.2, 0.35, 0);
+    upper.rotation.z = -sign * 1.35;
+    upper.add(lower);
+    lower.position.x = sign * 0.28;
+    if (side === 'right') {
+      lower.add(bones.get('rightHand'));
+      bones.get('rightHand').position.x = sign * 0.25;
+    }
+  }
+  if (metaVersion === '0') {
+    // VRM 0.0 faces -Z before the stage applies rotateVRM0.
+    for (const bone of bones.values()) {
+      bone.position.x *= -1;
+      bone.position.z *= -1;
+      bone.quaternion.x *= -1;
+      bone.quaternion.z *= -1;
+    }
+  }
+  vrm.meta = { metaVersion };
+  vrm.scene = scene;
+  VRMUtils.rotateVRM0(vrm);
+  return { ...result, position: name => bones.get(name).getWorldPosition(new THREE.Vector3()) };
+}
+
+test('VRM 0.0 and 1.0 bow toward the viewer after the stage corrects facing direction', () => {
+  for (const version of ['0', '1']) {
+    const { vrm, position } = facingFixture(version);
+    const animator = new AvatarAnimator(vrm);
+    const before = position('head');
+    animator.trigger({ id: 1, kind: 'action', action: 'bow' });
+    advance(animator, 0.8, { ...still, reducedMotion: false });
+    const bowed = position('head');
+    assert.ok(bowed.z > before.z + 0.1, `VRM ${version} must lean toward the +Z camera`);
+    assert.ok(bowed.y < before.y, `VRM ${version} must lower its head`);
+  }
+});
+
+test('VRM 0.0 waves through the same world-space hand path as VRM 1.0 and restores its pose', () => {
+  const models = ['0', '1'].map(version => {
+    const model = facingFixture(version);
+    return { ...model, animator: new AvatarAnimator(model.vrm) };
+  });
+  const baseline = models[0].position('rightHand');
+  for (const model of models) model.animator.trigger({ id: 1, kind: 'action', action: 'wave' });
+  for (let step = 0; step < 12; step++) {
+    for (const model of models) advance(model.animator, 0.2, { ...still, reducedMotion: false });
+    assert.ok(models[0].position('rightHand').distanceTo(models[1].position('rightHand')) < 1e-7, 'waving must follow the same direction across VRM versions');
+    if (step === 3) assert.ok(models[0].position('rightHand').y > baseline.y + 0.2, 'a wave raises the relaxed hand');
+  }
+  for (const model of models) {
+    advance(model.animator, 5);
+    assert.ok(model.position('rightHand').distanceTo(baseline) < 1e-7, 'waving must recover the relaxed hand position');
+  }
+});
 
 test('all actions recover the relaxed bone pose and camera across repeated plays', () => {
   const { vrm, bones } = fixture();

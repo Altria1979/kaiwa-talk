@@ -34,18 +34,26 @@ beforeEach(() => {
 test('default cloned voice is used for new browsers and settings without a saved voice', async () => {
   assert.equal((await persistence.forOwner(randomUUID()).getSettings()).voice, DEFAULT_SETTINGS.voice);
   const { voice, ...settings } = DEFAULT_SETTINGS;
-  assert.equal(voice, 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512');
+  assert.equal(voice, 'qwen-tts-vc-violet-voice-20261001184926083-8183');
   saveSettings(settings);
   assert.deepEqual(await store.getSettings(), DEFAULT_SETTINGS);
 });
 
-test('saved Cherry voice migrates to the cloned default and persists on the next settings update', async () => {
-  saveSettings({ ...DEFAULT_SETTINGS, voice: 'Cherry' });
-  assert.equal((await store.getSettings()).voice, DEFAULT_SETTINGS.voice);
-  const updated = await store.updateSettings({ vadSilenceMs: 1800 });
-  assert.equal(updated.voice, DEFAULT_SETTINGS.voice);
-  assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).voice, DEFAULT_SETTINGS.voice);
-  assert.equal((await store.getSettings()).voice, updated.voice);
+test('previous built-in voices migrate to Violet and persist on the next settings update', async () => {
+  for (const voice of ['Cherry', 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512']) {
+    saveSettings({ ...DEFAULT_SETTINGS, voice });
+    assert.equal((await store.getSettings()).voice, DEFAULT_SETTINGS.voice);
+    const updated = await store.updateSettings({ vadSilenceMs: 1800 });
+    assert.equal(updated.voice, DEFAULT_SETTINGS.voice);
+    assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).voice, DEFAULT_SETTINGS.voice);
+    assert.equal((await store.getSettings()).voice, updated.voice);
+  }
+});
+
+test('the previous default character name follows the replacement default model', async () => {
+  saveSettings({ ...DEFAULT_SETTINGS, characterName: 'VRoid Avatar A' });
+  assert.equal((await store.getSettings()).characterName, DEFAULT_SETTINGS.characterName);
+  assert.equal((await store.updateSettings({ vadSilenceMs: 1800 })).characterName, DEFAULT_SETTINGS.characterName);
 });
 
 test('default cloned voice preserves custom voices and their saved settings', async () => {
@@ -58,7 +66,7 @@ test('default cloned voice preserves custom voices and their saved settings', as
 });
 
 test('Japanese defaults and legacy built-in settings share the same public values', async () => {
-  assert.equal((await store.getSettings()).characterName, 'VRoid Avatar A');
+  assert.equal((await store.getSettings()).characterName, 'ヴァイオレット');
   assert.equal((await store.getSettings()).learningLanguage, '日本語');
   assert.equal((await store.getSettings()).supportLanguage, '日本語');
   saveSettings({
@@ -84,9 +92,9 @@ test('legacy character name migrates without changing the imported avatar or sav
 
   assert.deepEqual((await store.getSettings()), { ...DEFAULT_SETTINGS, avatarUrl });
   const updated = (await store.updateSettings({ voice: 'Serena' }));
-  assert.equal(updated.characterName, 'VRoid Avatar A');
+  assert.equal(updated.characterName, 'ヴァイオレット');
   assert.equal(updated.avatarUrl, avatarUrl);
-  assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).characterName, 'VRoid Avatar A');
+  assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).characterName, 'ヴァイオレット');
   assert.deepEqual(history(), before);
 });
 

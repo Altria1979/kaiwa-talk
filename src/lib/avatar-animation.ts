@@ -153,6 +153,11 @@ export class AvatarAnimator {
         this.euler.y += Math.sin(options.elapsed * 0.5) * 0.022 + options.gazeX * 0.16;
         this.euler.z += options.tilt + Math.sin(options.elapsed * 0.7) * 0.012;
       }
+      // rotateVRM0 aligns the scene, but normalized bone offsets retain VRM 0.0's axes.
+      if (this.vrm.meta?.metaVersion === '0') {
+        this.euler.x *= -1;
+        this.euler.z *= -1;
+      }
       this.target.copy(rest).multiply(this.rotation.setFromEuler(this.euler));
       node.quaternion.slerp(this.target, smoothing);
       if (node.quaternion.angleTo(this.target) < 0.00001) node.quaternion.copy(this.target);

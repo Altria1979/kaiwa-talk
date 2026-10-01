@@ -23,7 +23,7 @@ No registration or website password is required. Bring your own Alibaba Cloud Mo
 | Replay and slow playback | Listen again to complete sentences already synthesised in the current conversation, or play them at 0.8× speed while preserving pitch |
 | Japanese explanations and recaps | Request a brief Japanese explanation. After a conversation, receive a topic summary, three useful expressions, and one suggestion for improvement |
 | 3D companion | Mouth movements, expressions, and captions alongside speech; actions such as waving, nodding, and bowing; and interactions by clicking the head, body, or hands |
-| Character and practice settings | Adjust the name, personality, voice, difficulty, and pause after speaking. Import your own VRM 1.0 avatar |
+| Character and practice settings | Adjust the name, personality, voice, difficulty, and pause after speaking. Import your own VRM 0.x / 1.0 avatar |
 | History and memories | Browse conversations and recaps. Explicitly save, edit, or delete preferences you want the companion to remember; memory suggestions are never saved automatically |
 | Browser isolation | Keep history, memories, character settings, and uploaded avatars separate for each browser, with access retained after refreshing the same browser |
 | Three interface languages | Switch instantly between 日本語, 简体中文, and English. Existing conversations and learning content are not translated or rewritten when you switch |
@@ -56,9 +56,9 @@ The recording stays in memory on the current page, in a browser-supported format
 
 ### Choose a different companion
 
-Upload a **VRM 1.0** model from the avatar section of “Practice settings”. The limit is **30 MB**, and textures and other resources must be embedded. VRM 0.x and references to external resources are not supported. If an import fails, your previous avatar is kept. Check that the model's creator permits your intended use.
+Upload a **VRM 0.x / 1.0** model from the avatar section of “Practice settings”. The limit is **30 MB**, and textures and other resources must be embedded. References to external resources are not supported. If an import fails, your previous avatar is kept. Check that the model's creator permits your intended use.
 
-The project includes **VRoid Avatar A** from the pixiv VRoid Project as its default model. Adjust the framing from a full-body view to a close-up, and use “Actions / Expressions / Interactions” to select movements, expressions, and touch responses. These manual interactions do not call AI services. Some controls may be unavailable if a custom model lacks the required bones or expressions. See the [third-party notices](THIRD_PARTY_NOTICES.md) for the model's source and licence terms.
+The default avatar in this workspace has been replaced locally with the user-provided **Violet Evergarden v1** by Little Cwoissant, preserving the original model unchanged. Its embedded terms require attribution and prohibit redistribution, commercial use, and modification, so it must not be distributed through a public repository or deployment. Adjust the framing from a full-body view to a close-up, and use “Actions / Expressions / Interactions” to select movements, expressions, and touch responses. These manual interactions do not call AI services. Some controls may be unavailable if a custom model lacks the required bones or expressions. See the [third-party notices](THIRD_PARTY_NOTICES.md) for the model's source and licence terms.
 
 ### Records and privacy
 
@@ -106,7 +106,7 @@ See the [Vercel deployment guide](docs/vercel-deployment.md) for setup steps, th
 | --- | --- |
 | Web application and types | [Next.js 16](https://github.com/vercel/next.js) App Router, [React 19](https://github.com/facebook/react), and [TypeScript 5.9](https://github.com/microsoft/TypeScript) |
 | Interface and localisation | CSS Modules, global styles, and project-owned Chinese, Japanese, and English dictionaries; all three languages share the application routes |
-| Avatars | [Three.js](https://github.com/mrdoob/three.js) and [three-vrm](https://github.com/pixiv/three-vrm) load VRM 1.0 models and drive mouth movements, poses, and expressions |
+| Avatars | [Three.js](https://github.com/mrdoob/three.js) and [three-vrm](https://github.com/pixiv/three-vrm) load VRM 0.x / 1.0 models and drive mouth movements, poses, and expressions |
 | Conversation and speech | Bailian Qwen chat models, Fun-ASR realtime recognition, and Qwen realtime TTS; environment configuration controls the default models |
 | Audio and voice activity detection | Web Audio, AudioWorklet, [vad-web](https://github.com/ricky0123/vad), [Silero VAD](https://github.com/snakers4/silero-vad), and [ONNX Runtime](https://github.com/microsoft/onnxruntime) |
 | Realtime service | Node.js 24, [ws](https://github.com/websockets/ws), HTTP APIs, and a WebSocket event protocol |
@@ -134,7 +134,7 @@ Automated tests use mocked model responses and temporary storage; a real Bailian
 
 ### References and thanks
 
-Thanks to the maintainers of the open-source projects above and to the pixiv VRoid Project for its sample character. The default avatar, VAD models, runtime assets, and code dependencies each retain their original licence terms. Sources and pinned versions are recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Thanks to the maintainers of the open-source projects above and to Little Cwoissant, the creator of the current local model. The default avatar, VAD models, runtime assets, and code dependencies each retain their original licence terms. Sources and pinned versions are recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 This README follows the organisation of the author's [Pokotype](https://github.com/Altria1979/pokotype) project: introduce the product and how to use it first, then explain the implementation and related resources.
 
@@ -152,4 +152,4 @@ Please include your browser and operating system versions, steps to reproduce th
 
 The application source code is licensed under the [MIT License](LICENSE). Copyright © 2026 Altria1979. Third-party assets and dependencies are covered by the licences described below.
 
-The default VRM character is subject to its embedded VRM Public License 1.0 and the official VRoidPreset A–Z terms. It is **not CC0**. Dependencies and bundled resources remain subject to their respective licences. See the [third-party asset and code notices](THIRD_PARTY_NOTICES.md) for details.
+The current local default VRM character has separate embedded terms that require attribution and prohibit redistribution, commercial use, and modification. **It is not covered by this project's MIT License and is not CC0.** Dependencies and bundled resources remain subject to their respective licences. See the [third-party asset and code notices](THIRD_PARTY_NOTICES.md) for details.

@@ -69,7 +69,7 @@ test('TTS model and default voice are paired code constants regardless of legacy
     `], { cwd: new URL('../', import.meta.url), env: { ...environment, ...overrides }, encoding: 'utf8', timeout: 15_000 });
     assert.equal(result.status, 0, result.stderr || result.error?.message);
     assert.deepEqual(JSON.parse(result.stdout), {
-      voice: 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512',
+      voice: 'qwen-tts-vc-violet-voice-20261001184926083-8183',
       model: 'qwen3-tts-vc-realtime-2026-01-15',
     });
   }

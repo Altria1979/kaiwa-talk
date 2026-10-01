@@ -26,14 +26,29 @@ mock.module('@vercel/blob', { exports: {
   presignUrl: async (_, options) => { calls.push(['url', options]); return { presignedUrl: 'https://store.private.blob.vercel-storage.com/signed' }; },
 } });
 const { prepareAvatarUpload, completeAvatarUpload, readAvatar, assertAvatarOwner, validateVrm } = await import('../server/avatars.ts');
-function vrm(external = false) {
-  const json = Buffer.from(JSON.stringify({ extensions: { VRMC_vrm: { specVersion: '1.0' } }, buffers: external ? [{ uri: 'https://untrusted.invalid/model' }] : [] }));
+function vrm(external = false, extensions = { VRMC_vrm: { specVersion: '1.0' } }) {
+  const json = Buffer.from(JSON.stringify({ extensions, buffers: external ? [{ uri: 'https://untrusted.invalid/model' }] : [] }));
   const result = Buffer.alloc(20 + json.length);
   result.writeUInt32LE(0x46546c67, 0); result.writeUInt32LE(2, 4); result.writeUInt32LE(result.length, 8);
   result.writeUInt32LE(json.length, 12); result.writeUInt32LE(0x4e4f534a, 16); json.copy(result, 20);
   return result;
 }
 beforeEach(() => { calls.length = 0; data = vrm(); claimedSize = undefined; finalized = false; objects = []; });
+
+test('embedded VRM 0.0 avatars can be finalized without converting the uploaded file', async () => {
+  data = vrm(false, { VRM: { specVersion: '0.0' } });
+  assert.doesNotThrow(() => validateVrm(data));
+  assert.equal(await completeAvatarUpload(owner, id), `/api/avatars/${id}.vrm`);
+  assert.equal(calls.find(call => call[0] === 'copy')[2], `avatars/${owner}/${id}.vrm`);
+});
+
+test('VRM 0.0 compatibility keeps version and embedded-resource checks', () => {
+  assert.doesNotThrow(() => validateVrm(vrm()));
+  assert.throws(() => validateVrm(vrm(true, { VRM: { specVersion: '0.0' } })), { errorCode: 'vrmExternalResources' });
+  for (const extensions of [{}, { VRM: {} }, { VRM: { specVersion: '0.9' } }, { VRMC_vrm: { specVersion: '2.0' } }]) {
+    assert.throws(() => validateVrm(vrm(false, extensions)), { errorCode: 'vrmMetadataInvalid' });
+  }
+});
 
 test('direct upload tokens are scoped to a new staging object with a 30MB limit and no overwrite', async () => {
   const grant = await prepareAvatarUpload(owner);

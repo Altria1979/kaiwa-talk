@@ -19,18 +19,18 @@ const blobOptions = () => ({ token: process.env.BLOB_READ_WRITE_TOKEN, abortSign
 
 export function validateVrm(data: Buffer) {
   if (data.length > MAX_MODEL_BYTES) throw new AvatarError(413, 'モデルファイルは 30 MB 以下にしてください。');
-  if (data.length < 24 || data.readUInt32LE(0) !== 0x46546c67 || data.readUInt32LE(4) !== 2 || data.readUInt32LE(8) !== data.length) throw new AvatarError(400, '完全な VRM 1.0 バイナリファイルを選択してください');
+  if (data.length < 24 || data.readUInt32LE(0) !== 0x46546c67 || data.readUInt32LE(4) !== 2 || data.readUInt32LE(8) !== data.length) throw new AvatarError(400, '完全な VRM 0.0 / 1.0 バイナリファイルを選択してください');
   const size = data.readUInt32LE(12);
   if (data.readUInt32LE(16) !== 0x4e4f534a || size > 4 * 1024 * 1024 || size + 20 > data.length) throw new AvatarError(400, 'VRM の記述データが正しくないか、サイズが大きすぎます');
   try {
     const gltf = JSON.parse(data.subarray(20, 20 + size).toString('utf8'));
-    if (gltf.extensions?.VRMC_vrm?.specVersion !== '1.0') throw new Error();
+    if (gltf.extensions?.VRMC_vrm?.specVersion !== '1.0' && gltf.extensions?.VRM?.specVersion !== '0.0') throw new Error();
     for (const asset of [...(gltf.buffers ?? []), ...(gltf.images ?? [])]) {
       if (asset.uri && (typeof asset.uri !== 'string' || !asset.uri.startsWith('data:'))) throw new AvatarError(400, 'モデルに外部リソースが含まれています。テクスチャとリソースを埋め込んだ VRM を書き出してください');
     }
   } catch (error) {
     if (error instanceof AvatarError) throw error;
-    throw new AvatarError(400, '有効なメタデータを含む VRM 1.0 モデルを使用してください');
+    throw new AvatarError(400, '有効なメタデータを含む VRM 0.0 / 1.0 モデルを使用してください');
   }
 }
 

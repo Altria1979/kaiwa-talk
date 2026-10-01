@@ -23,7 +23,7 @@
 | 重听与慢放 | 重听当前会话已合成的完整句，以 0.8 倍速度慢放并保持音高 |
 | 日语解释与回顾 | 按需获取简明日语解释；会话结束后生成话题摘要、三个实用表达和一个改进建议 |
 | 3D 虚拟伙伴 | 跟随音频的口型、表情与字幕；挥手、点头、鞠躬等动作，以及点击头部、身体、手部的互动 |
-| 角色与练习设置 | 调整角色名字、性格、音色、难度和说话后的等待时间；导入自己的 VRM 1.0 形象 |
+| 角色与练习设置 | 调整角色名字、性格、音色、难度和说话后的等待时间；导入自己的 VRM 0.x / 1.0 形象 |
 | 历史与记忆 | 查看对话与学习回顾；主动保存、编辑或删除想让伙伴记住的偏好，不自动保存记忆建议 |
 | 浏览器隔离 | 不同浏览器分别保存历史、记忆、角色设置和上传头像；同一浏览器刷新后可继续使用 |
 | 三语界面 | 日本語、简体中文、English 即时切换；已有对话与学习内容不会因此被翻译或改写 |
@@ -56,9 +56,9 @@ API Key 只保存在当前浏览器的 localStorage 中，调用时通过项目�
 
 ### 换一个喜欢的伙伴
 
-在「练习设置 → 伙伴形象」上传 **VRM 1.0** 模型，最大 **30 MB**，贴图与资源必须内嵌；不支持 VRM 0.x 或外部资源引用。导入失败时保留原形象。请先确认模型作者允许相应使用。
+在「练习设置 → 伙伴形象」上传 **VRM 0.x / 1.0** 模型，最大 **30 MB**，贴图与资源必须内嵌，不支持外部资源引用。导入失败时保留原形象。请先确认模型作者允许相应使用。
 
-默认随项目提供 pixiv VRoid Project 的 **VRoid Avatar A**。可以调节全身到近景的取景大小，通过「动作／表情／互动」切换姿态、表情和触碰反应。动作互动本身不调用 AI；自定义模型缺少相应骨骼或表情时，部分操作不可用。模型来源与许可见[第三方声明](THIRD_PARTY_NOTICES.md)。
+当前工作区的默认形象已在本地替换为用户提供的 **Violet Evergarden v1**（作者：Little Cwoissant），原始模型保留不变。其内嵌条款要求署名，并禁止再分发、商业使用和修改，因此不能随公开仓库或部署分发。可以调节全身到近景的取景大小，通过「动作／表情／互动」切换姿态、表情和触碰反应。动作互动本身不调用 AI；自定义模型缺少相应骨骼或表情时，部分操作不可用。模型来源与许可见[第三方声明](THIRD_PARTY_NOTICES.md)。
 
 ### 保存记录与保护隐私
 
@@ -106,7 +106,7 @@ pnpm start
 | --- | --- |
 | 网页与类型 | [Next.js 16](https://github.com/vercel/next.js) App Router、[React 19](https://github.com/facebook/react)、[TypeScript 5.9](https://github.com/microsoft/TypeScript) |
 | 界面与国际化 | CSS Modules、全局样式与自有中／日／英字典，三语共用应用路由 |
-| 虚拟形象 | [Three.js](https://github.com/mrdoob/three.js) 与 [three-vrm](https://github.com/pixiv/three-vrm)，加载 VRM 1.0 并驱动口型、姿态和表情 |
+| 虚拟形象 | [Three.js](https://github.com/mrdoob/three.js) 与 [three-vrm](https://github.com/pixiv/three-vrm)，加载 VRM 0.x / 1.0 并驱动口型、姿态和表情 |
 | 对话与语音 | 百炼 Qwen 对话模型、Fun-ASR 实时识别、Qwen 实时 TTS；默认模型由环境配置控制 |
 | 音频与人声检测 | Web Audio、AudioWorklet、[vad-web](https://github.com/ricky0123/vad)、[Silero VAD](https://github.com/snakers4/silero-vad)、[ONNX Runtime](https://github.com/microsoft/onnxruntime) |
 | 实时服务 | Node.js 24、[ws](https://github.com/websockets/ws)、HTTP API 与 WebSocket 事件协议 |
@@ -134,7 +134,7 @@ pnpm build
 
 ### 参考与致谢
 
-感谢上述开源项目的维护者，以及 pixiv VRoid Project 提供的示例角色。默认人物、VAD 模型、运行时资源及代码依赖各自遵循原有许可，出处与固定版本记录见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+感谢上述开源项目的维护者，以及当前本地模型作者 Little Cwoissant。默认人物、VAD 模型、运行时资源及代码依赖各自遵循原有许可，出处与固定版本记录见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 本 README 的组织方式参考同作者的 [Pokotype](https://github.com/Altria1979/pokotype)：先介绍产品与使用方法，再说明技术实现及相关资料。
 
@@ -152,4 +152,4 @@ pnpm build
 
 本项目的应用源码采用 [MIT License](LICENSE)，版权归属 © 2026 Altria1979。第三方素材及依赖的许可见下文。
 
-默认 VRM 角色适用其内嵌 VRM Public License 1.0 与 VRoidPreset A–Z 官方条件，**不是 CC0**；依赖和随附资源继续遵循各自许可证。详见[第三方素材与代码声明](THIRD_PARTY_NOTICES.md)。
+当前本地默认 VRM 角色适用文件内嵌的独立条款：要求署名，禁止再分发、商业使用和修改，**不适用本项目的 MIT 许可证，也不是 CC0**。依赖和随附资源继续遵循各自许可证。详见[第三方素材与代码声明](THIRD_PARTY_NOTICES.md)。

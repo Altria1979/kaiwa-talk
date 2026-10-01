@@ -36,7 +36,7 @@ function checkEmbeddedModel(buffer: ArrayBuffer) {
   const jsonSize = view.getUint32(12, true);
   if (view.getUint32(16, true) !== 0x4e4f534a || jsonSize + 20 > buffer.byteLength) throw new AvatarError('avatarErrorIncomplete');
   const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 20, jsonSize)));
-  if (!json.extensions?.VRMC_vrm?.specVersion?.startsWith('1.')) throw new AvatarError('avatarErrorVersion');
+  if (json.extensions?.VRMC_vrm?.specVersion !== '1.0' && json.extensions?.VRM?.specVersion !== '0.0') throw new AvatarError('avatarErrorVersion');
   const inspect = (value: unknown) => {
     if (!value || typeof value !== 'object') return;
     for (const [key, child] of Object.entries(value)) {
@@ -329,6 +329,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
         const next = gltf.userData.vrm as VRM | undefined;
         if (!next) { VRMUtils.deepDispose(gltf.scene); throw new AvatarError('avatarErrorLoad'); }
         if (disposed || version !== loadVersion) { VRMUtils.deepDispose(next.scene); return; }
+        VRMUtils.rotateVRM0(next);
         relaxArms(next);
         const bounds = new THREE.Box3().setFromObject(next.scene);
         bounds.getSize(subjectSize);
