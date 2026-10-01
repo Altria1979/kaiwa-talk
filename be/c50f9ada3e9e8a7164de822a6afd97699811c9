@@ -1,0 +1,19 @@
+src/components/companion.tsx
+  s_c118a37d017625::t_d5118c09654744 242
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bec50f9ada3e9e8a7164de822a6afd97699811c9",
+  "prompts": {},
+  "sessions": {
+    "s_c118a37d017625": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f551-0bf7-75b1-bd1c-6de6a9f6c9a4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
