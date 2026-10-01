@@ -15,13 +15,19 @@ export interface Settings {
   avatarUrl: string;
 }
 
+// Keep the model paired with the target_model used to enroll this voice.
+export const DEFAULT_TTS = Object.freeze({
+  model: 'qwen3-tts-vc-realtime-2026-01-15',
+  voice: 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512',
+});
+
 export const DEFAULT_SETTINGS: Settings = {
   characterName: 'VRoid Avatar A',
   persona: '優しく、辛抱強く、好奇心旺盛な日本語の会話パートナー。友達のように自然に話します。',
   learningLanguage: '日本語',
   supportLanguage: '日本語',
   japaneseLevel: 'beginner',
-  voice: 'Cherry',
+  voice: DEFAULT_TTS.voice,
   vadSilenceMs: 1600,
   avatarUrl: '/models/default.vrm',
 };

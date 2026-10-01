@@ -8,7 +8,7 @@ import Database from 'better-sqlite3';
 import { DEFAULT_SETTINGS } from '../shared/protocol.ts';
 
 const dataDir = mkdtempSync(join(tmpdir(), 'koharu-locale-'));
-const config = { dataDir, ttsVoice: DEFAULT_SETTINGS.voice };
+const config = { dataDir };
 mock.module('../server/config.ts', { exports: { config } });
 const { store: persistence } = await import('../server/storage.ts');
 const ownerId = randomUUID();
@@ -27,32 +27,28 @@ function saveSettings(settings) {
 }
 
 beforeEach(() => {
-  config.ttsVoice = DEFAULT_SETTINGS.voice;
   db.exec('DELETE FROM browser_messages; DELETE FROM browser_sessions; DELETE FROM browser_memories;');
   saveSettings(DEFAULT_SETTINGS);
 });
 
-test('deployment voice is used for new browsers and settings without a saved voice', async () => {
-  config.ttsVoice = 'qwen-tts-vc-test-deployment';
-  assert.equal((await persistence.forOwner(randomUUID()).getSettings()).voice, config.ttsVoice);
+test('default cloned voice is used for new browsers and settings without a saved voice', async () => {
+  assert.equal((await persistence.forOwner(randomUUID()).getSettings()).voice, DEFAULT_SETTINGS.voice);
   const { voice, ...settings } = DEFAULT_SETTINGS;
-  assert.equal(voice, 'Cherry');
+  assert.equal(voice, 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512');
   saveSettings(settings);
-  assert.deepEqual(await store.getSettings(), { ...DEFAULT_SETTINGS, voice: config.ttsVoice });
+  assert.deepEqual(await store.getSettings(), DEFAULT_SETTINGS);
 });
 
-test('saved built-in voice uses the deployment voice and persists on the next settings update', async () => {
-  config.ttsVoice = 'qwen-tts-vc-test-deployment';
-  assert.equal((await store.getSettings()).voice, config.ttsVoice);
+test('saved Cherry voice migrates to the cloned default and persists on the next settings update', async () => {
+  saveSettings({ ...DEFAULT_SETTINGS, voice: 'Cherry' });
+  assert.equal((await store.getSettings()).voice, DEFAULT_SETTINGS.voice);
   const updated = await store.updateSettings({ vadSilenceMs: 1800 });
-  assert.equal(updated.voice, config.ttsVoice);
-  assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).voice, config.ttsVoice);
-  config.ttsVoice = 'qwen-tts-vc-other-deployment';
+  assert.equal(updated.voice, DEFAULT_SETTINGS.voice);
+  assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).voice, DEFAULT_SETTINGS.voice);
   assert.equal((await store.getSettings()).voice, updated.voice);
 });
 
-test('deployment voice preserves custom voices and their saved settings', async () => {
-  config.ttsVoice = 'qwen-tts-vc-test-deployment';
+test('default cloned voice preserves custom voices and their saved settings', async () => {
   for (const voice of ['Serena', 'qwen-tts-vc-custom-user']) {
     saveSettings({ ...DEFAULT_SETTINGS, voice });
     assert.equal((await store.getSettings()).voice, voice);

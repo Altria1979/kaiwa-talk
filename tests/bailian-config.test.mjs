@@ -56,20 +56,22 @@ function request(path, credentials, method = 'GET') {
   });
 }
 
-test('deployment TTS voice is optional, trims its value and leaves the generic model default intact', () => {
+test('TTS model and default voice are paired code constants regardless of legacy environment settings', () => {
   const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(BAILIAN_TTS_|KAIWA_TALK_|KAIWA_LAB_|VIRTUALMAID_|KOHARU_|VERCEL$|PORT$)/.test(key)));
-  for (const [overrides, voice] of [
-    [{}, 'Cherry'],
-    [{ BAILIAN_TTS_VOICE: '' }, 'Cherry'],
-    [{ BAILIAN_TTS_VOICE: '   ' }, 'Cherry'],
-    [{ BAILIAN_TTS_VOICE: '  qwen-tts-vc-test-deployment  ' }, 'qwen-tts-vc-test-deployment'],
+  for (const overrides of [
+    {},
+    { BAILIAN_TTS_MODEL: 'qwen3-tts-flash-realtime', BAILIAN_TTS_VOICE: 'Cherry' },
   ]) {
     const result = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
       const { config } = await import('./server/config.ts');
-      console.log(JSON.stringify({ voice: config.ttsVoice, model: config.ttsModel }));
+      const { DEFAULT_SETTINGS } = await import('./shared/protocol.ts');
+      console.log(JSON.stringify({ voice: DEFAULT_SETTINGS.voice, model: config.ttsModel }));
     `], { cwd: new URL('../', import.meta.url), env: { ...environment, ...overrides }, encoding: 'utf8', timeout: 15_000 });
     assert.equal(result.status, 0, result.stderr || result.error?.message);
-    assert.deepEqual(JSON.parse(result.stdout), { voice, model: 'qwen3-tts-flash-realtime' });
+    assert.deepEqual(JSON.parse(result.stdout), {
+      voice: 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512',
+      model: 'qwen3-tts-vc-realtime-2026-01-15',
+    });
   }
 });
 

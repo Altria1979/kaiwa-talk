@@ -277,9 +277,9 @@ test('voice replies to typed help use Japanese, while Chinese history and transl
   assert.equal(reply.delivery, 'voice');
   assert.equal(reply.content, '大丈夫です。神戸に行きます。東京。');
   assert.deepEqual(syntheses.map(({ text, voice, language }) => ({ text, voice, language })), [
-    { text: '大丈夫です。', voice: 'Cherry', language: 'Japanese' },
-    { text: '神戸に行きます。', voice: 'Cherry', language: 'Japanese' },
-    { text: '東京。', voice: 'Cherry', language: 'Japanese' },
+    { text: '大丈夫です。', voice: DEFAULT_SETTINGS.voice, language: 'Japanese' },
+    { text: '神戸に行きます。', voice: DEFAULT_SETTINGS.voice, language: 'Japanese' },
+    { text: '東京。', voice: DEFAULT_SETTINGS.voice, language: 'Japanese' },
   ]);
 
   // The translation endpoint stores this field independently, including during playback.
@@ -357,8 +357,8 @@ test('all sentences retain the turn language and voice; the next turn uses updat
   firstSentence.resolve();
   await waitFor(() => last(events, 'turn.done'));
   assert.deepEqual(syntheses.map(({ voice, language }) => ({ voice, language })), [
-    { voice: 'Cherry', language: 'Japanese' },
-    { voice: 'Cherry', language: 'Japanese' },
+    { voice: DEFAULT_SETTINGS.voice, language: 'Japanese' },
+    { voice: DEFAULT_SETTINGS.voice, language: 'Japanese' },
   ]);
   assert.match(prompts[0][0].content, /正文必须全部使用日本語/);
 

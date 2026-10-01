@@ -34,13 +34,15 @@
 
 ## 服务器跨模块接口
 
-config 导出 config {apiKey, region, workspaceId, chatBaseUrl, asrUrl, realtimeUrl, chatModel, asrModel, ttsModel, dataDir} 和 getStatus(): ServiceStatus。端点仅在完整地域/工作空间配置下生成；未配置 ready=false。
+config 导出模型及运行配置、resolveBailianConfig(credentials?) 和 getStatus(): ServiceStatus。API Key 与 API Host 由每个用户在网页设置填写，通过请求传入后解析为本次请求／会话的服务配置；项目不提供共享 Key，不从服务器环境变量或源码读取 Key。没有浏览器凭据时 ready=false。TTS 模型及默认音色使用 shared/protocol.ts 导出的 DEFAULT_TTS 常量：model 为 qwen3-tts-vc-realtime-2026-01-15，voice 为 qwen-tts-vc-kaiwa-voice-20261001155111507-6512，前后端统一使用，不读取 TTS 环境变量。
 
 storage 导出 store 对象，同步方法：getSettings(), updateSettings(patch), listSessions(), getSession(id), createSession(), endSession(id, review?), saveReview(id,review), listMessages(sessionId), getMessage(id), addMessage({sessionId,turnId,role,content,delivery}), updateMessage(id, Partial<ChatMessage>), listMemories(), addMemory(content), updateMemory(id,content), deleteMemory(id), recentReviews(limit), close()。
 
+读取设置时，新用户采用 DEFAULT_TTS.voice，旧 Cherry 存量设置迁移为该默认音色，已有自定义音色保持不变。
+
 server/providers/qwen.ts 导出 QwenClient 类：stream(messages,signal): AsyncGenerator<string>、complete(messages,signal?): Promise<string>，以及 PromptMessage {role:'system'|'user'|'assistant',content:string}。
 
-server/providers/tts.ts 导出 TtsClient.synthesize(text,voice,languageType,signal,onAudio):Promise<void>，languageType 为必传 TtsLanguage。resolveTtsLanguage(learningLanguage) 将日/英/韩/法/德/西班牙语映射到 Japanese/English/Korean/French/German/Spanish，未知语言使用 Auto。不根据文字是否包含汉字猜测语种；session.update 使用传入语种及音色，保留 server_commit 与 24 kHz PCM。`BAILIAN_TTS_MODEL` 与 `BAILIAN_TTS_VOICE` 可配套指定 Qwen Realtime 复刻模型和专属音色；模型必须与创建音色时的 target_model 一致。
+server/providers/tts.ts 导出 TtsClient.synthesize(text,voice,languageType,signal,onAudio):Promise<void>，languageType 为必传 TtsLanguage。resolveTtsLanguage(learningLanguage) 将日/英/韩/法/德/西班牙语映射到 Japanese/English/Korean/French/German/Spanish，未知语言使用 Auto。不根据文字是否包含汉字猜测语种；session.update 使用传入语种及音色，保留 server_commit 与 24 kHz PCM。复刻音色绑定创建时的模型、账号和地域，target_model 必须与 DEFAULT_TTS.model 一致；其他用户需在网页设置中填写自己账号可用的复刻音色 ID。
 
 server/session.ts 导出 RealtimeSession(socket:WebSocket)，handle(event:ClientEvent):Promise<void>、dispose():Promise<void>；导出 getActiveSessionId():string|null。HTTP translate 可使用 QwenClient.complete，需缓存结果。会话模块直接使用 store/config。
 

@@ -23,20 +23,27 @@ KAIWA_TALK_WEB_PORT=13000 pnpm dev
 
 生产模式先运行 `pnpm build`，再运行 `KAIWA_TALK_WEB_PORT=13000 pnpm start`，无需按端口重新构建。浏览器以页面主机名和下一端口连接本地服务，保证浏览器身份 Cookie 可以正常发送。本地服务校验 Host 与 Origin，不应直接暴露到公网。
 
-无需为本地使用配置 Turso 或 Blob；默认模型名内置在 `server/config.ts`。需要调整时，将 `.env.example` 复制为 `.env.local` 后编辑；已有环境文件不要覆盖：
+无需为本地使用配置 Turso 或 Blob。聊天与 ASR 的默认模型名内置在 `server/config.ts`；需要调整时，将 `.env.example` 复制为 `.env.local` 后编辑，已有环境文件不要覆盖：
 
 ```dotenv
 BAILIAN_CHAT_MODEL=qwen3.8-flash
 BAILIAN_ASR_MODEL=fun-asr-realtime
-BAILIAN_TTS_MODEL=qwen3-tts-flash-realtime
-BAILIAN_TTS_VOICE=Cherry
 ```
 
-模型名称和默认音色的变化需要重启后端。`BAILIAN_TTS_VOICE` 用于新用户及仍使用内置默认音色 `Cherry` 的设置，其他已保存的自定义音色保留。网页中保存、更新或删除 API Key 无需重启；每次会话固定使用开始时的凭据。默认模型能否使用取决于实际账户、地域、模型权限和额度，不由配置格式检查保证。
+TTS 模型与默认音色由 `shared/protocol.ts` 导出的 `DEFAULT_TTS` 常量统一定义，前后端共用，不读取 `.env.local` 或 Vercel 中的 TTS 环境变量：
 
-使用复刻音色时，先通过百炼 `qwen-voice-enrollment` 创建音色，再将本地 `.env.local` 的 `BAILIAN_TTS_MODEL` 设为 `qwen3-tts-vc-realtime-2026-01-15`，`BAILIAN_TTS_VOICE` 设为接口返回的 `voice`。创建时的 `target_model` 必须与合成模型完全一致；网页中需使用拥有该音色的同一百炼账号和地域。已有自定义音色可在练习设置中替换。音色 ID 保存在本地配置，不将账号专属音色或原始录音加入公共源码。
+```ts
+export const DEFAULT_TTS = {
+  model: 'qwen3-tts-vc-realtime-2026-01-15',
+  voice: 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512',
+};
+```
 
-百炼 API Key 与 API Host 仅从浏览器请求传入，不使用服务器环境变量中的旧百炼密钥兜底。后端按允许的百炼官方域名构造端点，不接受任意代理 URL、端口或路径。具体配置见[使用教程](../README.md#2-使用教程)。
+新用户使用默认音色；已保存为旧默认音色 `Cherry` 的设置会读取为当前默认音色，其他已保存的自定义音色保留。修改默认 TTS 时应配套修改常量中的模型和音色，并重新构建部署；聊天与 ASR 环境变量的变化需要重启后端。
+
+复刻音色绑定创建时的模型、账号和地域。默认音色 ID 不授权其他账号使用该音色；每位用户应在网页练习设置中填写自己的 API Key，并使用自己账号可用的复刻音色 ID。创建音色时，调用百炼 `qwen-voice-enrollment` 的 `target_model` 必须与 `DEFAULT_TTS.model` 完全一致。可在练习设置中替换音色，无需修改项目默认值。
+
+项目不提供共享 API Key。百炼 API Key 与 API Host 仅从浏览器请求传入，不写入源码，也不使用服务器环境变量中的旧百炼密钥兜底。网页中保存、更新或删除 API Key 无需重启；每次会话固定使用开始时的凭据。后端按允许的百炼官方域名构造端点，不接受任意代理 URL、端口或路径。模型能否使用取决于实际账户、地域、模型权限和额度，不由配置格式检查保证。具体配置见[使用教程](../README.md#2-使用教程)。
 
 ## 数据流与目录
 
@@ -66,7 +73,7 @@ BAILIAN_TTS_VOICE=Cherry
 | `server/session.ts` | 会话租约、轮次编排、取消、上下文与学习回顾 |
 | `server/storage.ts` | 共享数据库连接与按身份绑定的存储视图 |
 | `server/avatars.ts` | VRM 验证、私有上传、完成和所属检查 |
-| `shared/protocol.ts` | 前后端事件与数据类型 |
+| `shared/protocol.ts` | 前后端事件、数据类型及默认 TTS 模型和音色 |
 | `shared/cloud-access.ts` | 浏览器身份 Cookie 的签名与校验 |
 | `scripts/prepare-vad-assets.mjs` | 从锁定依赖复制 VAD、Worklet、ORT 与许可文件 |
 | `data/` | 自动生成的本地数据库、签名密钥和导入头像，不提交到仓库 |
