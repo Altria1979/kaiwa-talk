@@ -1,0 +1,60 @@
+tests/avatar-file.test.mjs
+  s_e8b001cc635821::t_599fbea1352eb3 1-45
+README.en.md
+  s_e8b001cc635821::t_e603c6797a6c3b 26,59,61,109,137,155
+server/storage.ts
+  s_e8b001cc635821::t_d5efb79b102333 36,38
+src/i18n/messages/errors.ts
+  s_e8b001cc635821::t_721865335b85a2 38,41,171,174,304,307
+tests/storage-localization.test.mjs
+  s_e8b001cc635821::t_caabb8c6eda445 37,42-56,69,95,97
+src/lib/avatar-animation.ts
+  s_e8b001cc635821::t_c8c38b530c11ca 156-160
+src/components/avatar-stage.tsx
+  s_e8b001cc635821::t_c7778747f17fc2 39,332
+tests/avatar-animation.test.mjs
+  s_e8b001cc635821::t_3229a937e9ea9e 4,25-92
+  s_e8b001cc635821::t_0d0bfadecf7ba0 93
+shared/protocol.ts
+  s_e8b001cc635821::t_d5efb79b102333 21,25
+shared/app-errors.ts
+  s_e8b001cc635821::t_721865335b85a2 36,39
+src/i18n/messages/controls.ts
+  s_e8b001cc635821::t_721865335b85a2 24,50,74
+tests/cloud-avatars.test.mjs
+  s_e8b001cc635821::t_599fbea1352eb3 29-30,38-51
+  s_e8b001cc635821::t_ab0262256eb947 52
+README.ja.md
+  s_e8b001cc635821::t_e603c6797a6c3b 26,59,61,109,137,155
+docs/development.md
+  s_e8b001cc635821::t_e603c6797a6c3b 134,140
+  s_e8b001cc635821::t_50f326a0a5dca0 141
+README.md
+  s_e8b001cc635821::t_e603c6797a6c3b 26,59,61,109,137,155
+tests/bailian-config.test.mjs
+  s_e8b001cc635821::t_caabb8c6eda445 72
+src/i18n/messages/companion.ts
+  s_e8b001cc635821::t_721865335b85a2 98,100,102,246,248,250,392,394,396
+tests/default-avatar.test.mjs
+  s_e8b001cc635821::t_caabb8c6eda445 7-8,12-13,20-24,28-29
+THIRD_PARTY_NOTICES.md
+  s_e8b001cc635821::t_80c22b9543a513 3,6-11,15-22,29
+server/avatars.ts
+  s_e8b001cc635821::t_c7778747f17fc2 22,27,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c9e903c3d65647fc412e15f8108e59dbf5967a9b",
+  "prompts": {},
+  "sessions": {
+    "s_e8b001cc635821": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f712-c13c-72d0-93c2-00d883b40def",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
