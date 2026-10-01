@@ -49,7 +49,6 @@ export function Companion() {
   const [busy, setBusy] = useState(false);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translating, setTranslating] = useState<string | null>(null);
-  const composer = useRef<HTMLTextAreaElement>(null);
   const statusRequest = useRef(0);
   const { chatScroll, chatContent, onScroll, showLatest, scrollToLatest } = useConversationScroll({
     sessionId: conversation.session?.id,
@@ -137,7 +136,6 @@ export function Companion() {
       await conversation.sendText(text.trim());
       scrollToLatest();
       setInput('');
-      composer.current?.focus();
     });
   };
   const submit = (event: FormEvent) => { event.preventDefault(); void sendText(input); };
@@ -193,7 +191,6 @@ export function Companion() {
             const sending = conversation.sendSuggestion(message.id, index);
             scrollToLatest();
             setInput('');
-            composer.current?.focus();
             await sending;
           });
         }}
@@ -242,7 +239,7 @@ export function Companion() {
               </div>
               <form id="text-composer" className="composer" onSubmit={submit}>
                 <label className="sr-only" htmlFor="message-input">{t('companion.messageInput')}</label>
-                <textarea ref={composer} id="message-input" value={input} maxLength={MAX_TEXT_LENGTH} onChange={(event) => setInput(event.target.value)} placeholder={t('companion.messagePlaceholder')} rows={1} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendText(input); } }} />
+                <textarea id="message-input" value={input} maxLength={MAX_TEXT_LENGTH} onChange={(event) => setInput(event.target.value)} placeholder={t('companion.messagePlaceholder')} rows={1} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendText(input); } }} />
                 <button className="send-button" type="submit" aria-label={t('companion.sendMessage')} disabled={!input.trim() || !ready || busy}><Icon name="send" size={18} /></button>
               </form>
               <div className="composer-secondary-controls">
