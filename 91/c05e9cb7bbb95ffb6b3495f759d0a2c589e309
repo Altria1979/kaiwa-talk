@@ -1,0 +1,35 @@
+docs/IMPLEMENTATION.md
+  s_12e19604c2b250::t_6e42a33a235ae3 37,41-42,45
+tests/storage-localization.test.mjs
+  s_12e19604c2b250::t_b294e83fb960b2 11,34-35,37,39,42-44,46-47,51
+docs/development.md
+  s_12e19604c2b250::t_6e42a33a235ae3 26,33,35-44,46,76
+tests/bailian-config.test.mjs
+  s_12e19604c2b250::t_b294e83fb960b2 59,61-63,67-68,71-74
+server/storage.ts
+  s_12e19604c2b250::t_b294e83fb960b2 36
+shared/protocol.ts
+  s_12e19604c2b250::t_b294e83fb960b2 18-23,30
+.env.example
+  s_12e19604c2b250::t_6e42a33a235ae3 1,8-9
+tests/session.test.mjs
+  s_12e19604c2b250::t_b294e83fb960b2 280-282,360-361
+server/config.ts
+  s_12e19604c2b250::t_b294e83fb960b2 3,60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "91c05e9cb7bbb95ffb6b3495f759d0a2c589e309",
+  "prompts": {},
+  "sessions": {
+    "s_12e19604c2b250": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f65b-55fd-7b43-862b-a7b0e45ac5ca",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
