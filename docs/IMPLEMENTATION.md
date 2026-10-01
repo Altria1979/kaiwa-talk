@@ -40,7 +40,7 @@ storage 导出 store 对象，同步方法：getSettings(), updateSettings(patch
 
 server/providers/qwen.ts 导出 QwenClient 类：stream(messages,signal): AsyncGenerator<string>、complete(messages,signal?): Promise<string>，以及 PromptMessage {role:'system'|'user'|'assistant',content:string}。
 
-server/providers/tts.ts 导出 TtsClient.synthesize(text,voice,languageType,signal,onAudio):Promise<void>，languageType 为必传 TtsLanguage。resolveTtsLanguage(learningLanguage) 将日/英/韩/法/德/西班牙语映射到 Japanese/English/Korean/French/German/Spanish，未知语言使用 Auto。不根据文字是否包含汉字猜测语种；session.update 使用传入语种，保留 Cherry、server_commit 与 24 kHz PCM。
+server/providers/tts.ts 导出 TtsClient.synthesize(text,voice,languageType,signal,onAudio):Promise<void>，languageType 为必传 TtsLanguage。resolveTtsLanguage(learningLanguage) 将日/英/韩/法/德/西班牙语映射到 Japanese/English/Korean/French/German/Spanish，未知语言使用 Auto。不根据文字是否包含汉字猜测语种；session.update 使用传入语种及音色，保留 server_commit 与 24 kHz PCM。`BAILIAN_TTS_MODEL` 与 `BAILIAN_TTS_VOICE` 可配套指定 Qwen Realtime 复刻模型和专属音色；模型必须与创建音色时的 target_model 一致。
 
 server/session.ts 导出 RealtimeSession(socket:WebSocket)，handle(event:ClientEvent):Promise<void>、dispose():Promise<void>；导出 getActiveSessionId():string|null。HTTP translate 可使用 QwenClient.complete，需缓存结果。会话模块直接使用 store/config。
 

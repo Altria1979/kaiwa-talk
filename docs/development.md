@@ -29,9 +29,12 @@ KAIWA_TALK_WEB_PORT=13000 pnpm dev
 BAILIAN_CHAT_MODEL=qwen3.8-flash
 BAILIAN_ASR_MODEL=fun-asr-realtime
 BAILIAN_TTS_MODEL=qwen3-tts-flash-realtime
+BAILIAN_TTS_VOICE=Cherry
 ```
 
-模型名称的变化需要重启后端。网页中保存、更新或删除 API Key 无需重启；每次会话固定使用开始时的凭据。默认模型能否使用取决于实际账户、地域、模型权限和额度，不由配置格式检查保证。
+模型名称和默认音色的变化需要重启后端。`BAILIAN_TTS_VOICE` 用于新用户及仍使用内置默认音色 `Cherry` 的设置，其他已保存的自定义音色保留。网页中保存、更新或删除 API Key 无需重启；每次会话固定使用开始时的凭据。默认模型能否使用取决于实际账户、地域、模型权限和额度，不由配置格式检查保证。
+
+使用复刻音色时，先通过百炼 `qwen-voice-enrollment` 创建音色，再将本地 `.env.local` 的 `BAILIAN_TTS_MODEL` 设为 `qwen3-tts-vc-realtime-2026-01-15`，`BAILIAN_TTS_VOICE` 设为接口返回的 `voice`。创建时的 `target_model` 必须与合成模型完全一致；网页中需使用拥有该音色的同一百炼账号和地域。已有自定义音色可在练习设置中替换。音色 ID 保存在本地配置，不将账号专属音色或原始录音加入公共源码。
 
 百炼 API Key 与 API Host 仅从浏览器请求传入，不使用服务器环境变量中的旧百炼密钥兜底。后端按允许的百炼官方域名构造端点，不接受任意代理 URL、端口或路径。具体配置见[使用教程](../README.md#2-使用教程)。
 

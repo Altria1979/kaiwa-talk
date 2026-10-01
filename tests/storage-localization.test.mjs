@@ -8,7 +8,8 @@ import Database from 'better-sqlite3';
 import { DEFAULT_SETTINGS } from '../shared/protocol.ts';
 
 const dataDir = mkdtempSync(join(tmpdir(), 'koharu-locale-'));
-mock.module('../server/config.ts', { exports: { config: { dataDir } } });
+const config = { dataDir, ttsVoice: DEFAULT_SETTINGS.voice };
+mock.module('../server/config.ts', { exports: { config } });
 const { store: persistence } = await import('../server/storage.ts');
 const ownerId = randomUUID();
 const store = persistence.forOwner(ownerId);
@@ -26,8 +27,38 @@ function saveSettings(settings) {
 }
 
 beforeEach(() => {
+  config.ttsVoice = DEFAULT_SETTINGS.voice;
   db.exec('DELETE FROM browser_messages; DELETE FROM browser_sessions; DELETE FROM browser_memories;');
   saveSettings(DEFAULT_SETTINGS);
+});
+
+test('deployment voice is used for new browsers and settings without a saved voice', async () => {
+  config.ttsVoice = 'qwen-tts-vc-test-deployment';
+  assert.equal((await persistence.forOwner(randomUUID()).getSettings()).voice, config.ttsVoice);
+  const { voice, ...settings } = DEFAULT_SETTINGS;
+  assert.equal(voice, 'Cherry');
+  saveSettings(settings);
+  assert.deepEqual(await store.getSettings(), { ...DEFAULT_SETTINGS, voice: config.ttsVoice });
+});
+
+test('saved built-in voice uses the deployment voice and persists on the next settings update', async () => {
+  config.ttsVoice = 'qwen-tts-vc-test-deployment';
+  assert.equal((await store.getSettings()).voice, config.ttsVoice);
+  const updated = await store.updateSettings({ vadSilenceMs: 1800 });
+  assert.equal(updated.voice, config.ttsVoice);
+  assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).voice, config.ttsVoice);
+  config.ttsVoice = 'qwen-tts-vc-other-deployment';
+  assert.equal((await store.getSettings()).voice, updated.voice);
+});
+
+test('deployment voice preserves custom voices and their saved settings', async () => {
+  config.ttsVoice = 'qwen-tts-vc-test-deployment';
+  for (const voice of ['Serena', 'qwen-tts-vc-custom-user']) {
+    saveSettings({ ...DEFAULT_SETTINGS, voice });
+    assert.equal((await store.getSettings()).voice, voice);
+    assert.equal((await store.updateSettings({ vadSilenceMs: 1800 })).voice, voice);
+    assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).voice, voice);
+  }
 });
 
 test('Japanese defaults and legacy built-in settings share the same public values', async () => {

@@ -32,7 +32,8 @@ async function checkLease(db: DatabaseConnection, browserId: string, guard: Sess
 
 async function readSettings(db: DatabaseConnection, browserId: string): Promise<Settings> {
   const settings = { ...DEFAULT_SETTINGS, ...parse<Settings>((await db.execute('SELECT data FROM browser_settings WHERE owner_id = ?', [browserId])).rows[0]) };
-  // Only known built-in values are migrated; custom names, personas and models remain intact.
+  // Only known built-in values are migrated; custom names, personas, models and voices remain intact.
+  if (config.ttsVoice && settings.voice === DEFAULT_SETTINGS.voice) settings.voice = config.ttsVoice;
   if (settings.characterName === '小春') settings.characterName = DEFAULT_SETTINGS.characterName;
   if (settings.persona === '温柔、耐心、有好奇心的日语聊天伙伴。像朋友一样自然交流。') settings.persona = DEFAULT_SETTINGS.persona;
   settings.learningLanguage = languageNames.get(settings.learningLanguage) ?? settings.learningLanguage;

@@ -1,6 +1,6 @@
 import { AppError } from '../shared/app-errors.js';
 import { resolve } from 'node:path';
-import type { BrowserBailianCredentials, ServiceStatus } from '../shared/protocol.js';
+import { DEFAULT_SETTINGS, type BrowserBailianCredentials, type ServiceStatus } from '../shared/protocol.js';
 import { isCloudDeployment } from '../shared/cloud-access.js';
 
 import { loadBrowserSecret } from './browser-secret.js';
@@ -58,6 +58,7 @@ export const config = Object.freeze({
   chatModel: process.env.BAILIAN_CHAT_MODEL?.trim() || 'qwen3.8-flash',
   asrModel: process.env.BAILIAN_ASR_MODEL?.trim() || 'fun-asr-realtime',
   ttsModel: process.env.BAILIAN_TTS_MODEL?.trim() || 'qwen3-tts-flash-realtime',
+  ttsVoice: process.env.BAILIAN_TTS_VOICE?.trim() || DEFAULT_SETTINGS.voice,
   browserSecret: loadBrowserSecret(cloud, resolve(process.cwd(), 'data')),
   dataDir: resolve(process.cwd(), 'data'),
 });

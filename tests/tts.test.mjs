@@ -10,8 +10,9 @@ class Socket extends EventEmitter {
   sent = [];
   terminated = false;
 
-  constructor() {
+  constructor(endpoint) {
     super();
+    this.endpoint = new URL(endpoint);
     Socket.instances.push(this);
     queueMicrotask(() => this.emit('open'));
   }
@@ -27,6 +28,24 @@ mock.module(new URL('../server/config.ts', import.meta.url).href, {
   exports: { config: providerConfig, resolveBailianConfig: () => providerConfig },
 });
 const { TtsClient, resolveTtsLanguage } = await import('../server/providers/tts.ts');
+
+test('voice cloning uses the paired realtime model and preserves the registered voice ID', async () => {
+  const model = 'qwen3-tts-vc-realtime-2026-01-15';
+  const voice = 'qwen-tts-vc-example-voice-20260115120000000-abcd';
+  const completed = new TtsClient({ ...providerConfig, ttsModel: model }).synthesize(
+    '一緒に日本語で話しましょう。', voice, 'Japanese', new AbortController().signal, () => {},
+  );
+  const socket = Socket.instances.at(-1);
+  await setImmediate();
+  assert.equal(socket.endpoint.searchParams.get('model'), model);
+  assert.deepEqual(socket.sent[0].session, {
+    voice, mode: 'server_commit', language_type: 'Japanese', response_format: 'pcm', sample_rate: 24000,
+  });
+  socket.receive({ type: 'session.updated' });
+  socket.receive({ type: 'response.audio.delta', delta: 'AAABAA==' });
+  socket.receive({ type: 'session.finished' });
+  await completed;
+});
 
 async function synthesize(text, language = 'Japanese', signal = new AbortController().signal) {
   const audio = [];

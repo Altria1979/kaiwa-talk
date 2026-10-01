@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { browserCookie } from '../shared/cloud-access.ts';
 import { after, mock, test } from 'node:test';
@@ -54,6 +55,23 @@ function request(path, credentials, method = 'GET') {
     handler(req, res);
   });
 }
+
+test('deployment TTS voice is optional, trims its value and leaves the generic model default intact', () => {
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(BAILIAN_TTS_|KAIWA_TALK_|KAIWA_LAB_|VIRTUALMAID_|KOHARU_|VERCEL$|PORT$)/.test(key)));
+  for (const [overrides, voice] of [
+    [{}, 'Cherry'],
+    [{ BAILIAN_TTS_VOICE: '' }, 'Cherry'],
+    [{ BAILIAN_TTS_VOICE: '   ' }, 'Cherry'],
+    [{ BAILIAN_TTS_VOICE: '  qwen-tts-vc-test-deployment  ' }, 'qwen-tts-vc-test-deployment'],
+  ]) {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
+      const { config } = await import('./server/config.ts');
+      console.log(JSON.stringify({ voice: config.ttsVoice, model: config.ttsModel }));
+    `], { cwd: new URL('../', import.meta.url), env: { ...environment, ...overrides }, encoding: 'utf8', timeout: 15_000 });
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+    assert.deepEqual(JSON.parse(result.stdout), { voice, model: 'qwen3-tts-flash-realtime' });
+  }
+});
 
 test('legacy server credentials and endpoints cannot make an unconfigured browser ready', () => {
   const runtime = resolveBailianConfig();
