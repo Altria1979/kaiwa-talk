@@ -1,0 +1,38 @@
+tests/tts.test.mjs
+  s_12e19604c2b250::t_ed7aa6fb16c04e 13,15,32-48
+  s_12e19604c2b250::t_53a8119e501904 49
+docs/IMPLEMENTATION.md
+  s_12e19604c2b250::t_ed7aa6fb16c04e 43
+src/i18n/messages/companion.ts
+  s_12e19604c2b250::t_ed7aa6fb16c04e 117,265,411
+tests/storage-localization.test.mjs
+  s_12e19604c2b250::t_180e11f274a110 11-12,30,35-62
+  s_12e19604c2b250::t_5c398cb0f329b1 63
+docs/development.md
+  s_12e19604c2b250::t_ed7aa6fb16c04e 32,35-37
+.env.example
+  s_12e19604c2b250::t_3d0eac339f8b73 9-12
+server/storage.ts
+  s_12e19604c2b250::t_3d0eac339f8b73 35-36
+server/config.ts
+  s_12e19604c2b250::t_3d0eac339f8b73 3,61
+tests/bailian-config.test.mjs
+  s_12e19604c2b250::t_180e11f274a110 2,59-74
+  s_12e19604c2b250::t_2efa83c52edac0 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "efd19d74b75daa3d9881aa9ddac8b6253227b737",
+  "prompts": {},
+  "sessions": {
+    "s_12e19604c2b250": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f65b-55fd-7b43-862b-a7b0e45ac5ca",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
