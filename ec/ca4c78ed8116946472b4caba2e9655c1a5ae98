@@ -1,0 +1,19 @@
+README.md
+  s_e8b001cc635821::t_65e9323bb442c9 63-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ecca4c78ed8116946472b4caba2e9655c1a5ae98",
+  "prompts": {},
+  "sessions": {
+    "s_e8b001cc635821": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f712-c13c-72d0-93c2-00d883b40def",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
