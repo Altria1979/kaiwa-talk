@@ -51,6 +51,44 @@ test('an orbit keeps the composed view when actions widen and return to idle', (
   assertVector(controls.target, target);
 });
 
+test('desktop default and reset match one zoom-in step without shifting the target', () => {
+  const previous = fixture();
+  previous.view.zoom(true);
+  settle(previous.view);
+  const { camera, controls, view } = fixture();
+  view.resize(camera.aspect, 0.8, 0, 0.8);
+  assertVector(camera.position, previous.camera.position);
+  assertVector(controls.target, previous.controls.target);
+  view.rotate(true);
+  view.zoom(true);
+  view.reset(0.8);
+  settle(view);
+  assertVector(camera.position, previous.camera.position);
+  assertVector(controls.target, previous.controls.target);
+  view.update(0.8, 1);
+  assert.ok(controls.getDistance() > previous.controls.getDistance());
+  view.update(0.8);
+  assertVector(camera.position, previous.camera.position);
+});
+
+test('desktop zoom preserves full-body framing and mobile restores the original default', () => {
+  const { camera, controls, view, size } = fixture();
+  const mobilePosition = camera.position.clone();
+  view.resize(camera.aspect, 0.8, 0, 0.8);
+  view.reset(0);
+  const fullBody = getAvatarFraming(size, camera.fov, camera.aspect, 0);
+  assert.ok(Math.abs(controls.getDistance() - fullBody.distance) < 1e-9);
+  view.resize(camera.aspect, 0.8, 0, 1);
+  assertVector(camera.position, mobilePosition);
+  view.resize(camera.aspect, 0.8, 0, 0.8);
+  view.zoom(true);
+  const manualPosition = camera.position.clone();
+  view.resize(camera.aspect, 0.8, 0, 1);
+  assertVector(camera.position, manualPosition);
+  view.reset(0.8);
+  assertVector(camera.position, mobilePosition);
+});
+
 test('resize preserves the user orbit, zoom, and pan while updating the projection', () => {
   const { camera, controls, view } = fixture();
   view.rotate(true);

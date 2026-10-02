@@ -1,6 +1,6 @@
 import { MathUtils, Vector3, type PerspectiveCamera } from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { getAvatarFraming } from './avatar-framing';
+import { DEFAULT_AVATAR_FRAMING, getAvatarFraming } from './avatar-framing';
 import { isAvatarTap } from './avatar-animation';
 
 /** Keep automatic action framing until the viewer actually moves the camera. */
@@ -12,6 +12,7 @@ export class AvatarCamera {
   private interacting = false;
   private applyingView = false;
   private connected = true;
+  private defaultDistanceScale = 1;
 
   constructor(private readonly camera: PerspectiveCamera, private readonly controls: OrbitControls) {
     controls.enableDamping = true;
@@ -75,16 +76,20 @@ export class AvatarCamera {
       this.framingSize.copy(this.size);
       this.framingSize.x *= 1 + widening * 0.3;
       this.framingSize.y *= 1 + widening * 0.12;
-      const { distance, centerOffsetY } = getAvatarFraming(this.framingSize, this.camera.fov, this.camera.aspect, framing * (1 - widening * 0.72));
+      const effectiveFraming = framing * (1 - widening * 0.72);
+      const { distance, centerOffsetY } = getAvatarFraming(this.framingSize, this.camera.fov, this.camera.aspect, effectiveFraming);
+      // Apply the default zoom gradually so the full-body view still fits.
+      const distanceScale = MathUtils.lerp(1, this.defaultDistanceScale, Math.min(effectiveFraming / DEFAULT_AVATAR_FRAMING, 1));
       const targetY = this.center.y + centerOffsetY + this.size.y * widening * 0.04;
       this.controls.target.set(this.center.x, targetY, this.center.z);
-      this.camera.position.set(this.center.x, targetY, this.center.z + distance);
+      this.camera.position.set(this.center.x, targetY, this.center.z + distance * distanceScale);
     }
     this.controls.update();
     this.applyingView = false;
   }
 
-  resize(aspect: number, framing: number, widening = 0) {
+  resize(aspect: number, framing: number, widening = 0, defaultDistanceScale = 1) {
+    this.defaultDistanceScale = defaultDistanceScale;
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
     // Do not change the target, orbit, or distance of a view the user composed.

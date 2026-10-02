@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import Image from 'next/image';
 import { DEFAULT_SETTINGS, MAX_TEXT_LENGTH, type ChatMessage, type LearningReview, type ServiceStatus, type Settings } from '../../shared/protocol';
 import { api } from '../lib/api';
 import { subscribeBrowserCredentials } from '../lib/bailian-credentials';
@@ -44,6 +45,7 @@ export function Companion() {
   const [notice, setNotice] = useState<CompanionMessageKey | null>(null);
   const [input, setInput] = useState('');
   const [textExpanded, setTextExpanded] = useState(false);
+  const [stageCollapsed, setStageCollapsed] = useState(false);
   const messageInput = useRef<HTMLTextAreaElement>(null);
   const textToggle = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
@@ -222,13 +224,19 @@ export function Companion() {
     <button className="send-button" type="submit" aria-label={t('companion.sendMessage')} disabled={!input.trim() || !ready || busy}><Icon name="send" size={18} /></button>
   </form>;
 
-  return <div className={styles.shell} data-welcome={welcome}>
+  return <div className={styles.shell} data-welcome={welcome} data-stage-collapsed={stageCollapsed}>
     <main className="workspace">
+      <header className="mobile-header">
+        <button type="button" className="icon-button" aria-label={t('controls.avatarSettings')} aria-haspopup="dialog" onClick={() => setPanel('avatar')}><Icon name="spark" size={23} /></button>
+        <div><h1>{t('common.title').split(' · ')[0]}</h1><p>{t('companion.mobileSubtitle')}</p></div>
+        <button type="button" className="icon-button" aria-label={t('controls.settings')} aria-haspopup="dialog" onClick={() => setPanel('settings')}><Icon name="settings" size={24} /></button>
+      </header>
       {!ready && <div className="config-banner" role="status"><Icon name="info" size={18} /><span>{t(!status ? 'companion.serviceConnecting' : status.credentialSource === 'none' ? 'companion.apiKeyRequired' : 'companion.serviceSetup')}</span><button onClick={() => setPanel('settings')}>{t('companion.openSettings')}<Icon name="arrow" size={15} /></button></div>}
       {!panel && errorBanner}
 
       <div className="chat-layout">
         <section className="conversation-panel" aria-label={t('companion.currentConversation')}>
+          <div className="mobile-conversation-heading"><h2>{t('companion.conversationHeading')}</h2><ReadingControls {...readingPreferences} /></div>
           <div className="conversation-body">
             <div className="conversation-scroll" ref={chatScroll} tabIndex={0} aria-label={t('companion.conversationMessages')} onScroll={onScroll}>
               <div className="conversation-content" ref={chatContent}>
@@ -261,24 +269,33 @@ export function Companion() {
                 {!voiceActive && <div className="conversation-start">{startButton}</div>}
                 <div className="composer-secondary-controls">
                   {voiceActive && <>
-                    <button type="button" className={`round-control ${conversation.muted ? 'is-muted' : ''}`} aria-label={conversation.muted ? t('companion.unmute') : t('companion.mute')} title={conversation.muted ? t('companion.unmute') : t('companion.mute')} aria-pressed={conversation.muted} onClick={conversation.toggleMute}><Icon name={conversation.muted ? 'mic-off' : 'mic'} size={18} /></button>
+                    <button type="button" className={`round-control voice-control ${conversation.muted ? 'is-muted' : ''}`} aria-label={conversation.muted ? t('companion.unmute') : t('companion.mute')} title={conversation.muted ? t('companion.unmute') : t('companion.mute')} aria-pressed={conversation.muted} onClick={conversation.toggleMute}><Icon name={conversation.muted ? 'mic-off' : 'mic'} size={18} /></button>
                     <button ref={textToggle} type="button" className="text-input-toggle" aria-label={t(textExpanded ? 'companion.hideInput' : 'companion.typeMessage')} aria-expanded={textExpanded} aria-controls="text-composer" onClick={() => textExpanded ? hideInput() : setTextExpanded(true)}><Icon name="keyboard" size={18} /><span>{t(textExpanded ? 'companion.hideInput' : 'companion.typeMessage')}</span>{!textExpanded && input.trim() && <span className="draft-dot" role="img" aria-label={t('companion.draftSaved')} />}</button>
                   </>}
-                  {active && ['thinking', 'speaking'].includes(conversation.state) && <button type="button" className="round-control" aria-label={t('companion.stopReply')} title={t('companion.stopReply')} onClick={conversation.cancel}><Icon name="pause" size={15} /></button>}
+                  {active && ['thinking', 'speaking'].includes(conversation.state) && <button type="button" className="round-control interrupt-control" aria-label={t('companion.stopReply')} title={t('companion.stopReply')} onClick={conversation.cancel}><Icon name="pause" size={15} /></button>}
                   {active && <button type="button" className="end-call" aria-label={t('companion.endConversation')} title={t('companion.endConversation')} onClick={() => void perform(conversation.end)} disabled={busy}><Icon name="stop" size={14} /><span>{t('companion.endConversation')}</span></button>}
                 </div>
               </div>
               {showInput && <span className="composer-hint">{t('companion.composerHint')}</span>}
             </div>
           </div>}
+          {welcome && <div className="mobile-welcome-dock">
+            <button type="button" className="round-control" aria-label={t('companion.typeMessage')} onClick={() => messageInput.current?.focus()}><Icon name="keyboard" size={23} /></button>
+            <div className="mobile-start-voice">{startButton}<span>{t(busy ? 'companion.connecting' : 'companion.startConversation')}</span></div>
+            <button type="button" className="round-control" aria-label={t('companion.practiceSettings')} aria-haspopup="dialog" onClick={() => setPanel('settings')}><Icon name="settings" size={22} /></button>
+          </div>}
 
         </section>
 
         <aside className="companion-stage" aria-label={t('companion.virtualPartner')}>
-          <div className="character-stage">
+          <div className="character-stage" id="character-stage">
             <AvatarStage avatarUrl={DEFAULT_SETTINGS.avatarUrl} state={conversation.state} audioLevelRef={conversation.audioLevelRef} name={settings.characterName} framing={avatarFraming} caption={conversation.playbackCaption}
               emotion={avatarEmotionMode === 'auto' ? conversation.avatarEmotion : avatarEmotionMode}
               command={avatarCommand} onCapabilities={updateAvatarCapabilities} />
+          </div>
+          <div className="mobile-stage-footer">
+            <div className="practice-badge"><span>{t('companion.dailyPractice')}</span><strong>{t(`companion.level.${settings.japaneseLevel}`)}</strong></div>
+            <button type="button" className="stage-collapse" aria-label={t(stageCollapsed ? 'companion.expandCharacter' : 'companion.collapseCharacter')} aria-expanded={!stageCollapsed} aria-controls="character-stage" onClick={() => setStageCollapsed(value => !value)}><Icon name="chevron" size={20} /></button>
           </div>
           <div className="workspace-tools">
             <button type="button" className="icon-button" aria-label={t('controls.avatarSettings')} title={t('controls.avatarSettings')} aria-haspopup="dialog" onClick={() => setPanel('avatar')}><Icon name="spark" size={22} /></button>
@@ -314,10 +331,12 @@ function Message({ message, name, translation, translating, canReplay, onTransla
   const { t } = useI18n();
   const isAssistant = message.role === 'assistant';
   return <article className={`message ${isAssistant ? 'assistant-message' : 'user-message'}`}>
-    <div className="message-meta">{isAssistant && <span className="message-avatar">A</span>}<span>{isAssistant ? name : t('companion.you')}</span>{message.interrupted && <small>{t('companion.interrupted')}</small>}{message.delivery === 'voice' && !isAssistant && <Icon name="mic" size={12} />}</div>
+    <div className="message-meta">{isAssistant && <span className="message-avatar" aria-hidden="true"><Image src="/violet-avatar.png" alt="" width={36} height={36} sizes="36px" /></span>}<span>{isAssistant ? name : t('companion.you')}</span>{message.interrupted && <small>{t('companion.interrupted')}</small>}{message.delivery === 'voice' && !isAssistant && <Icon name="mic" size={12} />}</div>
     <div className="message-bubble"><p>{message.content || '…'}</p>{isAssistant && <MessageReadingAid message={message} autoLoad={autoLoadAid} streaming={streaming} showKana={readingPreferences.showKana} onReady={onReadingAid} />}{translation && <div className="message-translation"><Icon name="translate" size={13} /><span lang="ja">{translation}</span></div>}</div>
-    {isAssistant && message.content && <div className="message-actions"><button onClick={() => onReplay()} disabled={!canReplay} title={canReplay ? t('companion.replayTitle') : t('companion.replayUnavailable')}><Icon name="volume" size={14} />{t('companion.replay')}</button><button onClick={() => onReplay(true)} disabled={!canReplay}><Icon name="slow" size={14} />{t('companion.listenSlowly')}</button><button onClick={onTranslate} disabled={translating || !!translation}><Icon name="translate" size={14} />{translating ? t('companion.preparingExplanation') : translation ? t('companion.explained') : t('companion.explainJapanese')}</button></div>}
-    {children}
+    <div className="message-footer">
+      {isAssistant && message.content && <div className="message-actions"><button onClick={() => onReplay()} disabled={!canReplay} title={canReplay ? t('companion.replayTitle') : t('companion.replayUnavailable')}><Icon name="volume" size={14} />{t('companion.replay')}</button><button onClick={() => onReplay(true)} disabled={!canReplay}><Icon name="slow" size={14} />{t('companion.listenSlowly')}</button><button onClick={onTranslate} disabled={translating || !!translation}><Icon name="translate" size={14} />{translating ? t('companion.preparingExplanation') : translation ? t('companion.explained') : t('companion.explainJapanese')}</button></div>}
+      {children}
+    </div>
   </article>;
 }
 

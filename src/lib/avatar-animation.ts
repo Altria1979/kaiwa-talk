@@ -8,7 +8,7 @@ export type AvatarCommand = { id: number; kind: 'action'; action: AvatarAction }
 export type AvatarCapabilities = { ready: boolean; actions: AvatarAction[]; emotions: AvatarEmotion[]; interactions: AvatarInteraction[] };
 export const EMPTY_AVATAR_CAPABILITIES: AvatarCapabilities = { ready: false, actions: [], emotions: [], interactions: [] };
 
-const motionBones = ['head', 'spine', 'leftUpperArm', 'leftLowerArm', 'rightUpperArm', 'rightLowerArm', 'rightHand'] as const satisfies readonly VRMHumanBoneName[];
+const motionBones = ['head', 'spine', 'leftUpperArm', 'leftLowerArm', 'leftHand', 'rightUpperArm', 'rightLowerArm', 'rightHand'] as const satisfies readonly VRMHumanBoneName[];
 type MotionBone = (typeof motionBones)[number];
 type MotionName = AvatarAction | 'head' | 'body';
 type Rotation = [number, number, number];
@@ -16,12 +16,13 @@ export type AvatarMotionSample = { rotations: Partial<Record<MotionBone, Rotatio
 const durations: Record<MotionName, number> = { wave: 2.8, nod: 1.5, shake: 1.6, bow: 2.3, stretch: 3.2, head: 1.9, body: 1.5 };
 
 const ease = (value: number) => { const x = THREE.MathUtils.clamp(value, 0, 1); return x * x * (3 - 2 * x); };
+const motionEnvelope = (age: number, duration: number) => ease(age / 0.35) * ease((duration - age) / 0.45);
 
 /** Offsets always refer to the saved, relaxed pose, never the previous action. */
 export function sampleAvatarMotion(name: MotionName, age: number, reducedMotion = false): AvatarMotionSample {
   const duration = durations[name];
   if (age < 0 || age >= duration) return { rotations: {}, camera: 0 };
-  const envelope = ease(age / 0.35) * ease((duration - age) / 0.45);
+  const envelope = motionEnvelope(age, duration);
   const amount = envelope * (reducedMotion ? 0.4 : 1);
   switch (name) {
     case 'wave': return { rotations: { rightUpperArm: [0, 0.3 * amount, -0.85 * amount], rightLowerArm: [0, 0, -2.05 * amount], rightHand: [0, 0, Math.sin(age * 10) * 0.3 * amount] }, camera: envelope * 0.5 };
@@ -122,7 +123,7 @@ export class AvatarAnimator {
   private active: { name: MotionName; age: number } | null = null;
   camera = 0;
 
-  constructor(private readonly vrm: VRM) {
+  constructor(private readonly vrm: VRM, private readonly actionRest: ReadonlyMap<VRMHumanBoneName, THREE.Quaternion> = new Map()) {
     this.capabilities = getAvatarCapabilities(vrm);
     for (const name of motionBones) {
       const node = vrm.humanoid.getNormalizedBoneNode(name);
@@ -158,7 +159,13 @@ export class AvatarAnimator {
         this.euler.x *= -1;
         this.euler.z *= -1;
       }
-      this.target.copy(rest).multiply(this.rotation.setFromEuler(this.euler));
+      this.target.copy(rest);
+      const actionBase = this.actionRest.get(name);
+      if (actionBase && this.active && (this.active.name === 'stretch' || (this.active.name === 'wave' && name.startsWith('right')))) {
+        const release = motionEnvelope(this.active.age, durations[this.active.name]) * (options.reducedMotion ? 0.4 : 1);
+        this.target.slerp(actionBase, release);
+      }
+      this.target.multiply(this.rotation.setFromEuler(this.euler));
       node.quaternion.slerp(this.target, smoothing);
       if (node.quaternion.angleTo(this.target) < 0.00001) node.quaternion.copy(this.target);
     }

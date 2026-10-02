@@ -11,6 +11,7 @@ import { ensureBrowserSession, SERVICE_URL } from '../lib/api';
 import { AVATAR_BOB_RATIO } from '../lib/avatar-framing';
 import { AvatarCamera, AvatarTapGesture } from '../lib/avatar-camera';
 import { getMouthOpenness } from '../lib/avatar-mouth';
+import { setAvatarRestPose } from '../lib/avatar-pose';
 import { getAvatarCaptionPosition } from '../lib/avatar-caption';
 import type { AvatarEmotion } from '../../shared/avatar-emotion';
 import { AvatarAnimator, classifyAvatarHit, EMPTY_AVATAR_CAPABILITIES, getAvatarHandRegions, type AvatarCapabilities, type AvatarCommand } from '../lib/avatar-animation';
@@ -59,22 +60,6 @@ function createLoader() {
   const loader = new GLTFLoader(manager);
   loader.register((parser) => new VRMLoaderPlugin(parser));
   return loader;
-}
-
-function relaxArms(vrm: VRM) {
-  vrm.scene.updateMatrixWorld(true);
-  for (const side of ['left', 'right'] as const) {
-    const upper = vrm.humanoid.getNormalizedBoneNode(`${side}UpperArm`);
-    const lower = vrm.humanoid.getNormalizedBoneNode(`${side}LowerArm`);
-    if (!upper?.parent || !lower) continue;
-    const from = lower.getWorldPosition(new THREE.Vector3()).sub(upper.getWorldPosition(new THREE.Vector3())).normalize();
-    const to = new THREE.Vector3(from.x * 0.22, -1, 0.03).normalize();
-    const parentRotation = upper.parent.getWorldQuaternion(new THREE.Quaternion());
-    const delta = new THREE.Quaternion().setFromUnitVectors(from, to);
-    upper.quaternion.premultiply(parentRotation.clone().invert().multiply(delta).multiply(parentRotation));
-    upper.updateMatrixWorld(true);
-  }
-  vrm.update(0);
 }
 
 export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, caption, emotion = 'neutral', command = null, onCapabilities }: { avatarUrl: string; state: ConversationState; audioLevelRef: MutableRefObject<number>; name: string; framing: number; caption: PlaybackCaption | null; emotion?: AvatarEmotion; command?: AvatarCommand | null; onCapabilities?: (capabilities: AvatarCapabilities) => void }) {
@@ -153,7 +138,8 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
       const width = Math.max(container.clientWidth, 1);
       const height = Math.max(container.clientHeight, 1);
       renderer.setSize(width, height, false);
-      viewCamera.resize(width / height, framingRef.current, animator?.camera ?? 0);
+      const defaultDistanceScale = window.matchMedia('(max-width: 900px)').matches ? 1 : 0.8;
+      viewCamera.resize(width / height, framingRef.current, animator?.camera ?? 0, defaultDistanceScale);
     };
     const observer = new ResizeObserver(resize);
     observer.observe(container);
@@ -312,7 +298,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
         if (!next) { VRMUtils.deepDispose(gltf.scene); throw new AvatarError('avatarErrorLoad'); }
         if (disposed || version !== loadVersion) { VRMUtils.deepDispose(next.scene); return; }
         VRMUtils.rotateVRM0(next);
-        relaxArms(next);
+        const actionRest = setAvatarRestPose(next);
         const bounds = new THREE.Box3().setFromObject(next.scene);
         bounds.getSize(subjectSize);
         subjectHeight = subjectSize.y || 1.6;
@@ -321,7 +307,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
         next.scene.traverse((object) => { object.frustumCulled = false; });
         avatarGroup.add(next.scene);
         current = next;
-        animator = new AvatarAnimator(next);
+        animator = new AvatarAnimator(next, actionRest);
         if (current.lookAt) current.lookAt.autoUpdate = true;
         mouth = 0;
         current.expressionManager?.setValue('aa', 0);

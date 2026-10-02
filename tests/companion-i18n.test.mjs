@@ -5,6 +5,7 @@ import * as React from 'react';
 import { DEFAULT_SETTINGS } from '../shared/protocol.ts';
 import { companionMessages } from '../src/i18n/messages/companion.ts';
 import { controlsMessages } from '../src/i18n/messages/controls.ts';
+import { commonMessages } from '../src/i18n/messages/common.ts';
 
 let locale = 'ja';
 let rendering;
@@ -29,7 +30,7 @@ mock.module('react', { exports: {
   useEffect(effect, dependencies) { effects.push(dependencies); rendering.effects.push(effect); },
   useSyncExternalStore(_subscribe, getSnapshot) { return getSnapshot(); },
 } });
-const t = (key, params = {}) => (companionMessages[locale][key] ?? controlsMessages[locale][key]).replace(/\{(\w+)\}/g, (_, name) => String(params[name]));
+const t = (key, params = {}) => (companionMessages[locale][key] ?? controlsMessages[locale][key] ?? commonMessages[locale][key]).replace(/\{(\w+)\}/g, (_, name) => String(params[name]));
 const formattedErrors = [];
 mock.module('../src/i18n/provider.tsx', { exports: { useI18n: () => ({
   locale, t,
@@ -46,7 +47,8 @@ const conversation = {
   sendText: async text => { sent.push(text); }, clearError() {},
 };
 mock.module('../src/hooks/use-conversation.ts', { exports: { useConversation: () => conversation } });
-mock.module('../src/hooks/use-reading-preferences.ts', { exports: { useReadingPreferences: () => ({ showKana: true }) } });
+const readingPreferences = { showKana: true, setShowKana(value) { readingPreferences.showKana = value; } };
+mock.module('../src/hooks/use-reading-preferences.ts', { exports: { useReadingPreferences: () => ({ ...readingPreferences }) } });
 let credentialsSnapshot = null;
 const credentialsListeners = new Set();
 mock.module('../src/lib/bailian-credentials.ts', { exports: {
@@ -79,6 +81,8 @@ registerHooks({ load(url, context, nextLoad) {
 } });
 const { Companion } = await import('../src/components/companion.tsx');
 const { ConversationAudioExport } = await import('../src/components/conversation-audio-export.tsx');
+const { AvatarStage } = await import('../src/components/avatar-stage.tsx');
+const { ReadingControls } = await import('../src/components/reading-aids.tsx');
 
 const children = node => React.isValidElement(node) ? React.Children.toArray(node.props.children) : [];
 function find(node, predicate) {
@@ -720,6 +724,121 @@ test('welcome composer and avatar settings keep the draft and saved framing acro
     Object.assign(conversation, original);
     globalThis.localStorage = previousStorage;
     locale = 'ja';
+  }
+});
+
+test('mobile character collapse keeps its avatar reconciliation position and the conversation draft', () => {
+  const original = { ...conversation };
+  const originalLocale = locale;
+  Object.assign(conversation, { active: true, voiceEnabled: true });
+  function avatarPath(node) {
+    if (!React.isValidElement(node)) return undefined;
+    const identity = { type: node.type, key: node.key };
+    if (node.type === AvatarStage) return [identity];
+    for (const child of children(node)) {
+      const path = avatarPath(child);
+      if (path) return [identity, ...path];
+    }
+  }
+  try {
+    for (const next of ['ja', 'zh-CN', 'en']) {
+      locale = next;
+      const render = harness(Companion);
+      openMessageInput(render).props.onChange({ target: { value: 'Keep this mobile draft' } });
+      let tree = render();
+      const initialPath = avatarPath(tree);
+      const initialAvatar = find(tree, node => node.type === AvatarStage);
+      assert.ok(initialPath, 'the initial scene contains an avatar');
+      for (const collapsed of [true, false, true, false]) {
+        const toggle = find(tree, buttonLabel(t(collapsed ? 'companion.collapseCharacter' : 'companion.expandCharacter')));
+        assert.equal(toggle.props['aria-expanded'], collapsed);
+        assert.equal(find(tree, node => node.props.id === toggle.props['aria-controls']).props.id, 'character-stage');
+        toggle.props.onClick();
+        tree = render();
+        assert.equal(tree.props['data-stage-collapsed'], collapsed);
+        assert.equal(find(tree, buttonLabel(t(collapsed ? 'companion.expandCharacter' : 'companion.collapseCharacter'))).props['aria-expanded'], !collapsed);
+        assert.deepEqual(avatarPath(tree), initialPath, 'stable ancestor types and keys preserve the mounted avatar');
+        const avatar = find(tree, node => node.type === AvatarStage);
+        assert.equal(avatar.props.avatarUrl, initialAvatar.props.avatarUrl);
+        assert.equal(avatar.props.framing, initialAvatar.props.framing);
+        assert.equal(find(tree, messageInput).props.value, 'Keep this mobile draft');
+        assert.equal(find(tree, buttonLabel(t('companion.hideInput'))).props['aria-expanded'], true);
+      }
+    }
+  } finally {
+    Object.assign(conversation, original);
+    locale = originalLocale;
+  }
+});
+
+test('mobile header opens practice and character settings without losing the draft in every locale', () => {
+  const original = { ...conversation };
+  const originalLocale = locale;
+  Object.assign(conversation, { active: true, voiceEnabled: false });
+  try {
+    for (const next of ['ja', 'zh-CN', 'en']) {
+      locale = next;
+      const render = harness(Companion);
+      find(render(), messageInput).props.onChange({ target: { value: 'Draft before settings' } });
+      const header = find(render(), node => node.props.className === 'mobile-header');
+      assert.equal(text(find(header, node => node.type === 'h1')), t('common.title').split(' · ')[0]);
+      assert.equal(text(find(header, node => node.type === 'p')), t('companion.mobileSubtitle'));
+      for (const [label, title] of [['controls.settings', 'companion.practiceSettings'], ['controls.avatarSettings', 'controls.avatarSettings']]) {
+        const button = find(header, buttonLabel(t(label)));
+        assert.equal(button.props['aria-haspopup'], 'dialog');
+        button.props.onClick();
+        const tree = render();
+        const modal = find(tree, nodeType('Modal'));
+        assert.equal(modal.props.open, true);
+        assert.equal(modal.props.title, t(title));
+        if (label === 'controls.settings') assert.ok(find(tree, nodeType('SettingsPanel')));
+        else assert.ok(find(tree, node => node.props.id === 'avatar-framing'));
+        modal.props.onClose();
+        assert.equal(find(render(), nodeType('Modal')).props.open, false);
+        assert.equal(find(render(), messageInput).props.value, 'Draft before settings');
+      }
+    }
+  } finally {
+    Object.assign(conversation, original);
+    locale = originalLocale;
+  }
+});
+
+test('conversation heading kana switch shares its preference with messages and practice settings', () => {
+  const original = { ...conversation };
+  const originalLocale = locale;
+  const originalKana = readingPreferences.showKana;
+  Object.assign(conversation, {
+    active: true, voiceEnabled: false, canReplay: () => false,
+    messages: [{ id: 'mobile-kana-message', turnId: 'mobile-kana-turn', role: 'assistant', content: '今日は何をしましたか？' }],
+  });
+  try {
+    for (const next of ['ja', 'zh-CN', 'en']) {
+      locale = next;
+      readingPreferences.showKana = true;
+      const render = harness(Companion);
+      for (const showKana of [false, true]) {
+        const heading = find(render(), node => node.props.className === 'mobile-conversation-heading');
+        assert.equal(text(find(heading, node => node.type === 'h2')), t('companion.conversationHeading'));
+        const controls = find(heading, node => node.type === ReadingControls);
+        assert.equal(controls.props.showKana, !showKana);
+        assert.equal(controls.props.setShowKana, readingPreferences.setShowKana);
+        controls.props.setShowKana(showKana);
+        const tree = render();
+        assert.equal(find(find(tree, node => node.props.className === 'mobile-conversation-heading'), node => node.type === ReadingControls).props.showKana, showKana);
+        assert.equal(find(tree, nodeType('Message')).props.readingPreferences.showKana, showKana);
+        find(find(tree, node => node.props.className === 'mobile-header'), buttonLabel(t('controls.settings'))).props.onClick();
+        const settings = find(render(), nodeType('SettingsPanel'));
+        const settingsControls = find(harness(settings.type, settings.props)(), node => node.type === ReadingControls);
+        assert.equal(settingsControls.props.showKana, showKana);
+        assert.equal(settingsControls.props.setShowKana, readingPreferences.setShowKana);
+        find(render(), nodeType('Modal')).props.onClose();
+      }
+    }
+  } finally {
+    Object.assign(conversation, original);
+    readingPreferences.showKana = originalKana;
+    locale = originalLocale;
   }
 });
 

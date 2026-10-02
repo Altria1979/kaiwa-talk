@@ -1,6 +1,14 @@
 import type { Locale } from '../locales';
 
 const ja = {
+  "companion.mobileSubtitle": "AI 日本語パートナー",
+  "companion.conversationHeading": "会話",
+  "companion.dailyPractice": "日常会話",
+  "companion.level.beginner": "初級",
+  "companion.level.intermediate": "中級",
+  "companion.level.advanced": "上級",
+  "companion.collapseCharacter": "キャラクターを小さく表示",
+  "companion.expandCharacter": "キャラクターを大きく表示",
   "companion.state.idle": "終了",
   "companion.state.connecting": "接続中",
   "companion.state.listening": "聞いています",
@@ -122,6 +130,14 @@ const ja = {
 export type CompanionMessageKey = keyof typeof ja;
 
 const zh: Record<CompanionMessageKey, string> = {
+  "companion.mobileSubtitle": "AI 日语陪练",
+  "companion.conversationHeading": "对话",
+  "companion.dailyPractice": "日常会话",
+  "companion.level.beginner": "初级",
+  "companion.level.intermediate": "中级",
+  "companion.level.advanced": "高级",
+  "companion.collapseCharacter": "收起角色展示",
+  "companion.expandCharacter": "展开角色展示",
   "companion.state.idle": "已结束",
   "companion.state.connecting": "正在连接",
   "companion.state.listening": "正在聆听",
@@ -241,6 +257,14 @@ const zh: Record<CompanionMessageKey, string> = {
 };
 
 const en: Record<CompanionMessageKey, string> = {
+  "companion.mobileSubtitle": "AI Japanese partner",
+  "companion.conversationHeading": "Conversation",
+  "companion.dailyPractice": "Daily conversation",
+  "companion.level.beginner": "Beginner",
+  "companion.level.intermediate": "Intermediate",
+  "companion.level.advanced": "Advanced",
+  "companion.collapseCharacter": "Collapse character",
+  "companion.expandCharacter": "Expand character",
   "companion.state.idle": "Ended",
   "companion.state.connecting": "Connecting",
   "companion.state.listening": "Listening",

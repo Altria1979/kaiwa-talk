@@ -23,19 +23,17 @@ type Props = BaseProps & ({ readOnly: true } | {
 export function ReplySuggestions(props: Props) {
   const { value, learningLanguage, readingPreferences } = props;
   const { t, formatNumber } = useI18n();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const optionsId = useId();
   const japanese = learningLanguage === undefined ? undefined : /日语|日文|日本語|japanese|\bja\b/i.test(learningLanguage);
 
-  return <section className={`reply-suggestions${props.readOnly ? ' is-readonly' : ''}`} aria-label={t('controls.aiReplies')}>
-    <div className="reply-suggestions-header">
-      <h3><Icon name="spark" size={15} />{t('controls.aiReplies')}</h3>
-      {!props.readOnly && <div className="reply-suggestions-tools">
-        {japanese && <ReadingControls {...readingPreferences} />}
-        {value.status === 'ready' && <button type="button" className="reply-suggestions-toggle" aria-expanded={expanded} aria-controls={optionsId} onClick={() => setExpanded(current => !current)}>{t(expanded ? 'controls.close' : 'controls.open')}</button>}
-      </div>}
-    </div>
-    {value.status !== 'ready' ? <p className="reply-suggestions-status" role="status">{t(value.status === 'loading' ? 'controls.repliesLoading' : 'controls.repliesEmpty')}</p> : (props.readOnly || expanded) && <div id={optionsId} className="reply-suggestions-content">
+  return <section className={`reply-suggestions${props.readOnly ? ' is-readonly' : ''}`} aria-label={t('controls.replyHelp')}>
+    <button type="button" className="reply-help-toggle" aria-expanded={expanded} aria-controls={optionsId} onClick={() => setExpanded(current => !current)}>
+      <Icon name="spark" size={22} /><span>{t('controls.replyHelp')}</span><Icon name="chevron" size={18} />
+    </button>
+    <div id={optionsId} className="reply-suggestions-content" hidden={!expanded}>
+      {!props.readOnly && japanese && <div className="reply-suggestions-tools"><ReadingControls {...readingPreferences} /></div>}
+      {value.status !== 'ready' ? <p className="reply-suggestions-status" role="status">{t(value.status === 'loading' ? 'controls.repliesLoading' : 'controls.repliesEmpty')}</p> : <>
       <ol className="reply-options">
         {value.suggestions.slice(0, 2).map((suggestion, index) => {
           const playback = !props.readOnly && props.speech?.messageId === value.messageId && props.speech.index === index ? props.speech.status : null;
@@ -59,6 +57,7 @@ export function ReplySuggestions(props: Props) {
         })}
       </ol>
       {!props.readOnly && props.speech && <p className="reply-sample-hint" role="status">{t(props.speech.status === 'loading' ? 'controls.samplePreparingHint' : 'controls.samplePlayingHint')}</p>}
-    </div>}
+      </>}
+    </div>
   </section>;
 }

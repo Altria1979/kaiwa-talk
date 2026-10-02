@@ -63,7 +63,7 @@ test('reply meanings preserve their saved language across interface and learning
     const option = learningLanguage === '日本語' ? suggestion : { ...suggestion, text: 'I read books.', reading: 'ai reed buks', romaji: undefined };
     const markup = renderSuggestions({ value: { status: 'ready', messageId: 'message', suggestions: [option] }, learningLanguage }, locale);
     assert.ok(markup.includes(`<p class="reply-option-meaning" lang="ja">${suggestion.meaning}</p>`));
-    assert.ok(markup.includes(controlsMessages[locale]['controls.aiReplies']));
+    assert.ok(markup.includes(controlsMessages[locale]['controls.replyHelp']));
     assert.ok(markup.includes(option.text));
   }
 });
@@ -111,7 +111,7 @@ test('sample playback still exposes cancellation, stopping and status feedback',
   }
 });
 
-test('past replies remain expanded as references without romaji or current-turn controls', () => {
+test('past replies start hidden behind reply help without romaji or current-turn controls', () => {
   const markup = renderSuggestions({ readOnly: true }, 'zh-CN');
   for (const option of options.slice(0, 2)) {
     assert.ok(markup.includes(option.text));
@@ -120,7 +120,10 @@ test('past replies remain expanded as references without romaji or current-turn 
     assert.ok(!markup.includes(option.romaji));
   }
   assert.equal((markup.match(/class="reply-option"/g) ?? []).length, 2);
-  assert.doesNotMatch(markup, /<button|<details|reply-sample-hint|reply-suggestions-tools/);
+  assert.match(markup, /class="reply-help-toggle" aria-expanded="false" aria-controls="[^"]+"/);
+  assert.match(markup, /class="reply-suggestions-content" hidden=""/);
+  assert.equal((markup.match(/<button/g) ?? []).length, 1);
+  assert.doesNotMatch(markup, /reply-option-actions|suggestion-listen|reply-sample-hint|reply-suggestions-tools/);
 });
 
 test('Japanese history without romaji keeps its spoken language even with kana hidden', () => {
