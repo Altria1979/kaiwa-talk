@@ -1,5 +1,5 @@
 export const AVATAR_BOB_RATIO = 0.0018;
-export const DEFAULT_AVATAR_FRAMING = 0.85;
+export const DEFAULT_AVATAR_FRAMING = 0.8;
 export const AVATAR_FRAMING_STORAGE_KEY = 'avatar-a.framing.v1';
 
 export function parseAvatarFraming(value: string | null): number {

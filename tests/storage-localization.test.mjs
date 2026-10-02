@@ -79,6 +79,52 @@ test('Japanese defaults and legacy built-in settings share the same public value
   assert.deepEqual((await store.getSettings()), DEFAULT_SETTINGS);
 });
 
+test('legacy built-in personas migrate and persist only for their browser without changing history', async () => {
+  const otherOwnerId = randomUUID();
+  const otherStore = persistence.forOwner(otherOwnerId);
+  const otherSettings = { ...DEFAULT_SETTINGS, persona: '別のブラウザーの人物設定です。' };
+  await otherStore.updateSettings(otherSettings);
+  for (const scopedStore of [store, otherStore]) {
+    const session = await scopedStore.createSession();
+    await scopedStore.addMessage({ sessionId: session.id, turnId: 'old', role: 'user', content: '以前の会話です。', delivery: 'text' });
+    await scopedStore.endSession(session.id, { topic: '保存した話題', expressions: [], improvement: '保存した助言', memorySuggestions: [] });
+    await scopedStore.addMemory('手紙を書くことが好きです。');
+  }
+  const history = () => ['browser_sessions', 'browser_messages', 'browser_memories'].map(table => db.prepare(`SELECT owner_id, data FROM ${table} ORDER BY rowid`).all());
+  const before = history();
+
+  for (const persona of [
+    '温柔、耐心、有好奇心的日语聊天伙伴。像朋友一样自然交流。',
+    '優しく、辛抱強く、好奇心旺盛な日本語の会話パートナー。友達のように自然に話します。',
+  ]) {
+    const settings = { ...DEFAULT_SETTINGS, persona, characterName: '私の相手', voice: 'Serena', avatarUrl: '/api/avatars/custom.vrm' };
+    saveSettings(settings);
+    assert.deepEqual(await store.getSettings(), { ...settings, persona: DEFAULT_SETTINGS.persona });
+    assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).persona, persona);
+    const expected = { ...settings, persona: DEFAULT_SETTINGS.persona, vadSilenceMs: 1800 };
+    assert.deepEqual(await store.updateSettings({ vadSilenceMs: 1800 }), expected);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data), expected);
+    assert.deepEqual(await otherStore.getSettings(), otherSettings);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(otherOwnerId).data), otherSettings);
+    assert.deepEqual(history(), before);
+  }
+});
+
+test('persona migration preserves custom text and extended legacy personas exactly', async () => {
+  for (const persona of [
+    '请记住我喜欢料理。这是我自己写的人物设定。',
+    '温柔、耐心、有好奇心的日语聊天伙伴。像朋友一样自然交流。喜欢讨论料理。',
+    '優しく、辛抱強く、好奇心旺盛な日本語の会話パートナー。友達のように自然に話します。料理が好きです。',
+  ]) {
+    const settings = { ...DEFAULT_SETTINGS, persona };
+    saveSettings(settings);
+    assert.deepEqual(await store.getSettings(), settings);
+    const expected = { ...settings, vadSilenceMs: 1800 };
+    assert.deepEqual(await store.updateSettings({ vadSilenceMs: 1800 }), expected);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data), expected);
+  }
+});
+
 test('legacy character name migrates without changing the imported avatar or saved history', async () => {
   const avatarUrl = '/api/avatars/existing-avatar-a.vrm';
   saveSettings({ ...DEFAULT_SETTINGS, characterName: '小春', avatarUrl });

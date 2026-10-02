@@ -36,7 +36,8 @@ async function readSettings(db: DatabaseConnection, browserId: string): Promise<
   if (settings.voice === 'Cherry' || settings.voice === 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512') settings.voice = DEFAULT_SETTINGS.voice;
   if (settings.characterName === '小春') settings.characterName = DEFAULT_SETTINGS.characterName;
   if (settings.characterName === 'VRoid Avatar A' && settings.avatarUrl === DEFAULT_SETTINGS.avatarUrl) settings.characterName = DEFAULT_SETTINGS.characterName;
-  if (settings.persona === '温柔、耐心、有好奇心的日语聊天伙伴。像朋友一样自然交流。') settings.persona = DEFAULT_SETTINGS.persona;
+  if (settings.persona === '温柔、耐心、有好奇心的日语聊天伙伴。像朋友一样自然交流。'
+    || settings.persona === '優しく、辛抱強く、好奇心旺盛な日本語の会話パートナー。友達のように自然に話します。') settings.persona = DEFAULT_SETTINGS.persona;
   settings.learningLanguage = languageNames.get(settings.learningLanguage) ?? settings.learningLanguage;
   settings.supportLanguage = settings.supportLanguage === '中文' ? DEFAULT_SETTINGS.supportLanguage : languageNames.get(settings.supportLanguage) ?? settings.supportLanguage;
   return settings;

@@ -177,6 +177,40 @@ async function startSession(t, voice, scopedStore = store) {
 const last = (events, type) => events.filter(event => event.type === type).at(-1);
 const japaneseHelpRule = '用户用辅助语言求助时，先用日语简短解释';
 
+for (const voice of [false, true]) {
+  test(`Violet persona reaches ${voice ? 'voice' : 'text'} turns without overriding language rules or later custom settings`, async t => {
+    settings.learningLanguage = '英語';
+    const { session, events } = await startSession(t, voice);
+    await session.handle({ type: 'text', text: '今日は疲れました。' });
+    await waitFor(() => events.filter(event => event.type === 'turn.done').length === 1);
+
+    const system = prompts[0][0].content;
+    // The full profile, including examples at the end, must fit the settings editor and reach Qwen.
+    assert.ok(DEFAULT_SETTINGS.persona.length <= 1000);
+    assert.ok(system.includes(`你是${DEFAULT_SETTINGS.characterName}，${DEFAULT_SETTINGS.persona}`));
+    assert.match(system, /人物设定和例句.*不能覆盖本轮的语种、句数、朗读和输出格式规则/);
+    assert.match(system, /不要编造设定之外的个人经历、与用户共同发生过的事情或用户信息/);
+    assert.match(system, /回复第一行必须是内部情绪标记/);
+    assert.match(system, /一至两句短句，一次最多追问一个问题/);
+    assert.match(system, /练习英語/);
+    if (voice) {
+      assert.match(system, /正文必须全部使用英語/);
+      assert.ok(!system.includes(japaneseHelpRule));
+    } else {
+      assert.ok(system.includes(japaneseHelpRule));
+      assert.ok(!system.includes('当前回复将直接朗读'));
+    }
+
+    settings.characterName = '私の先生';
+    settings.persona = '落ち着いた英語の先生。';
+    await session.handle({ type: 'text', text: 'Please help me practice.' });
+    await waitFor(() => events.filter(event => event.type === 'turn.done').length === 2);
+    const nextSystem = prompts[1][0].content;
+    assert.ok(nextSystem.includes(`你是${settings.characterName}，${settings.persona}`));
+    assert.ok(!nextSystem.includes(DEFAULT_SETTINGS.persona));
+  });
+}
+
 test('reply emotion precedes body and cannot reach history, captions, speech, or suggestions', async t => {
   const { session, events } = await startSession(t, true);
   streamReply = async function* () {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 type ScrollPosition = { top: number; height: number; viewport: number };
 type ConversationScrollOptions = {
+  enabled?: boolean;
   sessionId?: string;
   latestUserMessageId?: string;
   recognizing: boolean;
@@ -12,7 +13,7 @@ type ConversationScrollOptions = {
 const positionOf = (node: HTMLDivElement): ScrollPosition => ({ top: node.scrollTop, height: node.scrollHeight, viewport: node.clientHeight });
 const atBottom = ({ top, height, viewport }: ScrollPosition) => height - top - viewport < 64;
 
-export function useConversationScroll({ sessionId, latestUserMessageId, recognizing }: ConversationScrollOptions) {
+export function useConversationScroll({ enabled = true, sessionId, latestUserMessageId, recognizing }: ConversationScrollOptions) {
   const chatScroll = useRef<HTMLDivElement>(null);
   const chatContent = useRef<HTMLDivElement>(null);
   const followLatest = useRef(true);
@@ -21,6 +22,7 @@ export function useConversationScroll({ sessionId, latestUserMessageId, recogniz
   const [showLatest, setShowLatest] = useState(false);
 
   const scrollToLatest = useCallback(() => {
+    if (!enabled) return;
     followLatest.current = true;
     const node = chatScroll.current;
     if (node) {
@@ -32,7 +34,7 @@ export function useConversationScroll({ sessionId, latestUserMessageId, recogniz
       position.current = positionOf(node);
     }
     setShowLatest(false);
-  }, []);
+  }, [enabled]);
 
   const onScroll = useCallback(() => {
     const node = chatScroll.current;

@@ -30,7 +30,7 @@ test('concurrent browser requests share one bootstrap and wait for its cookie pr
       if (url.endsWith('/api/browser')) return new Promise(resolve => { finishProbe = () => resolve(ok()); });
       return ok();
     };
-    const pending = Promise.all([api.settings(), api.sessions(), api.memories()]);
+    const pending = Promise.all([api.settings(), api.status({ apiKey: 'test-key' }), api.session('active-session')]);
     await nextTick();
     assert.deepEqual(calls.map(call => call.url), ['/api/browser']);
     finishBootstrap();

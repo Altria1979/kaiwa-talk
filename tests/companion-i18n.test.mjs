@@ -57,14 +57,13 @@ mock.module('../src/lib/bailian-credentials.ts', { exports: {
   clearBrowserCredentials() { credentialsSnapshot = null; for (const listener of credentialsListeners) listener(); },
 } });
 let savedSettings;
-let memories = [];
+const dataRequests = [];
 mock.module('../src/lib/api.ts', { exports: { api: {
-  status: async () => ({ ready: credentialsSnapshot !== null, credentialSource: credentialsSnapshot ? 'browser' : 'none', missing: credentialsSnapshot ? [] : ['BAILIAN_API_KEY'], region: null, models: { chat: 'chat-model', asr: 'asr-model', tts: 'tts-model' } }),
-  settings: async () => DEFAULT_SETTINGS,
-  sessions: async () => [],
-  memories: async () => [],
+  status: async () => (dataRequests.push('status'), { ready: credentialsSnapshot !== null, credentialSource: credentialsSnapshot ? 'browser' : 'none', missing: credentialsSnapshot ? [] : ['BAILIAN_API_KEY'], region: null, models: { chat: 'chat-model', asr: 'asr-model', tts: 'tts-model' } }),
+  settings: async () => { dataRequests.push('settings'); return DEFAULT_SETTINGS; },
+  sessions: async () => { dataRequests.push('sessions'); return []; },
+  memories: async () => { dataRequests.push('memories'); return []; },
   saveSettings: async value => { savedSettings = value; return value; },
-  addMemory: async content => ({ id: 'saved', content, updatedAt: session.createdAt }),
 } } });
 for (const [path, names] of [
   ['reading-aids', ['ReadingControls', 'ReplyReading']],
@@ -72,7 +71,6 @@ for (const [path, names] of [
   ['avatar-controls', ['AvatarControls']],
   ['icon', ['Icon']],
   ['reply-suggestions', ['ReplySuggestions']],
-  ['paper-navigation', ['PaperNavigation']],
   ['language-switcher', ['LanguageSwitcher']],
 ]) mock.module(`../src/components/${path}.tsx`, { exports: Object.fromEntries(names.map(name => [name, () => null])) });
 registerHooks({ load(url, context, nextLoad) {
@@ -130,7 +128,22 @@ function harness(component, initialProps = {}) {
 }
 const nodeType = name => node => typeof node.type === 'function' && node.type.name === name;
 const buttonText = expected => node => node.type === 'button' && text(node) === expected;
+const buttonLabel = expected => node => node.type === 'button' && node.props['aria-label'] === expected;
+const messageInput = node => node.type === 'textarea' && node.props.id === 'message-input';
 const submitEvent = { preventDefault() {} };
+const settle = () => new Promise(resolve => setImmediate(resolve));
+
+function openMessageInput(render) {
+  const tree = render();
+  const existing = find(tree, messageInput);
+  if (existing) return existing;
+  const toggle = find(tree, buttonLabel(t('companion.typeMessage')));
+  assert.ok(toggle, 'voice mode offers an explicit text input toggle');
+  toggle.props.onClick();
+  const input = find(render(), messageInput);
+  assert.ok(input, 'the toggle opens the text input');
+  return input;
+}
 
 test('missing API keys show translated setup instructions with an action while preserving the draft', async () => {
   conversation.active = false;
@@ -171,7 +184,7 @@ test('deleting a saved API key requires configuration again and retains the tran
     await new Promise(resolve => setImmediate(resolve));
     const tree = render();
     assert.equal(find(tree, buttonText(t('companion.startConversation'))).props.disabled, false);
-    find(tree, node => node.props.onChange && node.props.panel === null).props.onChange('settings');
+    find(tree, node => node.type === 'button' && node.props['aria-label'] === t('controls.settings')).props.onClick();
     const settings = find(render(), nodeType('SettingsPanel'));
     const settingsView = harness(settings.type, settings.props);
     const bailian = find(settingsView(), nodeType('BailianSettings'));
@@ -198,12 +211,11 @@ test('deleting a saved API key requires configuration again and retains the tran
   }
 });
 
-function panel(name) {
+function panel() {
   const render = harness(Companion);
   const tree = render();
-  const navigation = find(tree, node => node.props.onChange && node.props.panel === null);
-  navigation.props.onChange(name);
-  const panelElement = find(render(), nodeType(name === 'settings' ? 'SettingsPanel' : 'MemoryPanel'));
+  find(tree, node => node.type === 'button' && node.props['aria-label'] === t('controls.settings')).props.onClick();
+  const panelElement = find(render(), nodeType('SettingsPanel'));
   return { root: render, element: panelElement, render: harness(panelElement.type, panelElement.props) };
 }
 
@@ -355,23 +367,46 @@ test('settings drafts survive every UI locale and submit original language value
   assert.equal(text(find(view.root(), node => node.props.className === 'toast')), t('companion.settingsSavedNotice'));
 });
 
-test('new and edited memory drafts remain intact while labels change', () => {
-  locale = 'ja';
-  const view = panel('memories');
-  const memory = { id: 'memory', content: 'An existing user memory', updatedAt: session.createdAt };
-  const render = harness(view.element.type, { memories: [memory], onChange: value => { memories = value; } });
-  let tree = render();
-  find(tree, node => node.type === 'textarea' && node.props.id === 'new-memory').props.onChange({ target: { value: 'A new draft' } });
-  find(tree, node => node.type === 'button' && node.props['aria-label'] === t('companion.editMemoryLabel', { content: memory.content })).props.onClick();
-  tree = render();
-  find(tree, node => node.type === 'textarea' && node.props['aria-label']).props.onChange({ target: { value: 'An edited draft' } });
-  for (const next of ['en', 'zh-CN']) {
-    locale = next;
-    tree = render();
-    assert.equal(find(tree, node => node.type === 'textarea' && node.props.id === 'new-memory').props.value, 'A new draft');
-    assert.equal(find(tree, node => node.type === 'textarea' && node.props['aria-label'] === t('companion.editMemory')).props.value, 'An edited draft');
+test('page initialization and settings refresh only fetch status and settings', async () => {
+  dataRequests.length = 0;
+  const render = harness(Companion);
+  render();
+  const cleanup = render.runEffects();
+  try {
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(dataRequests, ['status', 'settings']);
+    find(render(), node => node.type === 'button' && node.props['aria-label'] === t('controls.settings')).props.onClick();
+    await find(render(), nodeType('SettingsPanel')).props.onRefresh();
+    assert.deepEqual(dataRequests, ['status', 'settings', 'status', 'settings']);
+  } finally {
+    cleanup();
   }
-  assert.deepEqual(memories, []);
+});
+
+test('completed learning reviews keep expressions and advice without memory actions in every locale', () => {
+  const original = conversation.session;
+  const review = {
+    language: 'ja', topic: '庭の会話',
+    expressions: [{ text: 'いい天気ですね。', meaning: '晴れた日のあいさつです。' }],
+    improvement: '少しゆっくり話してみましょう。',
+    memorySuggestions: ['コーヒーが好きです。'],
+  };
+  conversation.session = { ...session, endedAt: session.createdAt, review };
+  try {
+    for (const next of ['ja', 'zh-CN', 'en']) {
+      locale = next;
+      const element = find(harness(Companion)(), nodeType('Review'));
+      const tree = harness(element.type, element.props)();
+      assert.ok(text(tree).includes(review.topic));
+      assert.ok(text(tree).includes(review.expressions[0].text));
+      assert.ok(text(tree).includes(review.improvement));
+      assert.equal(text(tree).includes(review.memorySuggestions[0]), false);
+      assert.equal(find(tree, node => node.type === 'button'), undefined);
+    }
+  } finally {
+    conversation.session = original;
+    locale = 'ja';
+  }
 });
 
 test('existing conversation errors retain codes and parameters across UI language changes', () => {
@@ -404,7 +439,7 @@ test('Japanese explanation metadata does not mislabel English learning content',
   conversation.messages = [];
 });
 
-test('saved Chinese reply meanings remain visible in history with only two options', () => {
+test('saved Chinese reply meanings remain visible in the conversation with only two options', () => {
   const suggestions = [
     { text: 'はい。', reading: 'はい。', romaji: 'Hai.', meaning: '是的。' },
     { text: 'いいえ。', reading: 'いいえ。', romaji: 'Iie.', meaning: '不是。' },
@@ -457,15 +492,246 @@ test('each AI message owns its reply suggestions inside the scrolling conversati
   }
 });
 
-test('the conversation control and message input share one composer row', () => {
-  for (const active of [false, true]) {
-    conversation.active = active;
-    const tree = harness(Companion)();
-    const row = find(tree, node => node.props.className === 'composer-row');
-    assert.ok(row);
-    assert.ok(find(row, node => node.type === 'textarea' && node.props.id === 'message-input'));
-    assert.ok(find(row, buttonText(t(active ? 'companion.endConversation' : 'companion.startConversation'))));
-    assert.ok(find(row, node => node.props['aria-label'] === t('companion.sendMessage')));
+test('voice conversations start with the input collapsed and retain their call controls in every locale', () => {
+  const original = { ...conversation };
+  const originalLocale = locale;
+  Object.assign(conversation, { active: true, voiceEnabled: true, state: 'speaking', muted: false });
+  try {
+    for (const next of ['ja', 'zh-CN', 'en']) {
+      locale = next;
+      const tree = harness(Companion)();
+      assert.equal(find(tree, messageInput), undefined);
+      assert.equal(find(tree, node => node.props.id === 'text-composer').props.hidden, true);
+      const toggle = find(tree, buttonLabel(t('companion.typeMessage')));
+      assert.ok(toggle);
+      assert.equal(toggle.props['aria-expanded'], false);
+      assert.ok(find(tree, buttonText(t('companion.endConversation'))));
+      assert.equal(Boolean(find(tree, buttonLabel(t('companion.mute'))).props.disabled), false);
+      assert.equal(Boolean(find(tree, buttonLabel(t('companion.stopReply'))).props.disabled), false);
+    }
+  } finally {
+    Object.assign(conversation, original);
+    locale = originalLocale;
   }
-  conversation.active = true;
+});
+
+test('the voice text drawer preserves its draft when closed and clears it after a successful send', async () => {
+  const original = { ...conversation };
+  Object.assign(conversation, { active: true, voiceEnabled: true });
+  sent = [];
+  try {
+    const render = harness(Companion);
+    openMessageInput(render).props.onChange({ target: { value: '  A voice-session draft  ' } });
+    let tree = render();
+    const expanded = find(tree, buttonLabel(t('companion.hideInput')));
+    assert.equal(expanded.props['aria-expanded'], true);
+    assert.ok(find(tree, node => node.props.id === expanded.props['aria-controls']));
+    find(tree, buttonLabel(t('companion.hideInput'))).props.onClick();
+    assert.equal(find(render(), messageInput), undefined);
+    assert.equal(openMessageInput(render).props.value, '  A voice-session draft  ');
+    find(render(), node => node.props.id === 'text-composer').props.onSubmit(submitEvent);
+    await settle();
+    assert.deepEqual(sent, ['A voice-session draft']);
+    tree = render();
+    assert.equal(find(tree, messageInput), undefined);
+    assert.equal(find(tree, buttonLabel(t('companion.typeMessage'))).props['aria-expanded'], false);
+    assert.equal(openMessageInput(render).props.value, '');
+  } finally {
+    Object.assign(conversation, original);
+  }
+});
+
+test('opening the voice input focuses it and closing it returns focus to its toggle', () => {
+  const original = { ...conversation };
+  Object.assign(conversation, { active: true, voiceEnabled: true });
+  let focused;
+  let cleanup;
+  try {
+    const render = harness(Companion);
+    const toggle = find(render(), buttonLabel(t('companion.typeMessage')));
+    toggle.props.ref.current = { focus() { focused = 'toggle'; } };
+    const input = openMessageInput(render);
+    input.props.ref.current = { focus() { focused = 'input'; } };
+    cleanup = render.runEffects();
+    assert.equal(focused, 'input');
+    find(render(), buttonLabel(t('companion.hideInput'))).props.onClick();
+    assert.equal(focused, 'toggle');
+    assert.equal(find(render(), messageInput), undefined);
+  } finally {
+    cleanup?.();
+    Object.assign(conversation, original);
+  }
+});
+
+test('a rejected text send leaves the voice drawer open and its draft available for retry', async () => {
+  const original = { ...conversation };
+  let attempts = 0;
+  sent = [];
+  Object.assign(conversation, {
+    active: true, voiceEnabled: true,
+    sendText: async value => {
+      if (++attempts === 1) throw new Error('Text delivery failed');
+      sent.push(value);
+    },
+  });
+  try {
+    const render = harness(Companion);
+    openMessageInput(render).props.onChange({ target: { value: 'Keep my draft' } });
+    find(render(), node => node.props.id === 'text-composer').props.onSubmit(submitEvent);
+    await settle();
+    const failedTree = render();
+    assert.equal(find(failedTree, messageInput).props.value, 'Keep my draft');
+    assert.equal(find(failedTree, buttonLabel(t('companion.hideInput'))).props['aria-expanded'], true);
+    assert.equal(find(failedTree, buttonLabel(t('companion.sendMessage'))).props.disabled, false);
+    assert.match(text(find(failedTree, node => node.props.role === 'alert')), /Text delivery failed/);
+    find(failedTree, node => node.props.id === 'text-composer').props.onSubmit(submitEvent);
+    await settle();
+    assert.deepEqual(sent, ['Keep my draft']);
+    assert.equal(find(render(), messageInput), undefined);
+    assert.equal(find(render(), node => node.props.role === 'alert'), undefined);
+  } finally {
+    Object.assign(conversation, original);
+  }
+});
+
+test('text-only conversations keep their composer visible after sending and offer voice startup', async () => {
+  const original = { ...conversation };
+  Object.assign(conversation, { active: true, voiceEnabled: false });
+  sent = [];
+  try {
+    const render = harness(Companion);
+    let tree = render();
+    assert.ok(find(tree, messageInput));
+    assert.equal(find(tree, buttonLabel(t('companion.typeMessage'))), undefined);
+    assert.ok(find(tree, buttonText(t('companion.enableVoice'))));
+    assert.ok(find(tree, buttonText(t('companion.endConversation'))));
+    find(tree, messageInput).props.onChange({ target: { value: 'A typed conversation' } });
+    find(render(), node => node.props.id === 'text-composer').props.onSubmit(submitEvent);
+    await settle();
+    assert.deepEqual(sent, ['A typed conversation']);
+    tree = render();
+    assert.equal(find(tree, messageInput).props.value, '');
+  } finally {
+    Object.assign(conversation, original);
+  }
+});
+
+test('composer keyboard shortcuts preserve Shift+Enter and IME input and close the voice drawer on Escape', async () => {
+  const original = { ...conversation };
+  Object.assign(conversation, { active: true, voiceEnabled: true });
+  sent = [];
+  try {
+    const render = harness(Companion);
+    openMessageInput(render).props.onChange({ target: { value: 'こんにちは' } });
+    for (const options of [{ shiftKey: true }, { nativeEvent: { isComposing: true } }, { keyCode: 229 }]) {
+      let prevented = false;
+      find(render(), messageInput).props.onKeyDown({ key: 'Enter', shiftKey: false, nativeEvent: { isComposing: false }, preventDefault() { prevented = true; }, ...options });
+      await settle();
+      assert.equal(prevented, false, 'newline and composition confirmation remain native input actions');
+      assert.deepEqual(sent, []);
+      assert.equal(find(render(), messageInput).props.value, 'こんにちは');
+    }
+    find(render(), messageInput).props.onKeyDown({ key: 'Escape', nativeEvent: { isComposing: true }, preventDefault() { assert.fail('composition Escape must remain native'); } });
+    assert.ok(find(render(), messageInput), 'Escape dismissing IME composition keeps the drawer open');
+    let escaped = false;
+    find(render(), messageInput).props.onKeyDown({ key: 'Escape', nativeEvent: { isComposing: false }, preventDefault() { escaped = true; } });
+    assert.equal(escaped, true);
+    assert.equal(find(render(), messageInput), undefined);
+    assert.equal(openMessageInput(render).props.value, 'こんにちは');
+    let entered = false;
+    find(render(), messageInput).props.onKeyDown({ key: 'Enter', shiftKey: false, nativeEvent: { isComposing: false }, preventDefault() { entered = true; } });
+    await settle();
+    assert.equal(entered, true);
+    assert.deepEqual(sent, ['こんにちは']);
+    assert.equal(find(render(), messageInput), undefined);
+  } finally {
+    Object.assign(conversation, original);
+  }
+});
+
+test('welcome composer and avatar settings keep the draft and saved framing across panel changes', () => {
+  const original = { ...conversation };
+  const previousStorage = globalThis.localStorage;
+  const stored = new Map();
+  globalThis.localStorage = { setItem: (key, value) => stored.set(key, value) };
+  Object.assign(conversation, { active: false, session: null, messages: [], pendingTranscript: '' });
+  locale = 'zh-CN';
+  try {
+    const render = harness(Companion);
+    let tree = render();
+    assert.equal(tree.props['data-welcome'], true);
+    assert.equal(find(tree, nodeType('Modal')).props.open, false);
+    assert.equal(find(tree, node => node.props.id === 'message-input').props.placeholder, t('companion.landingPlaceholder'));
+    assert.equal(find(tree, node => node.props['aria-label'] === t('companion.mute')), undefined);
+    find(tree, node => node.props.id === 'message-input').props.onChange({ target: { value: 'A garden draft' } });
+    const settingsButton = find(render(), node => node.type === 'button' && node.props['aria-label'] === t('controls.settings'));
+    assert.equal(settingsButton.props['aria-haspopup'], 'dialog');
+    settingsButton.props.onClick();
+    assert.ok(find(render(), nodeType('SettingsPanel')));
+    find(render(), nodeType('Modal')).props.onClose();
+    assert.equal(find(render(), node => node.props.id === 'message-input').props.value, 'A garden draft');
+    const gear = find(render(), node => node.type === 'button' && node.props['aria-label'] === t('controls.avatarSettings'));
+    assert.equal(gear.props['aria-haspopup'], 'dialog');
+    gear.props.onClick();
+    tree = render();
+    const modal = find(tree, nodeType('Modal'));
+    assert.equal(modal.props.open, true);
+    assert.equal(modal.props.title, t('controls.avatarSettings'));
+    find(tree, node => node.props.id === 'avatar-framing').props.onChange({ target: { value: '0' } });
+    assert.equal(stored.get('avatar-a.framing.v1'), '0');
+    find(render(), buttonText(t('companion.practiceSettings'))).props.onClick();
+    assert.ok(find(render(), nodeType('SettingsPanel')));
+    find(render(), nodeType('Modal')).props.onClose();
+    tree = render();
+    assert.equal(find(tree, nodeType('Modal')).props.open, false);
+    assert.equal(find(tree, node => node.props.id === 'message-input').props.value, 'A garden draft');
+    assert.equal(find(tree, node => node.props.framing !== undefined).props.framing, 0);
+    conversation.active = true;
+    conversation.session = session;
+    tree = render();
+    assert.equal(tree.props['data-welcome'], false);
+    assert.equal(openMessageInput(render).props.placeholder, t('companion.messagePlaceholder'));
+  } finally {
+    Object.assign(conversation, original);
+    globalThis.localStorage = previousStorage;
+    locale = 'ja';
+  }
+});
+
+test('switching modal content recovers lost focus without stealing focus during locale changes', () => {
+  const originalDocument = globalThis.document;
+  const outside = {};
+  const control = {};
+  const document = { activeElement: outside };
+  globalThis.document = document;
+  let focused = 0;
+  const heading = { focus() { focused++; document.activeElement = heading; } };
+  const dialog = {
+    open: false,
+    showModal() { this.open = true; document.activeElement = control; },
+    close() { this.open = false; },
+    contains: element => element === heading || element === control,
+  };
+  try {
+    const element = find(harness(Companion)(), nodeType('Modal'));
+    const props = { ...element.props, open: true, title: 'Character settings' };
+    const render = harness(element.type, props);
+    const tree = render();
+    tree.props.ref.current = dialog;
+    find(tree, node => node.type === 'h2').props.ref.current = heading;
+    render.runEffects();
+    assert.equal(document.activeElement, control, 'native initial focus is retained');
+    document.activeElement = outside;
+    render({ ...props, title: 'Practice settings' });
+    render.runEffects();
+    assert.equal(document.activeElement, heading);
+    assert.equal(focused, 1);
+    document.activeElement = control;
+    render({ ...props, title: '练习设置' });
+    render.runEffects();
+    assert.equal(document.activeElement, control);
+    assert.equal(focused, 1, 'translating the title does not move focus within the dialog');
+  } finally {
+    globalThis.document = originalDocument;
+  }
 });

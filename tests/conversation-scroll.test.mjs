@@ -31,7 +31,7 @@ mock.module('react', { exports: {
 } });
 const { useConversationScroll } = await import('../src/hooks/use-conversation-scroll.ts');
 
-function harness(t) {
+function harness(t, initialOptions = {}) {
   const previousObserver = globalThis.ResizeObserver;
   class TestResizeObserver {
     static latest;
@@ -53,7 +53,7 @@ function harness(t) {
   };
   const content = {};
   const owner = { slots: [], effects: [], cursor: 0, writes: 0 };
-  let options = { sessionId: 'session', latestUserMessageId: 'user-1', recognizing: false };
+  let options = { sessionId: 'session', latestUserMessageId: 'user-1', recognizing: false, ...initialOptions };
   let unmounted = false;
   const current = function Harness() {
     rendering = owner;
@@ -251,4 +251,17 @@ test('unmount disconnects observers, removes input handlers and cancels queued s
   assert.equal(h.listeners.size, 0);
   assert.equal(h.node.scrollTop, 300);
   assert.equal(h.owner.writes, writes);
+});
+
+
+test('welcome content stays at the top until conversation following is enabled', async t => {
+  const h = harness(t, { enabled: false, sessionId: undefined, latestUserMessageId: undefined });
+  assert.equal(h.node.scrollTop, 0);
+  h.resize({ scrollHeight: 1600 });
+  h.current().scrollToLatest();
+  assert.equal(h.node.scrollTop, 0, 'welcome resizing and explicit scrolling do not jump past the heading');
+  await h.update({ enabled: true, sessionId: 'started' });
+  assert.equal(h.node.scrollTop, 1200);
+  h.resize({ scrollHeight: 1800 });
+  assert.equal(h.node.scrollTop, 1400, 'normal message following resumes');
 });

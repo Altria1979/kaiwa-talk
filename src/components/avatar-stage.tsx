@@ -3,17 +3,20 @@
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm';
 import { AppError, APP_ERROR_MESSAGES } from '../../shared/app-errors';
 import type { ConversationState } from '../../shared/protocol';
 import { ensureBrowserSession, SERVICE_URL } from '../lib/api';
-import { AVATAR_BOB_RATIO, getAvatarFraming } from '../lib/avatar-framing';
+import { AVATAR_BOB_RATIO } from '../lib/avatar-framing';
+import { AvatarCamera, AvatarTapGesture } from '../lib/avatar-camera';
 import { getMouthOpenness } from '../lib/avatar-mouth';
 import { getAvatarCaptionPosition } from '../lib/avatar-caption';
 import type { AvatarEmotion } from '../../shared/avatar-emotion';
-import { AvatarAnimator, classifyAvatarHit, EMPTY_AVATAR_CAPABILITIES, getAvatarHandRegions, isAvatarTap, type AvatarCapabilities, type AvatarCommand } from '../lib/avatar-animation';
+import { AvatarAnimator, classifyAvatarHit, EMPTY_AVATAR_CAPABILITIES, getAvatarHandRegions, type AvatarCapabilities, type AvatarCommand } from '../lib/avatar-animation';
 import type { PlaybackCaption } from '../lib/playback-captions';
 import { AvatarSpeechCaption } from './avatar-speech-caption';
+import { AvatarViewControls, type AvatarViewCommand } from './avatar-view-controls';
 import { useI18n } from '../i18n/provider';
 import { controlsMessages, type ControlsMessageKey } from '../i18n/messages/controls';
 
@@ -101,14 +104,14 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
   const framingRef = useRef(framing);
   const emotionRef = useRef(emotion);
   const capabilitiesCallback = useRef(onCapabilities);
-  const engine = useRef<{ load: (url: string) => Promise<void>; resize: () => void; trigger: (command: AvatarCommand) => void } | null>(null);
+  const engine = useRef<{ load: (url: string) => Promise<void>; reframe: () => void; trigger: (command: AvatarCommand) => void; view: (command: AvatarViewCommand) => void } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AvatarError | AppError | null>(null);
   const [retry, setRetry] = useState(0);
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { emotionRef.current = emotion; }, [emotion]);
   useEffect(() => { capabilitiesCallback.current = onCapabilities; }, [onCapabilities]);
-  useEffect(() => { framingRef.current = framing; engine.current?.resize(); }, [framing]);
+  useEffect(() => { framingRef.current = framing; engine.current?.reframe(); }, [framing]);
   useEffect(() => { if (command) engine.current?.trigger(command); }, [command]);
 
   useEffect(() => {
@@ -140,6 +143,9 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
     container.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(27, 1, 0.01, 50);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    const viewCamera = new AvatarCamera(camera, controls);
+    viewCamera.setEnabled(false);
     const avatarGroup = new THREE.Group();
     scene.add(avatarGroup);
     const lookTarget = new THREE.Object3D();
@@ -155,31 +161,25 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
     let subjectHeight = 1.6;
     const subjectSize = new THREE.Vector3(0.6, subjectHeight, 0.3);
     const subjectCenter = new THREE.Vector3(0, subjectHeight / 2, 0);
-    const cameraSize = new THREE.Vector3();
-    const updateCamera = () => {
-      const widening = animator?.camera ?? 0;
-      cameraSize.copy(subjectSize);
-      cameraSize.x *= 1 + widening * 0.3;
-      cameraSize.y *= 1 + widening * 0.12;
-      const { distance, centerOffsetY } = getAvatarFraming(cameraSize, camera.fov, camera.aspect, framingRef.current * (1 - widening * 0.72));
-      const targetY = subjectCenter.y + centerOffsetY + subjectHeight * widening * 0.04;
-      camera.position.set(subjectCenter.x, targetY, subjectCenter.z + distance);
-      camera.far = Math.max(50, distance + subjectSize.z / 2 + subjectHeight);
-      camera.lookAt(subjectCenter.x, targetY, subjectCenter.z);
-      camera.updateProjectionMatrix();
+    const reframe = () => viewCamera.reset(framingRef.current, animator?.camera ?? 0);
+    const view = (command: AvatarViewCommand) => {
+      if (!controls.enabled || !current) return;
+      if (command === 'reset') reframe();
+      else if (command === 'zoomIn' || command === 'zoomOut') viewCamera.zoom(command === 'zoomIn');
+      else viewCamera.rotate(command === 'rotateLeft');
     };
     const resize = () => {
       const width = Math.max(container.clientWidth, 1);
       const height = Math.max(container.clientHeight, 1);
       renderer.setSize(width, height, false);
-      camera.aspect = width / height;
-      updateCamera();
+      viewCamera.resize(width / height, framingRef.current, animator?.camera ?? 0);
     };
     const observer = new ResizeObserver(resize);
     observer.observe(container);
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let reducedMotion = motionQuery.matches;
-    const onMotion = () => { reducedMotion = motionQuery.matches; };
+    viewCamera.setReducedMotion(reducedMotion);
+    const onMotion = () => { reducedMotion = motionQuery.matches; viewCamera.setReducedMotion(reducedMotion); };
     motionQuery.addEventListener('change', onMotion);
     let nextBlink = 2.8;
     let blinkStarted = -1;
@@ -190,7 +190,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
     const gazeTarget = new THREE.Vector2();
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
-    let gesture: { id: number; x: number; y: number; time: number; moved: boolean } | null = null;
+    const gesture = new AvatarTapGesture();
     const trigger = (value: AvatarCommand) => { animator?.trigger(value); };
     const hitAvatar = (clientX: number, clientY: number) => {
       if (!current || !animator) return null;
@@ -225,30 +225,30 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
       return animator.capabilities.interactions.includes(target) ? target : null;
     };
     const onPointerDown = (event: PointerEvent) => {
-      if (!event.isPrimary || event.button !== 0) { gesture = null; return; }
-      gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, time: event.timeStamp, moved: false };
+      if (!controls.enabled) return;
+      gesture.down(event);
     };
     const onPointerMove = (event: PointerEvent) => {
-      if (gesture?.id === event.pointerId && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 8) gesture.moved = true;
+      gesture.move(event);
       if (event.pointerType !== 'mouse' || reducedMotion) return;
       const rect = renderer.domElement.getBoundingClientRect();
       gazeTarget.set(THREE.MathUtils.clamp((event.clientX - rect.left) / rect.width * 2 - 1, -1, 1), THREE.MathUtils.clamp(1 - (event.clientY - rect.top) / rect.height * 2, -1, 1));
     };
     const onPointerUp = (event: PointerEvent) => {
-      const start = gesture;
-      gesture = null;
-      if (!start || start.id !== event.pointerId || !isAvatarTap(start, { x: event.clientX, y: event.clientY, time: event.timeStamp }, start.moved)) return;
+      if (!gesture.up(event) || !controls.enabled) return;
       const target = hitAvatar(event.clientX, event.clientY);
       if (target) trigger({ id: event.timeStamp, kind: 'interaction', target });
     };
-    const onPointerLeave = () => { gazeTarget.set(0, 0); gesture = null; };
-    const onPointerCancel = () => { gesture = null; };
+    const onPointerLeave = () => { gazeTarget.set(0, 0); gesture.cancel(); };
+    const onPointerCancel = () => { gesture.cancel(); };
     const canvas = renderer.domElement;
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointerleave', onPointerLeave);
     canvas.addEventListener('pointercancel', onPointerCancel);
+    canvas.addEventListener('lostpointercapture', onPointerCancel);
+    canvas.addEventListener('wheel', onPointerCancel, { passive: true });
     const captionPoint = new THREE.Vector3();
     const positionCaption = () => {
       const node = captionHost.current;
@@ -277,7 +277,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
         gaze.lerp(gazeTarget, 1 - Math.exp(-delta * 8));
         const tilt = stateRef.current === 'thinking' ? 0.075 : stateRef.current === 'listening' ? -0.025 : 0;
         animator.update(delta, { elapsed, reducedMotion, emotion: emotionRef.current, speaking: stateRef.current === 'speaking' || mouth > 0, tilt, gazeX: gaze.x, gazeY: gaze.y });
-        updateCamera();
+        viewCamera.update(framingRef.current, animator.camera);
         if (!reducedMotion) {
           avatarGroup.position.y = Math.sin(elapsed * 1.5) * subjectHeight * AVATAR_BOB_RATIO;
           if (elapsed > nextBlink) { blinkStarted = elapsed; nextBlink = elapsed + 3.2 + Math.random() * 3; }
@@ -307,7 +307,8 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
       const controller = new AbortController();
       request = controller;
       animator = null;
-      gesture = null;
+      viewCamera.setEnabled(false);
+      gesture.cancel();
       gaze.set(0, 0);
       gazeTarget.set(0, 0);
       avatarGroup.position.y = 0;
@@ -343,7 +344,9 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
         if (current.lookAt) current.lookAt.autoUpdate = true;
         mouth = 0;
         current.expressionManager?.setValue('aa', 0);
+        viewCamera.setSubject(subjectSize, subjectCenter, framingRef.current);
         resize();
+        viewCamera.setEnabled(true);
         setLoading(false);
         capabilitiesCallback.current?.(animator.capabilities);
       } catch (cause) {
@@ -352,7 +355,7 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
         setError((cause instanceof AvatarError || cause instanceof AppError) ? cause : new AvatarError('avatarErrorUnknown'));
       }
     };
-    engine.current = { load, resize, trigger };
+    engine.current = { load, reframe, trigger, view };
     resize();
     animate();
     return () => {
@@ -366,6 +369,9 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
       canvas.removeEventListener('pointercancel', onPointerCancel);
+      canvas.removeEventListener('lostpointercapture', onPointerCancel);
+      canvas.removeEventListener('wheel', onPointerCancel);
+      viewCamera.dispose();
       if (current) VRMUtils.deepDispose(current.scene);
       renderer.dispose();
       renderer.forceContextLoss();
@@ -376,8 +382,9 @@ export function AvatarStage({ avatarUrl, state, audioLevelRef, name, framing, ca
 
   useEffect(() => { void engine.current?.load(avatarUrl); }, [avatarUrl, retry]);
 
-  return <div className="avatar-render" role="img" aria-label={t('controls.avatarDescription', { name })}>
+  return <div className="avatar-render" role="group" aria-label={t('controls.avatarDescription', { name })}>
     <div ref={host} className="avatar-canvas" />
+    <AvatarViewControls disabled={loading || !!error} onCommand={(command) => engine.current?.view(command)} />
     <div ref={captionHost} className="avatar-speech-anchor" aria-hidden="true">
       {!loading && !error && caption && <AvatarSpeechCaption key={`${caption.turnId}:${caption.sentenceId}:${caption.status}`} caption={caption} />}
     </div>

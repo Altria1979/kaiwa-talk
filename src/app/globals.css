@@ -2,30 +2,31 @@
 
 :root {
   --paper: #f4f1eb;
-  --surface: #fffdf8;
+  --surface: #fffdf7;
+  --glass: #fffef6ed;
+  --garden: #e1ede8;
   --paper-texture: url('/paper-canvas.png');
   --paper-art-texture: url('/paper-grain.png');
-  --ink: #111111;
-  --muted: #514e48;
-  --subtle: #716c62;
-  --line: #d3cec4;
-  --line-strong: #ada79b;
-  --primary: #20251f;
-  --accent: #ac481e;
-  --blue: #1e5fce;
-  --success: #235c34;
+  --ink: #203d48;
+  --muted: #455f65;
+  --subtle: #596f72;
+  --line: #cad7cc;
+  --line-strong: #8ca6a1;
+  --primary: #29536a;
+  --accent: #65744f;
+  --blue: #286786;
+  --success: #326655;
   --error: #a13729;
-  --wash: #eae5da;
-  --success-wash: #e9eee2;
-  --blue-wash: #eaf0f8;
+  --wash: #edf0e7;
+  --success-wash: #eaf1e7;
+  --blue-wash: #e8f1f4;
   --error-wash: #f7e8df;
   --font-serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
   --font-japanese: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
 }
 
 * { box-sizing: border-box; }
-html { scroll-padding-top: 100px; }
-body { margin: 0; background: var(--paper) var(--paper-texture); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--garden); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; transition: background-color .16s, color .16s, border-color .16s; }
@@ -36,8 +37,8 @@ button svg { flex-shrink: 0; }
 a { color: inherit; text-decoration: none; }
 textarea { resize: vertical; }
 .language-switcher { display: inline-flex; flex-shrink: 0; max-width: 100%; }
-.language-switcher select { min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 24px; background: var(--paper); color: var(--ink); font-size: 13px; cursor: pointer; }
-::selection { background: #dfc8ae; color: var(--ink); }
+.language-switcher select { min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 13px; cursor: pointer; }
+::selection { background: #dce4d5; color: var(--ink); }
 [hidden] { display: none !important; }
 .page-notice { min-height: 100dvh; display: grid; align-content: center; justify-items: center; gap: 16px; padding: 32px; text-align: center; }
 .page-notice h1 { margin: 0; font-family: var(--font-serif); font-size: clamp(24px, 5vw, 36px); }

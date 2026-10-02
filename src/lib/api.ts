@@ -1,5 +1,5 @@
 import { AppError, describeError, type ErrorDescriptor } from '../../shared/app-errors';
-import { MAX_MODEL_BYTES, type BrowserBailianCredentials, type ChatMessage, type MemoryRecord, type MessageReadingAid, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
+import { MAX_MODEL_BYTES, type BrowserBailianCredentials, type ChatMessage, type MessageReadingAid, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
 import { browserCredentialHeaders, readBrowserCredentials } from './bailian-credentials';
 import { ensureBrowserSession, SERVICE_URL } from './browser-session';
 export { ensureBrowserSession, SERVICE_URL, SOCKET_URL } from './browser-session';
@@ -34,7 +34,6 @@ export const api = {
   status: async (credentials: BrowserBailianCredentials | undefined = readBrowserCredentials()) => request<ServiceStatus>('/api/status', { headers: browserCredentialHeaders(credentials) }),
   settings: () => request<Settings>('/api/settings'),
   saveSettings: (settings: Partial<Settings>) => request<Settings>('/api/settings', json('PUT', settings)),
-  sessions: () => request<SessionRecord[]>('/api/sessions'),
   session: (id: string) => request<{ session: SessionRecord; messages: ChatMessage[] }>(`/api/sessions/${encodeURIComponent(id)}`),
   translate: async (id: string) => request<{ translation: string }>(`/api/messages/${encodeURIComponent(id)}/translate`, { method: 'POST', headers: browserCredentialHeaders() }, 70_000),
   readingAid: (id: string, signal: AbortSignal) => request<{ readingAid: MessageReadingAid }>(`/api/messages/${encodeURIComponent(id)}/reading-aid`, { method: 'POST', headers: browserCredentialHeaders(), signal }, 70_000),
@@ -43,10 +42,6 @@ export const api = {
     { method: 'POST', headers: browserCredentialHeaders(), signal },
     70_000,
   ),
-  memories: () => request<MemoryRecord[]>('/api/memories'),
-  addMemory: (content: string) => request<MemoryRecord>('/api/memories', json('POST', { content })),
-  updateMemory: (id: string, content: string) => request<MemoryRecord>(`/api/memories/${encodeURIComponent(id)}`, json('PUT', { content })),
-  deleteMemory: (id: string) => request<{ ok: true }>(`/api/memories/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   uploadAvatar: async (file: File | Blob) => {
     if (file.size > MAX_MODEL_BYTES) return Promise.reject(new ApiError('モデルファイルは 30 MB 以下にしてください。'));
     const storage = await request<{ storage: 'local' | 'blob' }>('/api/avatar/storage');

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { DEFAULT_SETTINGS, MAX_TEXT_LENGTH, type ChatMessage, type LearningReview, type MemoryRecord, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
+import { DEFAULT_SETTINGS, MAX_TEXT_LENGTH, type ChatMessage, type LearningReview, type ServiceStatus, type Settings } from '../../shared/protocol';
 import { api } from '../lib/api';
 import { subscribeBrowserCredentials } from '../lib/bailian-credentials';
 import { AVATAR_FRAMING_STORAGE_KEY, DEFAULT_AVATAR_FRAMING, parseAvatarFraming } from '../lib/avatar-framing';
@@ -19,7 +19,6 @@ import { ReplySuggestions } from './reply-suggestions';
 import { TranscriptPreview } from './transcript-preview';
 import { ConversationAudioExport } from './conversation-audio-export';
 import { BailianSettings } from './bailian-settings';
-import { PaperNavigation, type Panel } from './paper-navigation';
 import { useI18n } from '../i18n/provider';
 import { LanguageSwitcher } from './language-switcher';
 import type { CompanionMessageKey } from '../i18n/messages/companion';
@@ -40,22 +39,27 @@ export function Companion() {
   }, []);
   const conversation = useConversation({ vadSilenceMs: settings.vadSilenceMs });
   const [status, setStatus] = useState<ServiceStatus | null>(null);
-  const [sessions, setSessions] = useState<SessionRecord[]>([]);
-  const [memories, setMemories] = useState<MemoryRecord[]>([]);
-  const [panel, setPanel] = useState<Panel>(null);
+  const [panel, setPanel] = useState<'settings' | 'avatar' | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<CompanionMessageKey | null>(null);
   const [input, setInput] = useState('');
+  const [textExpanded, setTextExpanded] = useState(false);
+  const messageInput = useRef<HTMLTextAreaElement>(null);
+  const textToggle = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translating, setTranslating] = useState<string | null>(null);
   const statusRequest = useRef(0);
+  const active = conversation.active;
+  const voiceActive = active && conversation.voiceEnabled;
+  const showInput = !voiceActive || textExpanded;
+  const welcome = !active && !conversation.session && !conversation.messages.length && !conversation.pendingTranscript;
   const { chatScroll, chatContent, onScroll, showLatest, scrollToLatest } = useConversationScroll({
+    enabled: !welcome,
     sessionId: conversation.session?.id,
     latestUserMessageId: conversation.messages.findLast(message => message.role === 'user')?.id,
     recognizing: Boolean(conversation.pendingTranscript),
   });
-  const active = conversation.active;
   // A running session owns its credentials even if another tab clears storage.
   const ready = active || status?.ready === true;
 
@@ -68,6 +72,20 @@ export function Companion() {
     });
     return () => { disposed = true; };
   }, []);
+
+  useEffect(() => {
+    if (textExpanded) messageInput.current?.focus();
+  }, [textExpanded]);
+
+  const hideInput = () => {
+    setTextExpanded(false);
+    textToggle.current?.focus();
+  };
+
+  const startVoice = () => perform(async () => {
+    await conversation.start({ voice: true, sessionId: conversation.session?.endedAt ? undefined : conversation.session?.id });
+    setTextExpanded(false);
+  });
 
   const changeAvatarFraming = (value: number) => {
     setAvatarFraming(value);
@@ -86,23 +104,19 @@ export function Companion() {
   }, []);
 
   const refreshData = useCallback(async () => {
-    const result = await Promise.allSettled([refreshStatus(), api.settings(), api.sessions(), api.memories()]);
+    const result = await Promise.allSettled([refreshStatus(), api.settings()]);
     if (result[0].status === 'rejected') setError(result[0].reason);
     else setError(null);
     if (result[1].status === 'fulfilled') setSettings(result[1].value);
-    if (result[2].status === 'fulfilled') setSessions(result[2].value);
-    if (result[3].status === 'fulfilled') setMemories(result[3].value);
   }, [refreshStatus]);
 
   useEffect(() => {
     let disposed = false;
     const requests = statusRequest;
-    void Promise.allSettled([refreshStatus(), api.settings(), api.sessions(), api.memories()]).then(result => {
+    void Promise.allSettled([refreshStatus(), api.settings()]).then(result => {
       if (disposed) return;
       if (result[0].status === 'rejected') setError(result[0].reason);
       if (result[1].status === 'fulfilled') setSettings(result[1].value);
-      if (result[2].status === 'fulfilled') setSessions(result[2].value);
-      if (result[3].status === 'fulfilled') setMemories(result[3].value);
     });
     return () => { disposed = true; ++requests.current; };
   }, [refreshStatus]);
@@ -115,9 +129,6 @@ export function Companion() {
     });
     return () => { clearInterval(timer); unsubscribe(); };
   }, [refreshStatus]);
-  useEffect(() => {
-    if (conversation.session) void api.sessions().then(setSessions).catch(() => {});
-  }, [conversation.session]);
   useEffect(() => {
     if (!notice) return;
     const timeout = setTimeout(() => setNotice(null), 4200);
@@ -136,6 +147,7 @@ export function Companion() {
       await conversation.sendText(text.trim());
       scrollToLatest();
       setInput('');
+      if (voiceActive || startVoice) hideInput();
     });
   };
   const submit = (event: FormEvent) => { event.preventDefault(); void sendText(input); };
@@ -146,11 +158,6 @@ export function Companion() {
       const result = await api.translate(message.id);
       setTranslations((current) => ({ ...current, [message.id]: result.translation }));
     } catch (cause) { setError(cause); } finally { setTranslating(null); }
-  };
-  const saveSuggestion = async (content: string) => {
-    const memory = await api.addMemory(content);
-    setMemories((current) => [memory, ...current]);
-    setNotice('companion.memorySaved');
   };
   const displayError = error ? formatError(error) : conversation.error ? formatError(conversation.error, conversation.errorDetails) : '';
   const listeningLabel = conversation.muted ? t('companion.muted') : conversation.voiceEnabled ? t('companion.state.listening') : t('companion.textConversation');
@@ -202,12 +209,20 @@ export function Companion() {
       />)}
     </Message>;
   };
-  const renderReview = (review: LearningReview) => review.language !== 'ja' ? <p className="review-pending">{t('companion.reviewUnavailable')}</p> : <Review review={review} memories={memories} onSave={async (content) => {
-    try { await saveSuggestion(content); } catch (cause) { setError(cause); throw cause; }
-  }} />;
+  const renderReview = (review: LearningReview) => review.language !== 'ja' ? <p className="review-pending">{t('companion.reviewUnavailable')}</p> : <Review review={review} />;
 
-  return <div className={styles.shell}>
-    <PaperNavigation panel={panel} onChange={(next) => { setPanel(next); if (next === 'history' || next === 'memories') void refreshData(); }} />
+  const startButton = <button type="button" className="primary-button" onClick={() => void startVoice()} disabled={!ready || busy}><Icon name="mic" size={18} />{busy ? t('companion.connecting') : active ? t('companion.enableVoice') : t('companion.startConversation')}</button>;
+  const textComposer = <form id="text-composer" className="composer" onSubmit={submit} hidden={!showInput}>
+    <label className="sr-only" htmlFor="message-input">{t('companion.messageInput')}</label>
+    {showInput && <textarea ref={messageInput} id="message-input" value={input} maxLength={MAX_TEXT_LENGTH} onChange={(event) => setInput(event.target.value)} placeholder={t(welcome ? 'companion.landingPlaceholder' : 'companion.messagePlaceholder')} rows={1} onKeyDown={(event) => {
+      if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+      if (event.key === 'Escape' && voiceActive) { event.preventDefault(); hideInput(); }
+      if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendText(input); }
+    }} />}
+    <button className="send-button" type="submit" aria-label={t('companion.sendMessage')} disabled={!input.trim() || !ready || busy}><Icon name="send" size={18} /></button>
+  </form>;
+
+  return <div className={styles.shell} data-welcome={welcome}>
     <main className="workspace">
       {!ready && <div className="config-banner" role="status"><Icon name="info" size={18} /><span>{t(!status ? 'companion.serviceConnecting' : status.credentialSource === 'none' ? 'companion.apiKeyRequired' : 'companion.serviceSetup')}</span><button onClick={() => setPanel('settings')}>{t('companion.openSettings')}<Icon name="arrow" size={15} /></button></div>}
       {!panel && errorBanner}
@@ -220,130 +235,78 @@ export function Companion() {
                 {conversation.messages.map(message => renderMessage(message, message.id === latestAssistantId))}
                 <TranscriptPreview text={conversation.pendingTranscript} recognizing={Boolean(conversation.transcript)} />
                 {!conversation.messages.length && !conversation.pendingTranscript && <div className="conversation-empty">
-                  <span className="conversation-empty-symbol" aria-hidden="true"><Icon name="mic" size={32} /></span>
+                  <div className="garden-heading"><Icon name="leaf" size={26} /><span>{t('companion.gardenEyebrow')}</span></div>
                   <h2>{t('companion.emptyHeading')}</h2>
                   <p>{t('companion.emptyDescription')}</p>
+                  <div className="welcome-actions">{welcome && startButton}<span className="garden-note">{t(!active ? 'companion.gardenNote' : !voiceActive ? 'companion.textConversation' : conversation.muted ? 'companion.muted' : 'companion.voiceStarting')}</span></div>
+                  <span className="topic-prompt">{t('companion.topicPrompt')}</span>
                   <div className="conversation-starters">{[{ id: 'greeting', label: t('companion.starterGreeting'), text: 'こんにちは！' }, { id: 'introduction', label: t('companion.starterIntroduction'), text: '日本語で自己紹介を練習したいです。' }, { id: 'cafe', label: t('companion.starterCafe'), text: 'カフェで注文する練習をしましょう。' }].map(starter => <button key={starter.id} disabled={!ready || busy} onClick={() => void sendText(starter.text, true)}>{starter.label}<Icon name="arrow" size={13} /></button>)}</div>
+                  {welcome && <div className="welcome-composer">{textComposer}</div>}
                 </div>}
                 {conversation.session?.review && renderReview(conversation.session.review)}
                 {conversation.session?.endedAt && !conversation.session.review && <p className="review-pending" role="status"><Icon name="spark" size={15} />{t('companion.reviewPending')}</p>}
               </div>
             </div>
-            {showLatest && <button className="latest-message" aria-label={t('companion.latestMessage')} onClick={scrollToLatest}>{t('companion.latestMessageButton')}</button>}
+            {showLatest && conversation.messages.length > 0 && <button className="latest-message" aria-label={t('companion.latestMessage')} onClick={scrollToLatest}>{t('companion.latestMessageButton')}</button>}
           </div>
-          <div className="conversation-footer">
+          {!welcome && <div className="conversation-footer" data-voice={voiceActive}>
             {conversation.recording && conversation.recording.sessionId === conversation.session?.id && <ConversationAudioExport key={conversation.recording.sessionId} recording={conversation.recording} />}
             <div className="composer-row">
-              <div className="conversation-start">
-                {active && conversation.voiceEnabled ? <button type="button" className="primary-button end-button" onClick={() => void perform(conversation.end)} disabled={busy}><Icon name="stop" size={14} />{t('companion.endConversation')}</button> : <button type="button" className="primary-button" onClick={() => void perform(() => conversation.start({ voice: true, sessionId: conversation.session?.endedAt ? undefined : conversation.session?.id }))} disabled={!ready || busy}><Icon name="mic" size={16} />{busy ? t('companion.connecting') : active ? t('companion.enableVoice') : t('companion.startConversation')}</button>}
+              {textComposer}
+              <div className="conversation-controls">
+                {active && <div className="conversation-status" role="status" data-state={conversation.muted ? 'muted' : conversation.state}>
+                  <span className="voice-indicator" aria-hidden="true"><i /><i /><i /></span>
+                  <span>{statusLabel}</span>
+                </div>}
+                {!voiceActive && <div className="conversation-start">{startButton}</div>}
+                <div className="composer-secondary-controls">
+                  {voiceActive && <>
+                    <button type="button" className={`round-control ${conversation.muted ? 'is-muted' : ''}`} aria-label={conversation.muted ? t('companion.unmute') : t('companion.mute')} title={conversation.muted ? t('companion.unmute') : t('companion.mute')} aria-pressed={conversation.muted} onClick={conversation.toggleMute}><Icon name={conversation.muted ? 'mic-off' : 'mic'} size={18} /></button>
+                    <button ref={textToggle} type="button" className="text-input-toggle" aria-label={t(textExpanded ? 'companion.hideInput' : 'companion.typeMessage')} aria-expanded={textExpanded} aria-controls="text-composer" onClick={() => textExpanded ? hideInput() : setTextExpanded(true)}><Icon name="keyboard" size={18} /><span>{t(textExpanded ? 'companion.hideInput' : 'companion.typeMessage')}</span>{!textExpanded && input.trim() && <span className="draft-dot" role="img" aria-label={t('companion.draftSaved')} />}</button>
+                  </>}
+                  {active && ['thinking', 'speaking'].includes(conversation.state) && <button type="button" className="round-control" aria-label={t('companion.stopReply')} title={t('companion.stopReply')} onClick={conversation.cancel}><Icon name="pause" size={15} /></button>}
+                  {active && <button type="button" className="end-call" aria-label={t('companion.endConversation')} title={t('companion.endConversation')} onClick={() => void perform(conversation.end)} disabled={busy}><Icon name="stop" size={14} /><span>{t('companion.endConversation')}</span></button>}
+                </div>
               </div>
-              <form id="text-composer" className="composer" onSubmit={submit}>
-                <label className="sr-only" htmlFor="message-input">{t('companion.messageInput')}</label>
-                <textarea id="message-input" value={input} maxLength={MAX_TEXT_LENGTH} onChange={(event) => setInput(event.target.value)} placeholder={t('companion.messagePlaceholder')} rows={1} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void sendText(input); } }} />
-                <button className="send-button" type="submit" aria-label={t('companion.sendMessage')} disabled={!input.trim() || !ready || busy}><Icon name="send" size={18} /></button>
-              </form>
-              <div className="composer-secondary-controls">
-                <button type="button" className={`round-control ${conversation.muted ? 'is-muted' : ''}`} aria-label={conversation.muted ? t('companion.unmute') : t('companion.mute')} title={conversation.muted ? t('companion.unmute') : t('companion.mute')} aria-pressed={conversation.muted} disabled={!active || !conversation.voiceEnabled} onClick={conversation.toggleMute}><Icon name={conversation.muted ? 'mic-off' : 'mic'} size={18} /></button>
-                <button type="button" className="round-control" aria-label={t('companion.stopReply')} title={t('companion.stopReply')} disabled={!active || !['thinking', 'speaking'].includes(conversation.state)} onClick={conversation.cancel}><Icon name="pause" size={15} /></button>
-                {active && !conversation.voiceEnabled && <button type="button" className="text-button" onClick={() => void perform(conversation.end)} disabled={busy}>{t('companion.endConversation')}</button>}
-              </div>
+              {showInput && <span className="composer-hint">{t('companion.composerHint')}</span>}
             </div>
-            <span className="composer-hint">{t('companion.composerHint')}</span>
-          </div>
+          </div>}
+
         </section>
 
         <aside className="companion-stage" aria-label={t('companion.virtualPartner')}>
-          <div className="stage-heading"><h2>{settings.characterName}</h2><span className={`presence-badge state-${conversation.state}`} role="status"><i />{statusLabel || t('companion.practiceTogether')}</span></div>
           <div className="character-stage">
-            <div className="scene-wash" aria-hidden="true" />
             <AvatarStage avatarUrl={settings.avatarUrl} state={conversation.state} audioLevelRef={conversation.audioLevelRef} name={settings.characterName} framing={avatarFraming} caption={conversation.playbackCaption}
               emotion={avatarEmotionMode === 'auto' ? conversation.avatarEmotion : avatarEmotionMode}
               command={avatarCommand} onCapabilities={updateAvatarCapabilities} />
           </div>
-          <details className="avatar-settings">
-            <summary><Icon name="settings" size={16} /><span>{t('controls.avatarSettings')}</span><Icon name="chevron" size={16} /></summary>
-            <div className="avatar-settings-content">
-              <AvatarControls capabilities={avatarCapabilities} emotionMode={avatarEmotionMode} onEmotionChange={setAvatarEmotionMode}
-                onAction={(action) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'action', action })}
-                onInteraction={(target) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'interaction', target })} />
-              <div className="avatar-size-control">
-                <div className="avatar-size-heading"><label htmlFor="avatar-framing">{t('companion.avatarSize')}</label><button className="text-button" type="button" onClick={() => changeAvatarFraming(DEFAULT_AVATAR_FRAMING)}>{t('companion.reset')}</button></div>
-                <input id="avatar-framing" type="range" min={0} max={100} step={1} value={Math.round(avatarFraming * 100)} aria-valuetext={avatarFraming === 0 ? t('companion.fullBody') : avatarFraming === 1 ? t('companion.bust') : t('companion.framingValue', { percent: formatNumber(avatarFraming, { style: 'percent' }) })} onChange={(event) => changeAvatarFraming(Number(event.target.value) / 100)} />
-                <div className="avatar-size-labels" aria-hidden="true"><span>{t('companion.fullBody')}</span><span>{t('companion.bust')}</span></div>
-              </div>
-              <button className="text-button companion-settings" onClick={() => setPanel('settings')}>{t('companion.practiceSettings')}<Icon name="arrow" size={14} /></button>
-            </div>
-          </details>
+          <div className="workspace-tools">
+            <button type="button" className="icon-button" aria-label={t('controls.avatarSettings')} title={t('controls.avatarSettings')} aria-haspopup="dialog" onClick={() => setPanel('avatar')}><Icon name="spark" size={22} /></button>
+            <button type="button" className="workspace-settings" aria-label={t('controls.settings')} title={t('controls.settings')} aria-haspopup="dialog" onClick={() => setPanel('settings')}><Icon name="settings" size={20} /><span>{t('controls.settings')}</span></button>
+          </div>
         </aside>
       </div>
+      {welcome && <p className="landing-signoff">{t('companion.landingSignoff')}</p>}
     </main>
 
-    <Modal open={panel !== null} onClose={() => setPanel(null)} title={panel === 'settings' ? t('companion.practiceSettings') : panel === 'history' ? t('companion.history') : t('companion.memoriesTitle')}>
+    <Modal open={panel !== null} onClose={() => setPanel(null)} title={t(panel === 'avatar' ? 'controls.avatarSettings' : 'companion.practiceSettings')}>
       {panel && errorBanner}
+      {panel === 'avatar' && (
+        <div className="avatar-settings-content">
+          <AvatarControls capabilities={avatarCapabilities} emotionMode={avatarEmotionMode} onEmotionChange={setAvatarEmotionMode}
+            onAction={(action) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'action', action })}
+            onInteraction={(target) => setAvatarCommand({ id: ++avatarRequest.current, kind: 'interaction', target })} />
+          <div className="avatar-size-control">
+            <div className="avatar-size-heading"><label htmlFor="avatar-framing">{t('companion.avatarSize')}</label><button className="text-button" type="button" onClick={() => changeAvatarFraming(DEFAULT_AVATAR_FRAMING)}>{t('companion.reset')}</button></div>
+            <input id="avatar-framing" type="range" min={0} max={100} step={1} value={Math.round(avatarFraming * 100)} aria-valuetext={avatarFraming === 0 ? t('companion.fullBody') : avatarFraming === 1 ? t('companion.bust') : t('companion.framingValue', { percent: formatNumber(avatarFraming, { style: 'percent' }) })} onChange={(event) => changeAvatarFraming(Number(event.target.value) / 100)} />
+            <div className="avatar-size-labels" aria-hidden="true"><span>{t('companion.fullBody')}</span><span>{t('companion.bust')}</span></div>
+          </div>
+          <button className="text-button companion-settings" onClick={() => setPanel('settings')}>{t('companion.practiceSettings')}<Icon name="arrow" size={14} /></button>
+        </div>
+      )}
       {panel === 'settings' && <SettingsPanel readingPreferences={readingPreferences} settings={settings} status={status} active={active} onSave={async (value) => { const saved = await api.saveSettings(value); setSettings(saved); setNotice('companion.settingsSavedNotice'); }} onAvatar={async (file) => { await validateAvatarFile(file); const result = await api.uploadAvatar(file); setSettings((current) => ({ ...current, avatarUrl: result.avatarUrl })); setNotice('companion.avatarChanged'); }} onRefresh={refreshData} />}
-      {panel === 'history' && <HistoryPanel sessions={sessions} currentSession={conversation.session} currentMessages={conversation.messages} renderMessage={renderMessage} renderReview={renderReview} onSelectHistory={conversation.clearAvatarEmotion} />}
-      {panel === 'memories' && <MemoryPanel memories={memories} onChange={setMemories} />}
     </Modal>
     {notice && <div className="toast" role="status"><Icon name="check" size={17} />{t(notice)}</div>}
-  </div>;
-}
-
-function HistoryPanel({ sessions, currentSession, currentMessages, renderMessage, renderReview, onSelectHistory }: {
-  sessions: SessionRecord[];
-  currentSession: SessionRecord | null;
-  currentMessages: ChatMessage[];
-  renderMessage: (message: ChatMessage) => ReactNode;
-  renderReview: (review: LearningReview) => ReactNode;
-  onSelectHistory: () => void;
-}) {
-  const { t, formatDate, formatError } = useI18n();
-  const formatSessionTitle = (date: string) => t('companion.sessionTitle', { date: formatDate(date, { month: 'long', day: 'numeric' }) });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState<{ session: SessionRecord; messages: ChatMessage[] } | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [retry, setRetry] = useState(0);
-  const isCurrent = selectedId !== null && selectedId === currentSession?.id;
-  useEffect(() => {
-    if (!selectedId || isCurrent) return;
-    let disposed = false;
-    void api.session(selectedId).then(result => {
-      if (!disposed) setLoaded(result);
-    }).catch(cause => { if (!disposed) setError(cause); });
-    return () => { disposed = true; };
-  }, [selectedId, isCurrent, retry]);
-  const select = (id: string | null) => { if (id !== null && id !== selectedId) onSelectHistory(); setSelectedId(id); setLoaded(null); setError(null); };
-  const session = isCurrent ? currentSession : loaded?.session.id === selectedId ? loaded.session : null;
-  const messages = isCurrent ? currentMessages : loaded?.messages ?? [];
-
-  if (selectedId) return <div className="history-detail">
-    <div className="history-detail-heading"><button className="text-button" onClick={() => select(null)}>{t('companion.backToList')}</button>{session && <span>{isCurrent ? t('companion.thisConversation') : formatSessionTitle(session.createdAt)}</span>}</div>
-    {error ? <div className="form-error" role="alert"><p>{formatError(error)}</p><button className="text-button" onClick={() => { setError(null); setRetry(value => value + 1); }}>{t('companion.retry')}</button></div> : session ? <HistoryMessages key={selectedId} session={session} messages={messages} renderMessage={renderMessage} renderReview={renderReview} /> : <p role="status" className="panel-intro">{t('companion.loading')}</p>}
-  </div>;
-
-  const previous = sessions.filter(session => session.id !== currentSession?.id);
-  return <div className="history-list">
-    {currentSession && <button className="history-item current" onClick={() => select(currentSession.id)}><span className="history-symbol"><Icon name="headphones" size={21} /></span><span className="history-item-content"><strong>{t('companion.thisConversation')}</strong><small>{currentSession.endedAt ? t('companion.state.idle') : t('companion.inConversation')} · {formatDate(currentSession.createdAt)}</small></span><Icon name="chevron" size={18} /></button>}
-    {previous.map(session => <button key={session.id} className="history-item" onClick={() => select(session.id)}><span className="history-symbol"><Icon name={session.review ? 'spark' : 'history'} size={21} /></span><span className="history-item-content"><strong>{formatSessionTitle(session.createdAt)}</strong><small>{formatDate(session.createdAt)}{session.review ? t('companion.reviewAvailable') : ''}</small></span><Icon name="chevron" size={18} /></button>)}
-    {!currentSession && previous.length === 0 && <p className="panel-empty">{t('companion.noHistory')}</p>}
-  </div>;
-}
-
-function HistoryMessages({ session, messages, renderMessage, renderReview }: {
-  session: SessionRecord;
-  messages: ChatMessage[];
-  renderMessage: (message: ChatMessage) => ReactNode;
-  renderReview: (review: LearningReview) => ReactNode;
-}) {
-  const { t } = useI18n();
-  const scroll = useRef<HTMLDivElement>(null);
-  const nearBottom = useRef(true);
-  useEffect(() => {
-    if (nearBottom.current && scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
-  }, [messages, session.review]);
-  return <div className="chat-scroll" ref={scroll} onScroll={() => { const node = scroll.current; if (node) nearBottom.current = node.scrollHeight - node.scrollTop - node.clientHeight < 100; }}>
-    {messages.length ? messages.map(message => renderMessage(message)) : <p className="panel-empty">{t('companion.noMessages')}</p>}
-    {session.review && renderReview(session.review)}
-    {session.endedAt && !session.review && <p className="review-pending" role="status">{t('companion.reviewPending')}</p>}
   </div>;
 }
 
@@ -358,21 +321,32 @@ function Message({ message, name, translation, translating, canReplay, onTransla
   </article>;
 }
 
-function Review({ review, memories, onSave }: { review: LearningReview; memories: MemoryRecord[]; onSave: (content: string) => Promise<void> }) {
+function Review({ review }: { review: LearningReview }) {
   const { t, formatNumber } = useI18n();
-  const [saving, setSaving] = useState<string | null>(null);
-  return <section className="learning-review" aria-label={t('companion.learningReview')}><div className="review-title"><Icon name="spark" size={18} /><h3>{t('companion.reviewHeading')}</h3></div><p className="review-topic" lang="ja">{review.topic}</p><h4>{t('companion.reusableExpressions')}</h4><ol>{review.expressions.slice(0, 3).map((expression, index) => <li key={`${expression.text}-${index}`}><span>{formatNumber(index + 1, { minimumIntegerDigits: 2 })}</span><div><strong>{expression.text}</strong><p lang="ja">{expression.meaning}</p></div></li>)}</ol><div className="improvement"><span>{t('companion.improvementTip')}</span><p lang="ja">{review.improvement}</p></div>{review.memorySuggestions.length > 0 && <div className="memory-suggestions"><h4>{t('companion.rememberPrompt')}</h4>{review.memorySuggestions.map((suggestion) => { const saved = memories.some((memory) => memory.content === suggestion); return <div key={suggestion}><p lang="ja">{suggestion}</p><button disabled={saved || saving === suggestion} className="text-button" onClick={() => { setSaving(suggestion); void onSave(suggestion).catch(() => {}).finally(() => setSaving(null)); }}><Icon name={saved ? 'check' : 'plus'} size={14} />{saved ? t('companion.saved') : saving === suggestion ? t('companion.saving') : t('companion.remember')}</button></div>; })}</div>}</section>;
+  return <section className="learning-review" aria-label={t('companion.learningReview')}>
+    <div className="review-title"><Icon name="spark" size={18} /><h3>{t('companion.reviewHeading')}</h3></div>
+    <p className="review-topic" lang="ja">{review.topic}</p>
+    <h4>{t('companion.reusableExpressions')}</h4>
+    <ol>{review.expressions.slice(0, 3).map((expression, index) => <li key={`${expression.text}-${index}`}>
+      <span>{formatNumber(index + 1, { minimumIntegerDigits: 2 })}</span>
+      <div><strong>{expression.text}</strong><p lang="ja">{expression.meaning}</p></div>
+    </li>)}</ol>
+    <div className="improvement"><span>{t('companion.improvementTip')}</span><p lang="ja">{review.improvement}</p></div>
+  </section>;
 }
 
 function Modal({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
   const { t } = useI18n();
   const titleId = useId();
   const dialog = useRef<HTMLDialogElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (open && !dialog.current?.open) dialog.current?.showModal();
     if (!open && dialog.current?.open) dialog.current?.close();
-  }, [open]);
-  return <dialog ref={dialog} className="panel-dialog" aria-labelledby={titleId} onCancel={onClose} onClick={(event) => { if (event.target === dialog.current) { const bounds = dialog.current.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose(); } }}><div className="panel-header"><div><h2 id={titleId}>{title}</h2></div><LanguageSwitcher /><button className="icon-button" aria-label={t('companion.closePanel')} onClick={onClose}><Icon name="close" size={22} /></button></div><div className="panel-body">{children}</div></dialog>;
+    // Switching panels can unmount the focused control while the dialog stays open.
+    if (open && dialog.current?.open && !dialog.current.contains(document.activeElement)) heading.current?.focus();
+  }, [open, title]);
+  return <dialog ref={dialog} className="panel-dialog" aria-labelledby={titleId} onCancel={onClose} onClick={(event) => { if (event.target === dialog.current) { const bounds = dialog.current.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose(); } }}><div className="panel-header"><div><h2 id={titleId} ref={heading} tabIndex={-1}>{title}</h2></div><LanguageSwitcher /><button className="icon-button" aria-label={t('companion.closePanel')} onClick={onClose}><Icon name="close" size={22} /></button></div><div className="panel-body">{children}</div></dialog>;
 }
 
 function SettingsPanel({ settings, status, active, onSave, onAvatar, onRefresh, readingPreferences }: { readingPreferences: ReadingControlsProps; settings: Settings; status: ServiceStatus | null; active: boolean; onSave: (settings: Settings) => Promise<void>; onAvatar: (file: File) => Promise<void>; onRefresh: () => Promise<void> }) {
@@ -406,15 +380,4 @@ function SettingsPanel({ settings, status, active, onSave, onAvatar, onRefresh, 
     {active && <p className="inline-info">{t('companion.endBeforeSettings')}</p>}
     <div className="panel-save"><span>{saved ? t('companion.settingsSaved') : t('companion.localStorageHelp')}</span><button className="primary-button" disabled={busy || uploading || active}><Icon name={saved ? 'check' : 'arrow'} size={17} />{busy ? t('companion.savingProgress') : t('companion.saveSettings')}</button></div>
   </form></>;
-}
-
-function MemoryPanel({ memories, onChange }: { memories: MemoryRecord[]; onChange: (memories: MemoryRecord[]) => void }) {
-  const { t, formatDate, formatError } = useI18n();
-  const [content, setContent] = useState('');
-  const [editing, setEditing] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-  const action = async (fn: () => Promise<void>) => { setBusy(true); setError(null); try { await fn(); } catch (cause) { setError(cause); } finally { setBusy(false); } };
-  return <div className="memories-panel"><p className="panel-intro">{t('companion.memoryIntro')}<br />{t('companion.memoryIntroPersistence')}</p>{Boolean(error) && <p className="form-error" role="alert">{formatError(error)}</p>}<form className="memory-form" onSubmit={(event) => { event.preventDefault(); if (!content.trim()) return; void action(async () => { const memory = await api.addMemory(content.trim()); onChange([memory, ...memories]); setContent(''); }); }}><label className="field" htmlFor="new-memory">{t('companion.newMemory')}<textarea id="new-memory" maxLength={1000} rows={3} placeholder={t('companion.memoryPlaceholder')} value={content} onChange={(event) => setContent(event.target.value)} /></label><button className="secondary-button" disabled={busy || !content.trim()}><Icon name="plus" size={16} />{t('companion.addMemory')}</button></form>{memories.length === 0 && <div className="panel-empty"><Icon name="memory" size={32} /><h3>{t('companion.memoryEmptyHeading')}</h3><p>{t('companion.memoryEmptyDescription')}</p></div>}<div className="memory-list">{memories.map((memory) => <div className="memory-item" key={memory.id}>{editing === memory.id ? <form onSubmit={(event) => { event.preventDefault(); if (!editContent.trim()) return; void action(async () => { const updated = await api.updateMemory(memory.id, editContent.trim()); onChange(memories.map((item) => item.id === updated.id ? updated : item)); setEditing(null); }); }}><textarea aria-label={t('companion.editMemory')} maxLength={1000} rows={3} value={editContent} onChange={(event) => setEditContent(event.target.value)} /><div className="memory-edit-actions"><button type="button" className="text-button" onClick={() => setEditing(null)}>{t('companion.cancel')}</button><button className="secondary-button" disabled={busy || !editContent.trim()}>{t('companion.save')}</button></div></form> : <><div className="memory-content"><Icon name="memory" size={17} /><p>{memory.content}</p></div><div className="memory-item-footer"><span>{formatDate(memory.updatedAt)}</span><div><button className="icon-button" aria-label={t('companion.editMemoryLabel', { content: memory.content })} disabled={busy} onClick={() => { setEditing(memory.id); setEditContent(memory.content); }}><Icon name="edit" size={16} /></button><button className="icon-button delete-button" aria-label={t('companion.deleteMemoryLabel', { content: memory.content })} disabled={busy} onClick={() => void action(async () => { await api.deleteMemory(memory.id); onChange(memories.filter((item) => item.id !== memory.id)); })}><Icon name="trash" size={16} /></button></div></div></>}</div>)}</div></div>;
 }
