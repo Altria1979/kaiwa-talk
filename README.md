@@ -2,6 +2,10 @@
 
 [日本語](README.ja.md) · **简体中文** · [English](README.en.md)
 
+[![点击查看 Violet Talk 日常对话演示](docs/media/violet-talk-demo.jpg)](docs/media/violet-talk-demo.mp4)
+
+[▶ 查看／下载演示视频](docs/media/violet-talk-demo.mp4) · 54 秒 · 720p · 6.2 MB · 实际日语对话与百炼复刻音色
+
 **和虚拟伙伴聊几句，让日语从“想得出来”变成“说得出口”。**
 
 [在线体验](https://kaiwa-talk.vercel.app/) · [应用源码](https://github.com/Altria1979/kaiwa-talk) · [问题反馈](https://github.com/Altria1979/kaiwa-talk/issues)
