@@ -1,0 +1,19 @@
+src/i18n/messages/common.ts
+  s_d19f5fd0b41984::t_d96b9ce264154c 5,20,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1473ab93eac8d7df8f90ecf6256c979bbb5118e4",
+  "prompts": {},
+  "sessions": {
+    "s_d19f5fd0b41984": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa5f-5c9f-7b91-a54c-5e0d6d6e68b1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
