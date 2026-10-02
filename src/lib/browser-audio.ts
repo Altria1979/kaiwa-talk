@@ -3,8 +3,11 @@ import { BrowserVad, type BrowserVadCallbacks } from './browser-vad';
 import type { SpeechContext } from '../../shared/speech-policy';
 import { captionCharacters, type PlaybackCaption } from './playback-captions';
 import { ConversationRecorder, type ConversationRecordingResult } from './conversation-recorder';
+import { BrowserMicrophone } from './browser-microphone';
 
 interface BrowserAudioOptions extends BrowserVadCallbacks {
+  /** Page-owned grant; capture and recording remain local to this conversation. */
+  microphone?: BrowserMicrophone;
   /** Raw RMS of the actual playback output, zero while playback is inactive. */
   levelRef: { current: number };
   onPcm: (base64: string, streamId: string) => void;
@@ -81,6 +84,8 @@ export class BrowserAudio {
   private context: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private stream: MediaStream | null = null;
+  private readonly microphone: BrowserMicrophone;
+  private microphoneOwner: object | null = null;
   private microphoneSource: MediaStreamAudioSourceNode | null = null;
   private capture: AudioWorkletNode | null = null;
   private captureGain: GainNode | null = null;
@@ -113,7 +118,9 @@ export class BrowserAudio {
   private replaySentenceIndex = 0;
   private replayVisibleCharacters = 0;
 
-  constructor(private readonly options: BrowserAudioOptions) {}
+  constructor(private readonly options: BrowserAudioOptions) {
+    this.microphone = options.microphone ?? new BrowserMicrophone();
+  }
 
   async prepare(): Promise<void> {
     if (this.disposed) throw new AppError('音声セッションは終了しました。会話を開始し直してください。');
@@ -154,20 +161,15 @@ export class BrowserAudio {
     void _vadSilenceMs;
     if (this.stream) return;
     this.vadEnabled = false;
-    await this.prepare();
     const generation = ++this.micGeneration;
-    if (!navigator.mediaDevices?.getUserMedia) throw new AppError('このブラウザーではマイクを使用できません。この端末のブラウザーでページを開いてください。');
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-    } catch (error) {
-      if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError')) throw new AppError('マイクの使用が許可されていません。テキストで会話を続けられます。');
-      throw new AppError('マイクを起動できません。機器とブラウザーの権限を確認してください。テキストで会話を続けられます。');
-    }
+    await this.prepare();
+    if (this.disposed || generation !== this.micGeneration || !this.context) return;
+    const owner = {};
+    this.microphoneOwner = owner;
+    const stream = await this.microphone.acquire(owner);
+    if (!stream) return;
     if (this.disposed || generation !== this.micGeneration || !this.context) {
-      stream.getTracks().forEach(track => track.stop());
+      this.microphone.release(owner);
       return;
     }
     this.stream = stream;
@@ -262,7 +264,11 @@ export class BrowserAudio {
     this.recorder?.setMicrophone(null);
     this.microphoneSource?.disconnect();
     this.captureGain?.disconnect();
-    for (const track of this.stream?.getTracks() ?? []) { track.onended = null; track.stop(); }
+    for (const track of this.stream?.getTracks() ?? []) track.onended = null;
+    if (this.microphoneOwner) this.microphone.release(this.microphoneOwner);
+    this.microphoneOwner = null;
+    // A page owner can reuse disabled tracks; standalone audio still owns teardown.
+    if (!this.options.microphone) this.microphone.dispose();
     this.capture = null;
     this.microphoneSource = null;
     this.captureGain = null;

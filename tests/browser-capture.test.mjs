@@ -141,9 +141,10 @@ test('inference errors report unavailable once without leaking stale evidence', 
   assert.equal(state.frames.length, 0);
 });
 
-function capture(t, { recordingError = false } = {}) {
+function capture(t, { recordingError = false, microphone } = {}) {
   let audio;
-  t.after(() => audio?.dispose());
+  const audios = [];
+  t.after(async () => { await Promise.all(audios.map(audio => audio.dispose())); microphone?.dispose(); });
   const nodes = [];
   const sent = [];
   const frames = [];
@@ -192,7 +193,7 @@ function capture(t, { recordingError = false } = {}) {
     AudioWorkletNode: Worklet,
     MediaRecorder: Recorder,
     navigator: { mediaDevices: { async getUserMedia() {
-      const track = { enabled: true, stopped: false, stop() { this.stopped = true; } };
+      const track = { enabled: true, stopped: false, readyState: 'live', stop() { this.stopped = true; this.readyState = 'ended'; } };
       tracks.push(track);
       return { getAudioTracks: () => [track], getTracks: () => [track] };
     } } },
@@ -205,13 +206,19 @@ function capture(t, { recordingError = false } = {}) {
   }
   currentModel = { async process() { return { isSpeech: 1 }; }, reset_state() {}, async release() {} };
   loadModel = async () => currentModel;
-  audio = new BrowserAudio({
-    levelRef: { current: 0 }, onPcm: (bytes, streamId) => sent.push({ bytes: Buffer.from(bytes, 'base64'), streamId }),
-    getSpeechContext: () => context, onVadFrame: frame => frames.push(frame),
-    onPlayed() {}, onBusy() {}, onError: error => assert.fail(error),
-  });
+  const createAudio = () => {
+    audio = new BrowserAudio({
+      microphone,
+      levelRef: { current: 0 }, onPcm: (bytes, streamId) => sent.push({ bytes: Buffer.from(bytes, 'base64'), streamId }),
+      getSpeechContext: () => context, onVadFrame: frame => frames.push(frame),
+      onPlayed() {}, onBusy() {}, onError: error => assert.fail(error),
+    });
+    audios.push(audio);
+    return audio;
+  };
+  createAudio();
   return {
-    audio, sent, frames, recorders, tracks,
+    audio, createAudio, sent, frames, recorders, tracks, nodes,
     get track() { return tracks.at(-1); }, get context() { return contexts.at(-1); },
     emit: () => nodes.at(-1).port.onmessage({ data: pcm().buffer }),
   };
@@ -311,4 +318,52 @@ test('recording failure leaves microphone capture and recognition operational', 
   assert.equal(state.sent[0].streamId, 'voice');
   assert.equal(state.track.stopped, false);
   assert.deepEqual(await state.audio.stopRecording(), { status: 'failed' });
+});
+
+test('conversations reuse the granted microphone while ended conversations cannot capture or upload', async t => {
+  const { BrowserMicrophone } = await import('../src/lib/browser-microphone.ts');
+  const microphone = new BrowserMicrophone();
+  const state = capture(t, { microphone });
+  await state.audio.startMicrophone();
+  state.audio.setRecognitionStream('first');
+  state.audio.setVadEnabled(true);
+  state.emit();
+  const track = state.track;
+  const staleCapture = state.nodes[0].port.onmessage;
+  const firstSource = state.context.sources[0];
+  await state.audio.dispose();
+  assert.equal(track.enabled, false, 'an ended conversation must not capture microphone input');
+  assert.equal(track.stopped, false, 'keep the granted track for another conversation on this page');
+  assert.equal(firstSource.targets.size, 0, 'disconnect recording and capture consumers');
+  staleCapture({ data: pcm().buffer });
+  assert.equal(state.sent.length, 1, 'queued audio from an ended session must never upload');
+
+  const second = state.createAudio();
+  await second.startMicrophone();
+  assert.equal(state.tracks.length, 1, 'starting again must not call getUserMedia again');
+  assert.equal(track.enabled, true);
+  second.setRecognitionStream('second');
+  second.setVadEnabled(true);
+  state.emit();
+  assert.equal(state.sent.at(-1).streamId, 'second');
+  state.audio.stopMicrophone();
+  assert.equal(track.enabled, true, 'stale cleanup must not mute the new conversation');
+
+  second.stopMicrophone();
+  assert.equal(track.enabled, false);
+  second.setMuted(true);
+  await second.startMicrophone();
+  assert.equal(state.tracks.length, 1, 'reconnect reuses the same grant');
+  assert.equal(track.enabled, false, 'reconnect preserves the mute preference');
+});
+
+test('stopping during audio preparation does not request a microphone later', async t => {
+  const state = capture(t);
+  const preparation = deferred();
+  state.audio.prepare = () => preparation.promise;
+  const starting = state.audio.startMicrophone();
+  state.audio.stopMicrophone();
+  preparation.resolve();
+  await starting;
+  assert.equal(state.tracks.length, 0);
 });

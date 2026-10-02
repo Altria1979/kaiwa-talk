@@ -89,6 +89,12 @@ class Socket {
 
 async function harness(t, { voice = true, start = true, autoStart = true } = {}) {
   const previousSocket = globalThis.WebSocket;
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  const page = new EventTarget();
+  const document = Object.assign(new EventTarget(), { visibilityState: 'visible' });
+  globalThis.window = page;
+  globalThis.document = document;
   globalThis.WebSocket = Socket;
   Audio.instances = [];
   Socket.instances = [];
@@ -102,11 +108,75 @@ async function harness(t, { voice = true, start = true, autoStart = true } = {})
     unmounted = true;
     for (const slot of hooks.slots) if (typeof slot === 'function') slot();
   };
-  t.after(() => { unmount(); globalThis.WebSocket = previousSocket; });
+  t.after(() => { unmount(); globalThis.WebSocket = previousSocket; globalThis.window = previousWindow; globalThis.document = previousDocument; });
   if (start) await current().start({ voice });
   const ended = () => Socket.instances.at(-1).receive({ type: 'session.ended', session: { ...current().session, endedAt: '2026-09-27T10:05:00.000Z' } });
-  return { current, unmount, ended, hooks, get audio() { return Audio.instances.at(-1); }, get socket() { return Socket.instances.at(-1); } };
+  return { current, unmount, ended, hooks, page, document, get audio() { return Audio.instances.at(-1); }, get socket() { return Socket.instances.at(-1); } };
 }
+
+test('a page keeps one microphone owner across conversations and releases it on unmount', async t => {
+  const h = await harness(t);
+  const microphone = h.audio.callbacks.microphone;
+  assert.ok(microphone);
+  const dispose = t.mock.method(microphone, 'dispose');
+  await h.current().end();
+  h.ended();
+  await nextTick();
+  await h.current().start({ voice: true });
+  assert.equal(h.audio.callbacks.microphone, microphone);
+  assert.equal(dispose.mock.callCount(), 0);
+  h.unmount();
+  assert.equal(dispose.mock.callCount(), 1);
+  h.page.dispatchEvent(new Event('pagehide'));
+  assert.equal(dispose.mock.callCount(), 1, 'unmount removes the pagehide listener');
+});
+
+test('leaving a page ends capture and releases its reusable microphone', async t => {
+  const h = await harness(t);
+  assert.ok(h.audio.callbacks.microphone);
+  const dispose = t.mock.method(h.audio.callbacks.microphone, 'dispose');
+  const audio = h.audio;
+  h.page.dispatchEvent(new Event('pagehide'));
+  assert.equal(audio.disposed, true);
+  assert.equal(dispose.mock.callCount(), 1);
+  assert.equal(h.socket.sent.filter(event => event.type === 'end').length, 1);
+  h.ended();
+  await nextTick();
+  assert.equal(h.current().active, false);
+});
+
+test('backgrounding an idle page releases its grant without interrupting active voice on visibility alone', async t => {
+  const h = await harness(t);
+  const dispose = t.mock.method(h.audio.callbacks.microphone, 'dispose');
+  h.document.visibilityState = 'hidden';
+  h.document.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(dispose.mock.callCount(), 0);
+  h.document.visibilityState = 'visible';
+  await h.current().end();
+  h.ended();
+  await nextTick();
+  h.document.visibilityState = 'hidden';
+  h.document.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(dispose.mock.callCount(), 1);
+  assert.equal(h.current().active, false);
+  h.unmount();
+  const afterUnmount = dispose.mock.callCount();
+  h.document.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(dispose.mock.callCount(), afterUnmount, 'unmount removes the visibility listener');
+});
+
+test('a conversation ending after the page is hidden releases the retained grant', async t => {
+  const h = await harness(t);
+  const dispose = t.mock.method(h.audio.callbacks.microphone, 'dispose');
+  h.document.visibilityState = 'hidden';
+  h.document.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(dispose.mock.callCount(), 0);
+  h.ended();
+  assert.equal(dispose.mock.callCount(), 1);
+  await nextTick();
+  assert.equal(h.current().active, false);
+  assert.equal(h.current().recording.status, 'ready');
+});
 
 test('recording begins only after the server confirms the conversation', async t => {
   const h = await harness(t, { start: false, autoStart: false });

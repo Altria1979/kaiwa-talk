@@ -7,6 +7,7 @@ import { isAvatarEmotion, type AvatarEmotion } from '../../shared/avatar-emotion
 import { api, ensureBrowserSession, SOCKET_URL } from '../lib/api';
 import { readBrowserCredentials } from '../lib/bailian-credentials';
 import { BrowserAudio } from '../lib/browser-audio';
+import { BrowserMicrophone } from '../lib/browser-microphone';
 import type { ConversationRecordingResult } from '../lib/conversation-recorder';
 import type { VadStatus } from '../lib/browser-vad';
 import { SpeechAdmission } from '../lib/speech-admission';
@@ -54,6 +55,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   const sessionSocketRef = useRef<WebSocket | null>(null);
   const connectingRef = useRef<{ cancel: () => void } | null>(null);
   const audioRef = useRef<BrowserAudio | null>(null);
+  const microphoneRef = useRef<BrowserMicrophone | null>(null);
   const audioSessionRef = useRef<{ sessionId: string; createdAt: string } | null>(null);
   const recordingRequestRef = useRef(0);
   const sessionRef = useRef<SessionRecord | null>(null);
@@ -178,6 +180,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
     audioBusyRef.current = false;
     replyGeneratingRef.current = false;
     audio?.stopMicrophone();
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') microphoneRef.current?.dispose();
     if (audio) void audio.dispose().catch(() => {});
     audioLevelRef.current = 0;
     if (mountedRef.current) {
@@ -283,7 +286,11 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
           resetSpeechInput(false);
         }
         if (event.voice) audioRef.current?.setVadEnabled(true);
-        if (!event.voice) { audioRef.current?.stopMicrophone(); resetSpeechInput(); vadStatusRef.current = 'idle'; setVadStatus('idle'); }
+        if (!event.voice) {
+          audioRef.current?.stopMicrophone();
+          if (typeof document !== 'undefined' && document.visibilityState === 'hidden') microphoneRef.current?.dispose();
+          resetSpeechInput(); vadStatusRef.current = 'idle'; setVadStatus('idle');
+        }
         setState('listening');
         if (pendingRef.current) {
           clearTimeout(pendingRef.current.timer);
@@ -521,6 +528,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       const isCurrent = (): boolean => mountedRef.current && generation === audioGenerationRef.current && audioRef.current === audio;
       const canDetectSpeech = () => isCurrent() && activeRef.current && voiceRef.current && !mutedRef.current && !endingRef.current && !suggestionSpeechRef.current;
       const audio: BrowserAudio = new BrowserAudio({
+      microphone: microphoneRef.current ??= new BrowserMicrophone(),
       levelRef: audioLevelRef,
       vadRedemptionMs: vadSilenceMs,
       getSpeechContext: () => ({
@@ -949,6 +957,24 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
   }, [releaseAudio, resetAvatarEmotion]);
 
   useEffect(() => {
+    const onPageHide = () => {
+      if (activeRef.current || startRef.current) void end().catch(() => {});
+      else releaseAudio();
+      microphoneRef.current?.dispose();
+    };
+    const onVisibilityChange = () => {
+      // An idle page need not hold even a disabled grant while in the background.
+      if (document.visibilityState === 'hidden' && !voiceRef.current && !startRef.current) microphoneRef.current?.dispose();
+    };
+    if (typeof window !== 'undefined') window.addEventListener('pagehide', onPageHide);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      if (typeof window !== 'undefined') window.removeEventListener('pagehide', onPageHide);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [end, releaseAudio]);
+
+  useEffect(() => {
     const lifecycle = lifecycleRef;
     mountedRef.current = true;
     return () => {
@@ -960,6 +986,7 @@ export function useConversation({ vadSilenceMs = DEFAULT_SETTINGS.vadSilenceMs }
       const socket = socketRef.current; socketRef.current = null;
       socket?.close(1000, 'ページを閉じました。');
       releaseAudio();
+      microphoneRef.current?.dispose();
     };
   }, [releaseAudio]);
 
