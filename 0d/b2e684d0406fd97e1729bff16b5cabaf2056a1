@@ -1,0 +1,59 @@
+README.md
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 80
+  s_69cccda09f5d0e::t_d28283e8d01a87 87
+  s_69cccda09f5d0e::t_19b8b28cb5b383 86
+  s_badf27fd722d5e::t_18032fbb3b687e 64,68-77,79,81-82
+  s_badf27fd722d5e::t_14bf534e7254f9 78
+  h_04d8bae17367b3 84,88,112
+  s_a1c0b81899ba66::t_a4222206a5f036 83
+  s_5d8e32af690bfd::t_2342f2dd0eec5c 85
+  s_8bd8fc91e47b51::t_311e9dc5b51b5d 183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0db2e684d0406fd97e1729bff16b5cabaf2056a1",
+  "prompts": {},
+  "sessions": {
+    "s_5d8e32af690bfd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e215-4343-7131-93af-8f9a07c384dd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_69cccda09f5d0e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa6a-80fa-7002-b7aa-7e85a5830ad8",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_8bd8fc91e47b51": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa79-f43c-73e3-ba1a-4cb84c462e5d",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    },
+    "s_a1c0b81899ba66": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa05-9f94-7b81-a840-35156b760fcd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_badf27fd722d5e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa75-7a09-7992-87ec-c4046c3cdd68",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
