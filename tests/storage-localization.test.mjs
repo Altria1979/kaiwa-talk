@@ -153,15 +153,34 @@ test('character migration preserves custom names and model selections exactly', 
   }
 });
 
-test('language aliases migrate while custom user-authored settings remain unchanged', async () => {
-  const persona = '请记住我喜欢料理。这是我自己写的人物设定。';
-  (await store.updateSettings({ persona, learningLanguage: '英语', voice: 'Serena' }));
-  assert.equal((await store.getSettings()).learningLanguage, '英語');
-  assert.equal((await store.getSettings()).persona, persona);
-  assert.equal((await store.getSettings()).voice, 'Serena');
-  for (const learningLanguage of ['我定义的语言', 'toString', '__proto__']) {
-    (await store.updateSettings({ learningLanguage }));
-    assert.equal((await store.getSettings()).learningLanguage, learningLanguage);
+test('saved and patched languages are fixed to Japanese without changing custom settings or history', async () => {
+  const customSettings = {
+    ...DEFAULT_SETTINGS,
+    persona: '请记住我喜欢料理。这是我自己写的人物设定。',
+    characterName: '私の会話パートナー',
+    voice: 'Serena',
+    avatarUrl: '/api/avatars/my-avatar.vrm',
+  };
+  const session = await store.createSession();
+  await store.addMessage({ sessionId: session.id, turnId: 'old', role: 'user', content: '以前の会話です。', delivery: 'text' });
+  await store.endSession(session.id, { topic: '保存した話題', expressions: [], improvement: '保存した助言', memorySuggestions: [] });
+  await store.addMemory('手紙を書くことが好きです。');
+  const history = () => ['browser_sessions', 'browser_messages', 'browser_memories'].map(table => db.prepare(`SELECT data FROM ${table} WHERE owner_id = ? ORDER BY rowid`).all(ownerId));
+  const before = history();
+
+  for (const language of ['英语', '英語', '中文', '我定义的语言', 'toString', '__proto__']) {
+    const legacySettings = { ...customSettings, learningLanguage: language, supportLanguage: language };
+    saveSettings(legacySettings);
+    assert.deepEqual(await store.getSettings(), customSettings);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data), legacySettings);
+
+    const expected = { ...customSettings, vadSilenceMs: 1800 };
+    assert.deepEqual(await store.updateSettings({ vadSilenceMs: 1800 }), expected);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data), expected);
+    assert.deepEqual(await store.updateSettings({ learningLanguage: language, supportLanguage: language }), expected);
+    assert.deepEqual(await store.getSettings(), expected);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data), expected);
+    assert.deepEqual(history(), before);
   }
 });
 

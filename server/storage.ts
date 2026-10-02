@@ -10,9 +10,6 @@ const now = () => new Date().toISOString();
 const databaseNow = "CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)";
 const defaultSessionTitle = '新しい会話';
 const legacySessionTitle = '新的日语对话';
-const languageNames = new Map([
-  ['日语', '日本語'], ['英语', '英語'], ['韩语', '韓国語'], ['法语', 'フランス語'], ['德语', 'ドイツ語'], ['西班牙语', 'スペイン語'], ['中文', '中国語'],
-]);
 
 function localizedSession(session: SessionRecord | null): SessionRecord | null {
   return session?.title === legacySessionTitle ? { ...session, title: defaultSessionTitle } : session;
@@ -38,8 +35,8 @@ async function readSettings(db: DatabaseConnection, browserId: string): Promise<
   if (settings.characterName === 'VRoid Avatar A' && settings.avatarUrl === DEFAULT_SETTINGS.avatarUrl) settings.characterName = DEFAULT_SETTINGS.characterName;
   if (settings.persona === '温柔、耐心、有好奇心的日语聊天伙伴。像朋友一样自然交流。'
     || settings.persona === '優しく、辛抱強く、好奇心旺盛な日本語の会話パートナー。友達のように自然に話します。') settings.persona = DEFAULT_SETTINGS.persona;
-  settings.learningLanguage = languageNames.get(settings.learningLanguage) ?? settings.learningLanguage;
-  settings.supportLanguage = settings.supportLanguage === '中文' ? DEFAULT_SETTINGS.supportLanguage : languageNames.get(settings.supportLanguage) ?? settings.supportLanguage;
+  settings.learningLanguage = DEFAULT_SETTINGS.learningLanguage;
+  settings.supportLanguage = DEFAULT_SETTINGS.supportLanguage;
   return settings;
 }
 
@@ -89,7 +86,12 @@ export function createStore(options: DatabaseOptions) {
       getSettings(): Promise<Settings> { return read(db => readSettings(db, browserId)); },
       updateSettings(patch: Partial<Settings>): Promise<Settings> {
         return write(async db => {
-          const settings = { ...await readSettings(db, browserId), ...patch };
+          const settings = {
+            ...await readSettings(db, browserId),
+            ...patch,
+            learningLanguage: DEFAULT_SETTINGS.learningLanguage,
+            supportLanguage: DEFAULT_SETTINGS.supportLanguage,
+          };
           await db.execute('INSERT INTO browser_settings (owner_id, data) VALUES (?, ?) ON CONFLICT(owner_id) DO UPDATE SET data = excluded.data', [browserId, JSON.stringify(settings)]);
           return settings;
         });

@@ -339,26 +339,27 @@ test('ordinary text sends normally and selected replies use automatic reading wi
   }
 });
 
-test('settings drafts survive every UI locale and submit original language values', async () => {
+test('settings drafts survive every UI locale with Japanese practice fixed and no language fields', async () => {
   locale = 'ja';
   const view = panel('settings');
-  let tree = view.render();
+  let tree = view.render({ ...view.element.props, settings: { ...DEFAULT_SETTINGS, learningLanguage: '英語', supportLanguage: '中文' } });
   const nameInput = find(tree, node => node.type === 'input' && node.props.value === DEFAULT_SETTINGS.characterName);
   nameInput.props.onChange({ target: { value: 'Draft partner' } });
   for (const next of ['en', 'zh-CN', 'ja']) {
     locale = next;
     tree = view.render();
     assert.ok(find(tree, node => node.type === 'input' && node.props.value === 'Draft partner'));
-    const language = find(tree, node => node.type === 'select' && node.props.value === DEFAULT_SETTINGS.learningLanguage);
-    assert.deepEqual(children(language).map(option => option.props.value), ['日本語', '英語', '韓国語', 'フランス語', 'ドイツ語', 'スペイン語']);
-    assert.equal(text(children(language)[0]), t('companion.language.japanese'));
+    const preferences = find(tree, node => node.props.className === 'settings-section' && text(node).includes(t('companion.practicePreferences')));
+    assert.deepEqual(children(preferences).filter(node => node.type === 'label').map(node => text(children(node)[0])), [t('companion.practiceLevel')]);
+    assert.equal(find(preferences, node => node.type === 'input' && node.props.readOnly), undefined);
+    assert.equal(find(preferences, node => node.type === 'select' && ![DEFAULT_SETTINGS.japaneseLevel, DEFAULT_SETTINGS.vadSilenceMs].includes(node.props.value)), undefined);
+    assert.ok(text(preferences).includes(t('companion.voiceLanguageHelp')));
+    assert.ok(text(preferences).includes(t('companion.explanationHelp')));
   }
-  const language = find(tree, node => node.type === 'select' && node.props.value === DEFAULT_SETTINGS.learningLanguage);
-  language.props.onChange({ target: { value: '英語' } });
   find(view.render(), node => node.type === 'form').props.onSubmit(submitEvent);
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(savedSettings.characterName, 'Draft partner');
-  assert.equal(savedSettings.learningLanguage, '英語');
+  assert.equal(savedSettings.learningLanguage, '日本語');
   assert.equal(savedSettings.supportLanguage, '日本語');
   // The already-visible notice translates from its key after the async save.
   locale = 'en';
