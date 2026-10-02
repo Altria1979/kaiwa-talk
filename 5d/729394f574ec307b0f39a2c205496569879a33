@@ -1,0 +1,184 @@
+src/components/companion.module.css
+  s_6d2575be23bb0a::t_5161dced0ec550 15-18
+  s_68a2d77ba771b9::t_825a559771d98a 25,27-28,33,169-170,195-198
+  s_9ace893106f073::t_4ad23bba21f031 1,92-96,275,280,289-292,339
+  s_a1c0b81899ba66::t_bd49caf3d9607e 100-102,104-113,276,293-296,366
+  s_9ace893106f073::t_753623e1bf0a33 103
+  s_6d2575be23bb0a::t_82b785ece47600 157,205-207,284,306
+  s_6d2575be23bb0a::t_db31325ceec44f 246,333
+  s_48e7fb18d46f90::t_3bdb86753b575d 40
+  s_6d2575be23bb0a::t_e5c553941ff432 305
+  s_9ace893106f073::t_ac34373355841b 343
+  s_68a2d77ba771b9::t_a559ac2cddea7c 11-12
+  s_9ace893106f073::t_c62e19a1522a61 2-4
+  s_68a2d77ba771b9::t_01aa52c702e553 26
+  s_68a2d77ba771b9::t_2d6e5b23c172b6 32
+  s_68a2d77ba771b9::t_6dcde4ad9fab87 34-35
+  s_48e7fb18d46f90::t_7ddd9f6b090158 37-39
+  s_48e7fb18d46f90::t_3044589d345c47 41-43
+  s_9ace893106f073::t_7c906d864427ac 97
+  s_a1c0b81899ba66::t_49c00a2d418eef 114
+  s_9ace893106f073::t_bdeee41d6d102b 274
+  s_9ace893106f073::t_9e056210de27ce 278-279
+  s_9ace893106f073::t_6751bfeeb35ef2 281
+  s_a1c0b81899ba66::t_435c779acd359f 297-299
+  s_6d2575be23bb0a::t_b9c03e46e24871 307-308
+  s_9ace893106f073::t_393b2448ae7e2d 336-338
+  s_9ace893106f073::t_073a709eabedc3 340
+  s_9ace893106f073::t_5494f1e8032704 342
+  s_a1c0b81899ba66::t_3a051754b3f4dc 363-365
+  s_a1c0b81899ba66::t_9b97dabf9891cd 367-369
+  s_68a2d77ba771b9::t_3a13ad0101f47e 5-9,13-14,19-24,44-66,285-288,300-302,319-321,324,335,345-347,349-353,355-357,359-362,370-375,377-384,386-389
+src/lib/api.ts
+  s_6d2575be23bb0a::t_c21db6915818ee 2
+tests/browser-session.test.mjs
+  s_6d2575be23bb0a::t_700a50911dd3f7 33
+tests/storage-localization.test.mjs
+  s_528e9f0a8681a0::t_0892c510110452 82-127
+server/session.ts
+  s_528e9f0a8681a0::t_da8a4e1b4428c9 89,95
+src/lib/avatar-framing.ts
+  s_6d2575be23bb0a::t_05a95c10797aaf 2
+docs/VIOLET-PERSONA.md
+  s_528e9f0a8681a0::t_eb6054119d72a7 1-59
+README.md
+  s_a1c0b81899ba66::t_a4222206a5f036 65-66
+tests/conversation-scroll.test.mjs
+  s_48e7fb18d46f90::t_ca568cdc8e2a09 34,56,255-266
+  s_48e7fb18d46f90::t_e65c483ec4fcc6 267
+src/components/icon.tsx
+  s_6d2575be23bb0a::t_8b5b4d24f8bc39 22
+  s_48e7fb18d46f90::t_6362033447c124 3,8
+  s_c02d96790fa4cc::t_f5c9be1f9b6281 27-29
+tests/session.test.mjs
+  s_528e9f0a8681a0::t_03c4f8e368c4a6 180-213
+src/i18n/messages/companion.ts
+  s_6d2575be23bb0a::t_e7113d28fb2d6c 30,33,163,166,294,297
+  s_d19f5fd0b41984::t_ffb7c541ff81b4 31,164,295
+  s_48e7fb18d46f90::t_6362033447c124 12-17,145-150,276-281
+  s_6d2575be23bb0a::t_3958691c852974 32,34-36,165,167-169,296,298-300
+  s_6d2575be23bb0a::t_bce8774eb22bfc 93,121,226,254,357,385
+docs/GARDEN-THEME.md
+  s_6d2575be23bb0a::t_050e0b3153e176 75
+  s_6d2575be23bb0a::t_17d965167511e7 20-28
+  s_6d2575be23bb0a::t_8a5dafcdeeaa13 14-19
+  s_6d2575be23bb0a::t_e115e1d3544bdc 1-2,35-50
+  s_6d2575be23bb0a::t_cda681e60932d5 77
+  s_6d2575be23bb0a::t_f1ea8a28b8f54e 71
+  s_6d2575be23bb0a::t_b105dc1dbc810b 3-13
+  s_6d2575be23bb0a::t_b44273b47543f6 29-32
+  s_6d2575be23bb0a::t_edf14571327415 51-70,72,78
+  s_6d2575be23bb0a::t_0cd11ebc0e56d4 33-34
+  s_6d2575be23bb0a::t_20528d7f4e751a 73-74,76
+src/app/globals.css
+  s_6d2575be23bb0a::t_7e8e44a85e6222 5-7,10-18,20-22,29,40-41
+tests/avatar-camera.test.mjs
+  s_a1c0b81899ba66::t_d25a03d25b6ff0 1-173
+tests/companion-i18n.test.mjs
+  s_48e7fb18d46f90::t_4cd07663d66a42 504,509-510,526,584
+  s_9ace893106f073::t_4ad23bba21f031 187,214,217,663,667-672
+  s_48e7fb18d46f90::t_6bb5e95a3bf4cd 544-565,626,634-635
+  s_6d2575be23bb0a::t_c21db6915818ee 60,62-65,218,370-377,379-408,442
+  s_6d2575be23bb0a::t_9d46115e2754eb 649-662,664-666,673-687,689-692,694-699
+  s_9ace893106f073::t_753623e1bf0a33 378
+  s_6d2575be23bb0a::t_a2308a6864ec81 688
+  s_6d2575be23bb0a::t_befb84aa417fbe 700-735
+  s_48e7fb18d46f90::t_fdf989c2c31285 131-132,134-146,495-503,505-508,511-525,527-543,566-583,585-625,627-633,636-648,693
+src/lib/avatar-camera.ts
+  s_a1c0b81899ba66::t_bfc12fbf4c01b1 1-159
+shared/protocol.ts
+  s_528e9f0a8681a0::t_edaf7cc6cd34e5 29,31
+  s_528e9f0a8681a0::t_da8a4e1b4428c9 26-28,30,32-35
+src/components/avatar-stage.tsx
+  s_a1c0b81899ba66::t_cdbb7fa86749d4 6,11-12,16,19,107,114,146-148,164-169,175,181-182,193,228-229,232,238,242-243,250-251,280,310-311,347,349,358,372-374,385,387
+server/storage.ts
+  s_528e9f0a8681a0::t_314c1a01b43217 39-40
+src/components/companion.tsx
+  s_48e7fb18d46f90::t_b93bfae1836ecf 46-48,76-89,150,214-224,242,244,250,252,255-269,271,273-274
+  s_6d2575be23bb0a::t_a2308a6864ec81 286,295-305
+  s_9ace893106f073::t_4ad23bba21f031 42,283-285
+  s_6d2575be23bb0a::t_db31325ceec44f 4,107,116,212,324,326-335
+  s_6d2575be23bb0a::t_befb84aa417fbe 342,346-349
+  s_48e7fb18d46f90::t_3bdb86753b575d 53-56,58,241
+  s_6d2575be23bb0a::t_3958691c852974 225,238,289,292,294,306
+src/i18n/messages/controls.ts
+  s_6d2575be23bb0a::t_bce8774eb22bfc 7,35,61
+  s_6d2575be23bb0a::t_4217b40ade98bf 5,33,59
+  s_a1c0b81899ba66::t_3d41b7ba1c392c 23-24,51-52,77-78
+src/hooks/use-conversation-scroll.ts
+  s_48e7fb18d46f90::t_3bdb86753b575d 7,16,25,37
+src/components/avatar-view-controls.tsx
+  s_a1c0b81899ba66::t_5186a84c958e11 3,5,7,9-12,14-24,27-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5d729394f574ec307b0f39a2c205496569879a33",
+  "prompts": {},
+  "sessions": {
+    "s_48e7fb18d46f90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa1b-9ab9-7681-9b2a-a2d8fa55a4c6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_528e9f0a8681a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa10-7e90-78a3-ad25-3f93a5f7b5f2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_68a2d77ba771b9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa21-c6ca-7bc0-ad9f-f1f6f6c2e2b5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_6d2575be23bb0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f723-b926-7f30-99bf-5fa418e60efd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_9ace893106f073": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa16-e184-7952-a3fc-2e9da34c542e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_a1c0b81899ba66": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa05-9f94-7b81-a840-35156b760fcd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_c02d96790fa4cc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa1f-307f-72f1-99c0-6bee610603e0",
+        "model": "unknown"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_d19f5fd0b41984": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa5f-5c9f-7b91-a54c-5e0d6d6e68b1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
