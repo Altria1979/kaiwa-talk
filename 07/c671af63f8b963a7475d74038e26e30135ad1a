@@ -1,0 +1,26 @@
+README.en.md
+  s_69cccda09f5d0e::t_19b8b28cb5b383 17-19,29,38-39,43,54,62-63,68
+  s_69cccda09f5d0e::t_f140cb46cce6a0 69
+README.md
+  s_69cccda09f5d0e::t_19b8b28cb5b383 17-19,29,38-39,43,54,62-63,72
+  s_69cccda09f5d0e::t_d28283e8d01a87 73
+README.ja.md
+  s_69cccda09f5d0e::t_19b8b28cb5b383 17-19,29,38-39,43,54,62-63,68
+  s_69cccda09f5d0e::t_a40a0428b9da87 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "07c671af63f8b963a7475d74038e26e30135ad1a",
+  "prompts": {},
+  "sessions": {
+    "s_69cccda09f5d0e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa6a-80fa-7002-b7aa-7e85a5830ad8",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
