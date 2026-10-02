@@ -2,9 +2,9 @@
 
 [日本語](README.ja.md) · **简体中文** · [English](README.en.md)
 
-[![点击查看 Violet Talk 日常对话演示](docs/media/violet-talk-demo.jpg)](docs/media/violet-talk-demo.mp4)
+https://github.com/user-attachments/assets/7308791b-4040-412e-b3bd-f7fa83897ac4
 
-[▶ 查看／下载演示视频](docs/media/violet-talk-demo.mp4) · 54 秒 · 720p · 6.2 MB · 实际日语对话与百炼复刻音色
+[下载演示视频](docs/media/violet-talk-demo.mp4) · 54 秒 · 720p · 6.2 MB · 实际日语对话与百炼复刻音色
 
 **和虚拟伙伴聊几句，让日语从“想得出来”变成“说得出口”。**
 
