@@ -2,7 +2,7 @@ import type { Locale } from '../locales';
 
 const ja = {
   'common.language': '表示言語',
-  'common.title': 'Kaiwa Talk · AI と日本語会話練習',
+  'common.title': 'Violet Talk · AI と日本語会話練習',
   'common.description': 'AI アバターと音声で対話しながら、日本語の日常会話を練習できます。',
   'common.errorTitle': 'ページを表示できませんでした',
   'common.errorDescription': '少し待ってから、もう一度お試しください。',
@@ -17,7 +17,7 @@ export const commonMessages: Record<Locale, Record<keyof typeof ja, string>> = {
   ja,
   'zh-CN': {
     'common.language': '界面语言',
-    'common.title': 'Kaiwa Talk · AI 日语对练',
+    'common.title': 'Violet Talk · AI 日语对练',
     'common.description': '与 AI 虚拟角色实时语音对话，练习日语口语和日常交流。',
     'common.errorTitle': '页面暂时无法显示',
     'common.errorDescription': '请稍候再试。',
@@ -29,7 +29,7 @@ export const commonMessages: Record<Locale, Record<keyof typeof ja, string>> = {
   },
   en: {
     'common.language': 'Interface language',
-    'common.title': 'Kaiwa Talk · AI Japanese Conversation Practice',
+    'common.title': 'Violet Talk · AI Japanese Conversation Practice',
     'common.description': 'Practice everyday Japanese through real-time voice conversations with an AI avatar.',
     'common.errorTitle': 'This page could not be displayed',
     'common.errorDescription': 'Please wait a moment and try again.',
