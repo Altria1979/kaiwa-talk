@@ -1,0 +1,37 @@
+src/hooks/use-conversation.ts
+  s_fff871be94e87f::t_d1a69a052c1c1c 183,289-293
+  s_fff871be94e87f::t_a99cf8d0b55e98 10,58,531,959-976,989
+tests/browser-microphone.test.mjs
+  s_fff871be94e87f::t_0582e6950302a1 77-87
+  s_fff871be94e87f::t_18e6c6a668037d 1-76,88-219
+src/lib/browser-audio.ts
+  s_fff871be94e87f::t_b01eb1a016a3cf 6,9-10,87-88,121-123,165-168,170,172,267-271
+  s_fff871be94e87f::t_e45cbf1afcb803 169
+tests/browser-capture.test.mjs
+  s_fff871be94e87f::t_b7539c38392ded 144,146-147,196,209-210,215-219,221,322-369
+  s_fff871be94e87f::t_27a230d93a3b42 211-214
+src/lib/browser-microphone.ts
+  s_fff871be94e87f::t_a4e819a0733904 16,20-21
+  s_fff871be94e87f::t_18501bffcf5165 1-15,17-19,22-87
+tests/conversation-recording.test.mjs
+  s_fff871be94e87f::t_1a104f28e08d2d 93,95,97,111,114,146-162,164
+  s_fff871be94e87f::t_45367c8ff74a11 92,94,96,117-145,179
+  s_fff871be94e87f::t_b5dd26659e122d 163,165-178
+  s_fff871be94e87f::t_613c8091f9d81c 180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fbdd342a0ac77b8df506f1aeee11bbe221bdd1ed",
+  "prompts": {},
+  "sessions": {
+    "s_fff871be94e87f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa75-1964-7860-936e-84fd56a40e41",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
