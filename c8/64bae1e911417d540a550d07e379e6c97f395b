@@ -1,0 +1,76 @@
+src/components/companion.tsx
+  s_5254af42996f34::t_b9114cd0d39ebb 4,48,227,229-233,239,272,275,282-286,291,296-298
+  s_5254af42996f34::t_ff22b0eb5ce946 334,336-339
+  s_e251d9f01275df::t_c974e6a2251136 299
+src/components/avatar-stage.tsx
+  s_0554ce97c80ce8::t_c20c362ef9da09 141-142
+  s_e251d9f01275df::t_c2cdea72fb0605 14,301,310
+src/components/reply-suggestions.tsx
+  s_5254af42996f34::t_72634dbab10654 32,36,60-61
+  s_5254af42996f34::t_49ca4571d46196 26,30-31,33-35
+tests/avatar-pose.test.mjs
+  s_e251d9f01275df::t_9a83c925e8c920 1-148
+tests/reading-aids.test.mjs
+  s_5254af42996f34::t_49ca4571d46196 66,114,123-126
+tests/reply-suggestions-ui.test.mjs
+  s_5254af42996f34::t_74b90522a74dd0 1-58,60-61,67-68,72,76,83-84,86-89,92,94,97,99,114-115,117-119,134-135,160
+  s_5254af42996f34::t_9fc2c02a29a38f 59,62-66,69-71,73-75,77-82,85,90-91,93,95-96,98,100-113,116,120-133,136-159
+src/lib/avatar-pose.ts
+  s_e251d9f01275df::t_c2cdea72fb0605 1-45,47-58,61-66,69,71-72,75-78
+  s_e251d9f01275df::t_da12c1aafac6c1 46
+  s_e251d9f01275df::t_c48b3f7b05e736 59-60,67-68,70,73-74
+src/lib/avatar-animation.ts
+  s_e251d9f01275df::t_c2cdea72fb0605 11,19,25,126,162-168
+src/lib/avatar-camera.ts
+  s_0554ce97c80ce8::t_c20c362ef9da09 3,15,79-82,85,91-92
+src/components/companion.module.css
+  s_5254af42996f34::t_6559f5a1c3421f 3,73-79,92,153-154,161-163,337,348-349,353-360
+  s_5254af42996f34::t_02e555ceee9e89 288-297,299-306,308-311,313-327,329-332,340-341,344,346-347,351-352,363-406,413,418-421,424-429,433
+  s_5254af42996f34::t_788478a5d71eab 307,343,345
+  s_5254af42996f34::t_6b852c5d608a6c 333,335
+  s_5254af42996f34::t_b29d36a4e5d3fd 422-423
+  s_5254af42996f34::t_8ecadc71a9bc4f 312,328,334,336,338-339,342,350
+tests/companion-i18n.test.mjs
+  s_5254af42996f34::t_3117d61ad22b95 730-844
+  s_5254af42996f34::t_579b23d3287dcb 8,33,50-51,84-85
+src/i18n/messages/companion.ts
+  s_5254af42996f34::t_d4f9c5825e0d62 4-11,133-140,260-267
+README.md
+  s_5254af42996f34::t_79ae670376501c 19,65-70
+  s_5254af42996f34::t_594abd28a9ffa1 25,54
+  s_5254af42996f34::t_8054b1789e980e 1,11,13,17,24,26,40,55,58-61,64,71-76,81,85
+tests/avatar-camera.test.mjs
+  s_0554ce97c80ce8::t_c20c362ef9da09 54-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c864bae1e911417d540a550d07e379e6c97f395b",
+  "prompts": {},
+  "sessions": {
+    "s_0554ce97c80ce8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0faa6-69aa-7691-8772-2eb43a3133d8",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_5254af42996f34": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa84-0839-7cd1-a92d-ec8831d38ab7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_e251d9f01275df": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa90-8b11-7632-bfa2-898cf473b3eb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
