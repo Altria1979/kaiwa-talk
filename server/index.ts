@@ -3,7 +3,6 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { createHash, randomUUID } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
 import { browserCookie, browserIdFromCookie } from '../shared/cloud-access.js';
-import { AvatarError, prepareAvatarUpload, completeAvatarUpload, saveLocalAvatar, readAvatar, assertAvatarOwner } from './avatars.js';
 import { config, CredentialError, getStatus, parseBrowserCredentials, resolveBailianConfig } from './config.js';
 import { store as persistence } from './storage.js';
 import { RealtimeSession } from './session.js';
@@ -11,7 +10,7 @@ import { providerError } from './providers/errors.js';
 import { QwenClient } from './providers/qwen.js';
 import { SuggestionAudioError, synthesizeSuggestionAudio } from './suggestion-audio.js';
 import { messageReadingAidPrompt, parseMessageReadingAid } from './message-reading-aid.js';
-import { MAX_MODEL_BYTES, MAX_TEXT_LENGTH, type ClientEvent, type MessageReadingAid, type Settings } from '../shared/protocol.js';
+import { MAX_TEXT_LENGTH, type ClientEvent, type MessageReadingAid, type Settings } from '../shared/protocol.js';
 
 const origins = new Set([`http://localhost:${config.webPort}`, `http://127.0.0.1:${config.webPort}`]);
 const localHosts = new Set([`localhost:${config.servicePort}`, `127.0.0.1:${config.servicePort}`]);
@@ -90,10 +89,6 @@ function settingsPatch(input: Record<string, unknown>): Partial<Settings> {
     if (typeof input.vadSilenceMs !== 'number' || !Number.isInteger(input.vadSilenceMs) || input.vadSilenceMs < 200 || input.vadSilenceMs > 6000) throw new HttpError(400, '発話後の待機時間は 200～6000 ミリ秒で指定してください');
     patch.vadSilenceMs = input.vadSilenceMs;
   }
-  if ('avatarUrl' in input) {
-    if (input.avatarUrl !== '/models/default.vrm' && (typeof input.avatarUrl !== 'string' || !/^\/api\/avatars\/[0-9a-f-]{36}\.vrm$/.test(input.avatarUrl))) throw new HttpError(400, '読み込んだ VRM アバターを選択してください');
-    patch.avatarUrl = input.avatarUrl;
-  }
   return patch;
 }
 
@@ -129,7 +124,6 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     if (req.method === 'PUT') {
       if (await store.getActiveSessionId()) throw new HttpError(409, '現在の会話を終了してから設定を変更してください');
       const patch = settingsPatch(await json(req));
-      if (patch.avatarUrl?.startsWith('/api/avatars/')) await assertAvatarOwner(browserId, patch.avatarUrl.slice('/api/avatars/'.length, -4));
       return send(res, 200, await store.updateSettings(patch));
     }
   }
@@ -238,33 +232,6 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
       return send(res, 200, { ok: true });
     }
   }
-  if (path === '/api/avatar/storage' && req.method === 'GET') return send(res, 200, { storage: config.cloud ? 'blob' : 'local' });
-  if (['/api/avatar', '/api/avatar/upload', '/api/avatar/complete'].includes(path) && req.method === 'POST') {
-    if (await store.getActiveSessionId()) throw new HttpError(409, '会話を終了してからアバターを変更してください');
-    if (config.cloud) {
-      if (path === '/api/avatar/upload') return send(res, 200, await prepareAvatarUpload(browserId));
-      if (path !== '/api/avatar/complete') throw new HttpError(400, 'バイナリ形式の VRM ファイルを使用してください');
-      const avatarUrl = await completeAvatarUpload(browserId, (await json(req)).id);
-      if (await store.getActiveSessionId()) throw new HttpError(409, '会話を終了してからアバターを変更してください');
-      await store.updateSettings({ avatarUrl });
-      return send(res, 201, { avatarUrl });
-    }
-    if (path !== '/api/avatar') throw new HttpError(404, '指定された API が見つかりません');
-    if (req.headers['content-type'] !== 'application/octet-stream') throw new HttpError(415, 'バイナリ形式の VRM ファイルを使用してください');
-    const avatarUrl = await saveLocalAvatar(browserId, await body(req, MAX_MODEL_BYTES));
-    await store.updateSettings({ avatarUrl });
-    return send(res, 201, { avatarUrl });
-  }
-  const avatarPath = path.match(/^\/api\/avatars\/([0-9a-f-]{36})\.vrm$/);
-  if (avatarPath && req.method === 'GET') {
-    const data = await readAvatar(browserId, avatarPath[1]);
-    if (typeof data === 'string') {
-      res.writeHead(302, { Location: data, 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer' });
-      res.end(); return;
-    }
-    res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store', 'Content-Length': data.length });
-    res.end(data); return;
-  }
   throw new HttpError(404, '指定された API が見つかりません');
 }
 
@@ -304,8 +271,8 @@ function clientEvent(value: unknown): ClientEvent {
 
 const server = createServer((req, res) => {
   void handle(req, res).catch(error => {
-    const { message, ...details } = describeError((error instanceof HttpError || error instanceof AvatarError) ? error : 'ローカルサービスでエラーが発生しました。再試行してください');
-    send(res, (error instanceof HttpError || error instanceof AvatarError) ? error.status : 500, { error: message, ...details });
+    const { message, ...details } = describeError(error instanceof HttpError ? error : 'ローカルサービスでエラーが発生しました。再試行してください');
+    send(res, error instanceof HttpError ? error.status : 500, { error: message, ...details });
   });
 });
 server.requestTimeout = 60_000;

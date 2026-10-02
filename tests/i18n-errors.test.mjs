@@ -88,7 +88,6 @@ test('HTTP client accepts old and new error responses and sanitizes transport fa
   }
   t.mock.method(globalThis, 'fetch', async () => { throw new Error('Authorization: Bearer secret'); });
   await assert.rejects(api.settings(), { errorCode: 'serviceUnavailable', message: APP_ERROR_MESSAGES.serviceUnavailable });
-  await assert.rejects(api.uploadAvatar({ size: 31 * 1024 * 1024 }), { errorCode: 'modelTooLarge' });
 });
 
 test('blocked and corrupt browser credential storage carries localized descriptors', () => {

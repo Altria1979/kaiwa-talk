@@ -12,7 +12,7 @@ if (cloud) {
   if (!Number.isInteger(cloudPort) || cloudPort < 1 || cloudPort > 65535) throw new Error('PORT must be an integer between 1 and 65535.');
   const origin = new URL(publicOrigin);
   if (origin.protocol !== 'https:' || origin.origin !== publicOrigin) throw new Error('KAIWA_TALK_PUBLIC_ORIGIN must be an HTTPS origin without a trailing slash.');
-  for (const key of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BLOB_READ_WRITE_TOKEN']) {
+  for (const key of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN']) {
     if (!process.env[key]?.trim()) throw new Error(`${key} is required for cloud deployment.`);
   }
 }

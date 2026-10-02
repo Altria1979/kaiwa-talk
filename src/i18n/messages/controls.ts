@@ -14,7 +14,7 @@ const ja = {
   keyInvalid: 'API キーをすべて入力してください。空白や改行は含めないでください。', hostInvalid: '接続先には Bailian の公式ドメインを指定してください。半角英数字と記号のみ使用できます。', configIncomplete: '設定が不足しています。API キーと接続先を確認してください。',
   keySaved: 'API キーをこのブラウザーに保存しました。次の会話から適用されます。', keyDeleted: 'ブラウザーの API キーを削除しました。会話を始めるには、API キーを入力して保存してください。',
   readingDisplay: '読み方の表示', showKana: 'かなを表示', kana: 'かな', reading: '読み方',
-  aiReplies: 'AI の返信候補', close: '閉じる', open: '開く', repliesLoading: '返信候補を準備しています…', repliesEmpty: '返信候補はまだありません。そのまま会話を続けられます。',
+  aiReplies: 'AI の返信候補', replyHelp: 'どう返せばいい？', close: '閉じる', open: '開く', repliesLoading: '返信候補を準備しています…', repliesEmpty: '返信候補はまだありません。そのまま会話を続けられます。',
   cancelSample: 'お手本の準備をキャンセル：{text}', stopSample: 'お手本を停止：{text}', listenSampleLabel: 'お手本を聞く：{text}', preparing: '準備中…', stop: '停止', listenSample: 'お手本を聞く', sendReplyLabel: 'この返信を送信：{text}', send: '送信',
   samplePreparingHint: 'お手本の音声を準備しています。もう一度押すとキャンセルできます。', samplePlayingHint: 'お手本を再生中です。',
   actions: '動き', emotions: '表情', interactions: 'ふれあい', wave: '手を振る', nod: 'うなずく', shake: '首を振る', bow: 'おじぎ', stretch: 'のびをする', auto: '自動', neutral: '自然', happy: 'うれしい', relaxed: 'リラックス', sad: 'かなしい', angry: 'おこる', surprised: 'びっくり', head: '頭をなでる', body: 'そっとつつく', hand: '手にタッチ',
@@ -23,7 +23,7 @@ const ja = {
   viewControls: '視点の操作', zoomIn: '拡大', zoomOut: '縮小', resetView: '視点をリセット',
   viewMouseHint: 'ドラッグで回転 · ホイールで拡大縮小 · 右ドラッグで移動', viewTouchHint: '1本指で回転 · 2本指で拡大縮小・移動', viewKeyboardHint: '左右キーで回転、プラス・マイナスで拡大縮小、Home キーで視点をリセット。',
   avatarDescription: '{name}、日本語で話せる 3D パートナー', avatarLoading: '{name}を迎えています…', reload: '再読み込み',
-  avatarErrorTooLarge: 'アバターファイルは 30 MB 以下にしてください。', avatarErrorInvalid: 'このファイルは有効な VRM 0.0 / 1.0 モデルではありません。', avatarErrorBinary: 'バイナリ形式の VRM 0.0 / 1.0 ファイルを選択してください。', avatarErrorIncomplete: 'モデルのデータが不足しています。', avatarErrorVersion: 'VRM 0.0 と 1.0 に対応しています。対応するモデルを選択してください。', avatarErrorEmbedded: 'テクスチャを埋め込んだモデルを使用してください。外部ファイルは参照できません。', avatarErrorExternal: 'アバターモデルは外部リソースを読み込めません。', avatarErrorLoad: 'この VRM アバターを読み込めませんでした。', avatarErrorFile: 'この VRM アバターを読み込めませんでした。ファイルを確認して、もう一度お試しください。', avatarErrorWebGL: 'ブラウザーで 3D アバターを表示できません。ハードウェアアクセラレーションを有効にして、もう一度お試しください。', avatarErrorFetch: 'アバターファイルを読み込めませんでした。もう一度お試しいただくか、設定からモデルを読み込んでください。', avatarErrorUnknown: 'アバターを読み込めませんでした。もう一度お試しください。',
+  avatarErrorTooLarge: '内蔵アバターのファイルサイズが上限を超えています。', avatarErrorInvalid: 'このファイルは有効な VRM 0.0 / 1.0 モデルではありません。', avatarErrorBinary: '内蔵アバターのファイル形式が正しくありません。', avatarErrorIncomplete: 'モデルのデータが不足しています。', avatarErrorVersion: '内蔵アバターのモデル形式に対応していません。', avatarErrorEmbedded: '内蔵アバターに必要なテクスチャが含まれていません。', avatarErrorExternal: 'アバターモデルは外部リソースを読み込めません。', avatarErrorLoad: 'この VRM アバターを読み込めませんでした。', avatarErrorFile: 'この VRM アバターを読み込めませんでした。ファイルを確認して、もう一度お試しください。', avatarErrorWebGL: 'ブラウザーで 3D アバターを表示できません。ハードウェアアクセラレーションを有効にして、もう一度お試しください。', avatarErrorFetch: '内蔵アバターを読み込めませんでした。もう一度お試しください。', avatarErrorUnknown: 'アバターを読み込めませんでした。もう一度お試しください。',
 } as const;
 
 export type ControlsMessageKey = keyof typeof ja;
@@ -42,7 +42,7 @@ const en: Record<ControlsMessageKey, string> = {
   keyInvalid: 'Enter the full API key without spaces or line breaks.', hostInvalid: 'Use an official Bailian domain for the endpoint. Only ASCII letters, numbers, and symbols are allowed.', configIncomplete: 'Configuration is incomplete. Check your API key and endpoint.',
   keySaved: 'API key saved in this browser. It will be used for your next conversation.', keyDeleted: 'The browser API key has been deleted. Enter and save an API key to start a conversation.',
   readingDisplay: 'Pronunciation display', showKana: 'Show kana', kana: 'Kana', reading: 'Pronunciation',
-  aiReplies: 'AI reply suggestions', close: 'Close', open: 'Open', repliesLoading: 'Preparing reply suggestions…', repliesEmpty: 'No reply suggestions yet. You can keep the conversation going.',
+  aiReplies: 'AI reply suggestions', replyHelp: 'Not sure how to reply?', close: 'Close', open: 'Open', repliesLoading: 'Preparing reply suggestions…', repliesEmpty: 'No reply suggestions yet. You can keep the conversation going.',
   cancelSample: 'Cancel sample preparation: {text}', stopSample: 'Stop sample: {text}', listenSampleLabel: 'Listen to sample: {text}', preparing: 'Preparing…', stop: 'Stop', listenSample: 'Listen to sample', sendReplyLabel: 'Send this reply: {text}', send: 'Send',
   samplePreparingHint: 'Preparing the sample audio. Press again to cancel.', samplePlayingHint: 'Playing the sample.',
   actions: 'Actions', emotions: 'Expressions', interactions: 'Interactions', wave: 'Wave', nod: 'Nod', shake: 'Shake head', bow: 'Bow', stretch: 'Stretch', auto: 'Auto', neutral: 'Neutral', happy: 'Happy', relaxed: 'Relaxed', sad: 'Sad', angry: 'Angry', surprised: 'Surprised', head: 'Pat head', body: 'Gentle poke', hand: 'Touch hand',
@@ -51,7 +51,7 @@ const en: Record<ControlsMessageKey, string> = {
   viewControls: 'View controls', zoomIn: 'Zoom in', zoomOut: 'Zoom out', resetView: 'Reset view',
   viewMouseHint: 'Drag to rotate · Scroll to zoom · Right-drag to pan', viewTouchHint: 'One finger to rotate · Two fingers to zoom or pan', viewKeyboardHint: 'Use left and right arrows to rotate, plus and minus to zoom, and Home to reset the view.',
   avatarDescription: '{name}, a 3D partner who speaks Japanese', avatarLoading: 'Welcoming {name}…', reload: 'Reload',
-  avatarErrorTooLarge: 'Choose an avatar file of 30 MB or less.', avatarErrorInvalid: 'This file is not a valid VRM 0.0 / 1.0 model.', avatarErrorBinary: 'Choose a binary VRM 0.0 / 1.0 file.', avatarErrorIncomplete: 'Model data is incomplete.', avatarErrorVersion: 'VRM 0.0 and 1.0 are supported. Choose a model in either format.', avatarErrorEmbedded: 'Use a model with embedded textures. External files cannot be referenced.', avatarErrorExternal: 'Avatar models cannot load external resources.', avatarErrorLoad: 'This VRM avatar could not be loaded.', avatarErrorFile: 'This VRM avatar could not be loaded. Check the file and try again.', avatarErrorWebGL: 'Your browser cannot display the 3D avatar. Enable hardware acceleration and try again.', avatarErrorFetch: 'The avatar file could not be loaded. Try again or import a model in settings.', avatarErrorUnknown: 'The avatar could not be loaded. Please try again.',
+  avatarErrorTooLarge: 'The built-in avatar file exceeds the size limit.', avatarErrorInvalid: 'This file is not a valid VRM 0.0 / 1.0 model.', avatarErrorBinary: 'The built-in avatar file format is invalid.', avatarErrorIncomplete: 'Model data is incomplete.', avatarErrorVersion: 'The built-in avatar uses an unsupported model format.', avatarErrorEmbedded: 'The built-in avatar is missing embedded textures.', avatarErrorExternal: 'Avatar models cannot load external resources.', avatarErrorLoad: 'This VRM avatar could not be loaded.', avatarErrorFile: 'This VRM avatar could not be loaded. Check the file and try again.', avatarErrorWebGL: 'Your browser cannot display the 3D avatar. Enable hardware acceleration and try again.', avatarErrorFetch: 'The built-in avatar could not be loaded. Please try again.', avatarErrorUnknown: 'The avatar could not be loaded. Please try again.',
 };
 
 const zh: Record<ControlsMessageKey, string> = {
@@ -68,7 +68,7 @@ const zh: Record<ControlsMessageKey, string> = {
   keyInvalid: '请输入完整的 API Key，不要包含空格或换行。', hostInvalid: '连接地址请使用百炼官方域名，仅支持半角字母、数字和符号。', configIncomplete: '配置不完整，请检查 API Key 和连接地址。',
   keySaved: 'API Key 已保存在当前浏览器中，将从下一次会话开始使用。', keyDeleted: '已删除浏览器中的 API Key。请重新填写并保存 API Key 后开始对话。',
   readingDisplay: '读音显示', showKana: '显示假名', kana: '假名', reading: '读音',
-  aiReplies: 'AI 回复建议', close: '收起', open: '展开', repliesLoading: '正在准备回复建议…', repliesEmpty: '暂无回复建议，你可以继续会话。',
+  aiReplies: 'AI 回复建议', replyHelp: '不知道怎么回答？', close: '收起', open: '展开', repliesLoading: '正在准备回复建议…', repliesEmpty: '暂无回复建议，你可以继续会话。',
   cancelSample: '取消准备示范：{text}', stopSample: '停止示范：{text}', listenSampleLabel: '听示范：{text}', preparing: '准备中…', stop: '停止', listenSample: '听示范', sendReplyLabel: '发送这条回复：{text}', send: '发送',
   samplePreparingHint: '正在准备示范语音，再次点击即可取消。', samplePlayingHint: '正在播放示范。',
   actions: '动作', emotions: '表情', interactions: '互动', wave: '挥手', nod: '点头', shake: '摇头', bow: '鞠躬', stretch: '伸懒腰', auto: '自动', neutral: '自然', happy: '开心', relaxed: '放松', sad: '难过', angry: '生气', surprised: '惊讶', head: '摸摸头', body: '轻轻戳一下', hand: '碰手',
@@ -77,7 +77,7 @@ const zh: Record<ControlsMessageKey, string> = {
   viewControls: '视角控制', zoomIn: '放大', zoomOut: '缩小', resetView: '重置视角',
   viewMouseHint: '拖动旋转 · 滚轮缩放 · 右键拖动平移', viewTouchHint: '单指旋转 · 双指缩放或平移', viewKeyboardHint: '左右方向键旋转，加减键缩放，Home 键重置视角。',
   avatarDescription: '{name}，会说日语的 3D 伙伴', avatarLoading: '正在迎接{name}…', reload: '重新加载',
-  avatarErrorTooLarge: '请选择不超过 30 MB 的虚拟形象文件。', avatarErrorInvalid: '此文件不是有效的 VRM 0.0 / 1.0 模型。', avatarErrorBinary: '请选择二进制格式的 VRM 0.0 / 1.0 文件。', avatarErrorIncomplete: '模型数据不完整。', avatarErrorVersion: '支持 VRM 0.0 和 1.0，请选择这两种格式的模型。', avatarErrorEmbedded: '请使用内嵌贴图的模型，不能引用外部文件。', avatarErrorExternal: '虚拟形象模型不能加载外部资源。', avatarErrorLoad: '无法加载此 VRM 虚拟形象。', avatarErrorFile: '无法加载此 VRM 虚拟形象，请检查文件后重试。', avatarErrorWebGL: '浏览器无法显示 3D 虚拟形象，请开启硬件加速后重试。', avatarErrorFetch: '无法加载虚拟形象文件，请重试或在设置中导入模型。', avatarErrorUnknown: '无法加载虚拟形象，请重试。',
+  avatarErrorTooLarge: '内置形象文件大小超出限制。', avatarErrorInvalid: '此文件不是有效的 VRM 0.0 / 1.0 模型。', avatarErrorBinary: '内置形象文件格式无效。', avatarErrorIncomplete: '模型数据不完整。', avatarErrorVersion: '内置形象的模型格式不受支持。', avatarErrorEmbedded: '内置形象缺少内嵌贴图。', avatarErrorExternal: '虚拟形象模型不能加载外部资源。', avatarErrorLoad: '无法加载此 VRM 虚拟形象。', avatarErrorFile: '无法加载此 VRM 虚拟形象，请检查文件后重试。', avatarErrorWebGL: '浏览器无法显示 3D 虚拟形象，请开启硬件加速后重试。', avatarErrorFetch: '无法加载内置形象，请重试。', avatarErrorUnknown: '无法加载虚拟形象，请重试。',
 };
 
 function namespace(messages: Record<ControlsMessageKey, string>) {

@@ -61,25 +61,6 @@ function createLoader() {
   return loader;
 }
 
-/** Parse before persisting an imported model, so invalid replacements leave the saved avatar intact. */
-export async function validateAvatarFile(file: File) {
-  if (file.size > MAX_BYTES) throw new AvatarError('avatarErrorTooLarge');
-  try {
-    const buffer = await file.arrayBuffer();
-    checkEmbeddedModel(buffer);
-    const gltf = await createLoader().parseAsync(buffer, '');
-    const vrm = gltf.userData.vrm as VRM | undefined;
-    if (!vrm) {
-      VRMUtils.deepDispose(gltf.scene);
-      throw new AvatarError('avatarErrorLoad');
-    }
-    VRMUtils.deepDispose(vrm.scene);
-  } catch (cause) {
-    if (cause instanceof AvatarError) throw cause;
-    throw new AvatarError('avatarErrorFile');
-  }
-}
-
 function relaxArms(vrm: VRM) {
   vrm.scene.updateMatrixWorld(true);
   for (const side of ['left', 'right'] as const) {

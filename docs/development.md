@@ -23,7 +23,7 @@ KAIWA_TALK_WEB_PORT=13000 pnpm dev
 
 生产模式先运行 `pnpm build`，再运行 `KAIWA_TALK_WEB_PORT=13000 pnpm start`，无需按端口重新构建。浏览器以页面主机名和下一端口连接本地服务，保证浏览器身份 Cookie 可以正常发送。本地服务校验 Host 与 Origin，不应直接暴露到公网。
 
-无需为本地使用配置 Turso 或 Blob。聊天与 ASR 的默认模型名内置在 `server/config.ts`；需要调整时，将 `.env.example` 复制为 `.env.local` 后编辑，已有环境文件不要覆盖：
+无需为本地使用配置 Turso。聊天与 ASR 的默认模型名内置在 `server/config.ts`；需要调整时，将 `.env.example` 复制为 `.env.local` 后编辑，已有环境文件不要覆盖：
 
 ```dotenv
 BAILIAN_CHAT_MODEL=qwen3.8-flash
@@ -57,8 +57,8 @@ export const DEFAULT_TTS = {
       ├─ Qwen：流式对话、回复候选、解释、回顾
       ├─ TTS：分句合成与取消
       └─ 按浏览器隔离的持久化
-          ├─ 本地：SQLite + 磁盘头像
-          └─ 云端：Turso + Private Vercel Blob
+          ├─ 本地：SQLite
+          └─ 云端：Turso
 ```
 
 | 路径 | 职责 |
@@ -72,11 +72,11 @@ export const DEFAULT_TTS = {
 | `server/providers` | Qwen SSE、ASR 与 TTS 服务适配 |
 | `server/session.ts` | 会话租约、轮次编排、取消、上下文与学习回顾 |
 | `server/storage.ts` | 共享数据库连接与按身份绑定的存储视图 |
-| `server/avatars.ts` | VRM 验证、私有上传、完成和所属检查 |
+| `public/models/default.vrm` | 固定内置的薇尔莉特形象，不支持上传或替换 |
 | `shared/protocol.ts` | 前后端事件、数据类型及默认 TTS 模型和音色 |
 | `shared/cloud-access.ts` | 浏览器身份 Cookie 的签名与校验 |
 | `scripts/prepare-vad-assets.mjs` | 从锁定依赖复制 VAD、Worklet、ORT 与许可文件 |
-| `data/` | 自动生成的本地数据库、签名密钥和导入头像，不提交到仓库 |
+| `data/` | 自动生成的本地数据库和签名密钥，不提交到仓库 |
 
 ## 会话与音频行为
 
@@ -97,11 +97,11 @@ export const DEFAULT_TTS = {
 
 云端 Cookie 使用 `Secure`、`SameSite=Strict` 和一年有效期，打开网页时续期。`KAIWA_TALK_BROWSER_SECRET` 必须稳定保存；更换签名密钥会使原身份失效。本地签名密钥自动写入 `data/.browser-secret`，重启会继续使用。
 
-设置、历史、消息、记忆与会话租约使用 `browser_*` 表；新访客读取默认设置，不继承旧数据。头像位于 `avatars/<browserId>/<id>.vrm`，云端临时上传位于 `avatar-uploads/<browserId>/<id>.vrm`，下载前检查所属身份，再签发短期私有读取链接。
+设置、历史、消息、记忆与会话租约使用 `browser_*` 表；新访客读取默认设置，不继承旧数据。所有浏览器均使用 `public/models/default.vrm` 的内置形象；旧版保存的头像设置不再用于加载模型。
 
 API Key 仅保存在浏览器 localStorage 与单次请求／会话的服务端内存中，不写入会话数据库。浏览器身份与 API Key 是不同的用途：前者选择自己的记录，后者授权百炼调用。共用一个浏览器配置文件的人也会共用该站点身份。
 
-清除站点数据、结束无痕会话、切换域名或浏览器，可能无法继续访问原记录。当前没有账号恢复或跨设备同步。备份本地数据时先停止服务，再备份整个 `data/`，包括数据库、头像与签名密钥；备份应作为私人资料保存。
+清除站点数据、结束无痕会话、切换域名或浏览器，可能无法继续访问原记录。当前没有账号恢复或跨设备同步。备份本地数据时先停止服务，再备份整个 `data/`，包括数据库与签名密钥；备份应作为私人资料保存。
 
 ## 名称与旧版兼容
 
@@ -109,7 +109,7 @@ API Key 仅保存在浏览器 localStorage 与单次请求／会话的服务端�
 
 部分浏览器存储键仍使用旧名称，目的是保留语言、阅读方式、取景和 API Key 偏好。网站不再接受旧用户名或访问密码登录，旧授权 Cookie 也不能访问新身份数据。旧密码环境变量仅作为签名密钥的升级回退；新部署使用专门的 `KAIWA_TALK_BROWSER_SECRET`。
 
-旧共享数据库表与未分身份的头像文件保持原样，不会自动公开或分配给新浏览器。若确实需要恢复到某个新身份，应另行备份并执行受控迁移，不要在公共 API 中增加旧表回退。
+旧共享数据库表保持原样，不会自动公开或分配给新浏览器。旧版头像文件和 Blob 对象保留，但不再使用。若确实需要恢复到某个新身份，应另行备份并执行受控迁移，不要在公共 API 中增加旧表回退。
 
 ## 检查与故障排查
 
@@ -131,12 +131,12 @@ pnpm build
 | 增强检测不可用 | 执行过 `pnpm dev` 或 `pnpm build` 后检查本站 VAD 静态资源；重新开启语音会重试 |
 | 识别、合成或断线异常 | 先保留可用文字交流，必要时重新开启语音；上一句不会自动重发 |
 | 回顾没有出现 | 可能超时或返回格式不完整；已保存的聊天记录仍可查看 |
-| 自定义人物无法加载 | 确认 VRM 0.x / 1.0、资源内嵌、不超过 30 MB，并使用上传它的浏览器身份 |
+| 内置人物无法加载 | 检查 `public/models/default.vrm` 是否存在，并确认浏览器能访问 `/models/default.vrm` |
 
 ## 发布边界
 
-仓库只发布源码、测试、锁文件、部署配置、必要静态资源和许可说明。环境文件、私人数据库、录音、导入模型、构建目录、IDE 状态及本地制作资料应保持忽略；`.env.example` 只包含非敏感示例。不要上传本地工具的快照引用或使用 `git push --mirror` 发布工作站内部资料。
+仓库只发布源码、测试、锁文件、部署配置、必要静态资源和许可说明。环境文件、私人数据库、录音、旧版导入模型、构建目录、IDE 状态及本地制作资料应保持忽略；`.env.example` 只包含非敏感示例。不要上传本地工具的快照引用或使用 `git push --mirror` 发布工作站内部资料。
 
-当前 `public/models/default.vrm` 是用户提供的 Violet Evergarden v1 本地替换，文件内嵌条款要求署名，禁止再分发、商业使用和修改，不得将该文件随公开仓库或部署分发。发布前须换回具有相应分发授权的模型。
+当前固定内置的 `public/models/default.vrm` 是用户提供的 Violet Evergarden v1，文件内嵌条款要求署名，禁止再分发、商业使用和修改，不得将该文件随公开仓库或部署分发。发布前须换回具有相应分发授权的模型。
 
 历史设计与验收文档可能引用不随仓库发布的本地证据，这些目录不是运行依赖。默认角色来源与分发条件见 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)。

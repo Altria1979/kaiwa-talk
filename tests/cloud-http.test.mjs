@@ -56,10 +56,6 @@ mock.module('../server/session.ts', { exports: { RealtimeSession: class {
   constructor(socket, store) { this.socket = socket; this.disposed = false; realtimeSessions.push(this); boundOwners.push(store.owner); }
   async dispose() { this.disposed = true; }
 } } });
-mock.module('../server/avatars.ts', { exports: {
-  AvatarError: class extends Error {}, prepareAvatarUpload() {}, completeAvatarUpload() {}, saveLocalAvatar() {}, readAvatar() {},
-  async assertAvatarOwner(owner) { if (owner !== a) { const error = new Error('foreign avatar'); error.status = 404; throw error; } },
-} });
 const signals = new Map(['SIGINT', 'SIGTERM'].map(signal => [signal, new Set(process.listeners(signal))]));
 await import('../server/index.ts');
 after(() => {
@@ -109,6 +105,23 @@ test('HTTP routes bind settings, session lookup and busy state to the verified b
   assert.equal((await request(`/api/sessions/${id}`, { cookie: cookie(b) })).status, 404);
   const failed = await request('/api/sessions', { cookie: cookie() });
   assert.equal(failed.status, 500); assert.doesNotMatch(JSON.stringify(failed.body), /private-database-token/);
+});
+test('settings writes ignore legacy and arbitrary avatar replacements while preserving other fields', async () => {
+  for (const avatarUrl of [`/api/avatars/${id}.vrm`, 'https://example.com/custom.vrm', null, 123]) {
+    const saved = await request('/api/settings', { origin, cookie: cookie(b) }, 'PUT', { characterName: 'My companion', avatarUrl });
+    assert.equal(saved.status, 200);
+    assert.deepEqual(saved.body, { characterName: 'My companion' });
+    assert.equal(Object.hasOwn(settings.get(b), 'avatarUrl'), false);
+  }
+});
+test('avatar storage, upload, completion and imported-model routes are unavailable', async () => {
+  for (const [path, method] of [
+    ['/api/avatar/storage', 'GET'], ['/api/avatar', 'POST'], ['/api/avatar/upload', 'POST'],
+    ['/api/avatar/complete', 'POST'], [`/api/avatars/${id}.vrm`, 'GET'],
+  ]) {
+    const response = await request(path, { origin, cookie: cookie(b) }, method, method === 'POST' ? { id } : undefined);
+    assert.equal(response.status, 404, path);
+  }
 });
 test('bootstrap, writes and sockets reject foreign origins; sockets bind separate stores and per-browser limits', async () => {
   for (const foreign of [undefined, 'https://attacker.example']) {

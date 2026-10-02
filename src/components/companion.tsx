@@ -12,7 +12,7 @@ import { useConversationScroll } from '../hooks/use-conversation-scroll';
 import { useReadingPreferences } from '../hooks/use-reading-preferences';
 import { ReadingControls, type ReadingControlsProps } from './reading-aids';
 import { MessageReadingAid } from './message-reading-aid';
-import { AvatarStage, validateAvatarFile } from './avatar-stage';
+import { AvatarStage } from './avatar-stage';
 import { AvatarControls } from './avatar-controls';
 import { Icon } from './icon';
 import { ReplySuggestions } from './reply-suggestions';
@@ -276,7 +276,7 @@ export function Companion() {
 
         <aside className="companion-stage" aria-label={t('companion.virtualPartner')}>
           <div className="character-stage">
-            <AvatarStage avatarUrl={settings.avatarUrl} state={conversation.state} audioLevelRef={conversation.audioLevelRef} name={settings.characterName} framing={avatarFraming} caption={conversation.playbackCaption}
+            <AvatarStage avatarUrl={DEFAULT_SETTINGS.avatarUrl} state={conversation.state} audioLevelRef={conversation.audioLevelRef} name={settings.characterName} framing={avatarFraming} caption={conversation.playbackCaption}
               emotion={avatarEmotionMode === 'auto' ? conversation.avatarEmotion : avatarEmotionMode}
               command={avatarCommand} onCapabilities={updateAvatarCapabilities} />
           </div>
@@ -304,7 +304,7 @@ export function Companion() {
           <button className="text-button companion-settings" onClick={() => setPanel('settings')}>{t('companion.practiceSettings')}<Icon name="arrow" size={14} /></button>
         </div>
       )}
-      {panel === 'settings' && <SettingsPanel readingPreferences={readingPreferences} settings={settings} status={status} active={active} onSave={async (value) => { const saved = await api.saveSettings(value); setSettings(saved); setNotice('companion.settingsSavedNotice'); }} onAvatar={async (file) => { await validateAvatarFile(file); const result = await api.uploadAvatar(file); setSettings((current) => ({ ...current, avatarUrl: result.avatarUrl })); setNotice('companion.avatarChanged'); }} onRefresh={refreshData} />}
+      {panel === 'settings' && <SettingsPanel readingPreferences={readingPreferences} settings={settings} status={status} active={active} onSave={async (value) => { const saved = await api.saveSettings(value); setSettings(saved); setNotice('companion.settingsSavedNotice'); }} onRefresh={refreshData} />}
     </Modal>
     {notice && <div className="toast" role="status"><Icon name="check" size={17} />{t(notice)}</div>}
   </div>;
@@ -349,20 +349,17 @@ function Modal({ open, title, children, onClose }: { open: boolean; title: strin
   return <dialog ref={dialog} className="panel-dialog" aria-labelledby={titleId} onCancel={onClose} onClick={(event) => { if (event.target === dialog.current) { const bounds = dialog.current.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose(); } }}><div className="panel-header"><div><h2 id={titleId} ref={heading} tabIndex={-1}>{title}</h2></div><LanguageSwitcher /><button className="icon-button" aria-label={t('companion.closePanel')} onClick={onClose}><Icon name="close" size={22} /></button></div><div className="panel-body">{children}</div></dialog>;
 }
 
-function SettingsPanel({ settings, status, active, onSave, onAvatar, onRefresh, readingPreferences }: { readingPreferences: ReadingControlsProps; settings: Settings; status: ServiceStatus | null; active: boolean; onSave: (settings: Settings) => Promise<void>; onAvatar: (file: File) => Promise<void>; onRefresh: () => Promise<void> }) {
+function SettingsPanel({ settings, status, active, onSave, onRefresh, readingPreferences }: { readingPreferences: ReadingControlsProps; settings: Settings; status: ServiceStatus | null; active: boolean; onSave: (settings: Settings) => Promise<void>; onRefresh: () => Promise<void> }) {
   const { t, formatError, formatNumber } = useI18n();
   const [draft, setDraft] = useState(settings);
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [saved, setSaved] = useState(false);
-  const [modelName, setModelName] = useState('');
-  const upload = useRef<HTMLInputElement>(null);
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => { setDraft((current) => ({ ...current, [key]: value })); setSaved(false); };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true); setError(null);
-    try { await onSave({ ...draft, learningLanguage: DEFAULT_SETTINGS.learningLanguage, supportLanguage: DEFAULT_SETTINGS.supportLanguage, avatarUrl: settings.avatarUrl }); setSaved(true); } catch (cause) { setError(cause); } finally { setBusy(false); }
+    try { await onSave({ ...draft, learningLanguage: DEFAULT_SETTINGS.learningLanguage, supportLanguage: DEFAULT_SETTINGS.supportLanguage, avatarUrl: DEFAULT_SETTINGS.avatarUrl }); setSaved(true); } catch (cause) { setError(cause); } finally { setBusy(false); }
   };
   return <>
     <section className="reading-settings" aria-labelledby="reading-settings-title">
@@ -374,10 +371,17 @@ function SettingsPanel({ settings, status, active, onSave, onAvatar, onRefresh, 
     <BailianSettings status={status} active={active} onRefresh={onRefresh} />
     <form className="settings-form" onSubmit={(event) => void submit(event)}>
     {Boolean(error) && <p className="form-error" role="alert">{formatError(error)}</p>}
-    <div className="settings-section"><h3><span>{formatNumber(1, { minimumIntegerDigits: 2 })}</span>{t('companion.partnerAppearance')}</h3><div className="avatar-setting"><span className="avatar-setting-symbol">A</span><div><strong>{modelName || (settings.avatarUrl === '/models/default.vrm' ? t('companion.defaultAvatar') : t('companion.customAvatar'))}</strong><p>{t('companion.avatarRequirements')}</p></div><button type="button" className="secondary-button" disabled={uploading || active} onClick={() => upload.current?.click()}><Icon name="upload" size={16} />{uploading ? t('companion.loading') : t('companion.change')}</button><input ref={upload} type="file" accept=".vrm" className="sr-only" aria-label={t('companion.uploadAvatar')} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; setUploading(true); setError(null); void onAvatar(file).then(() => setModelName(file.name)).catch((cause: unknown) => setError(cause)).finally(() => setUploading(false)); }} /></div><p className="field-help">{t('companion.avatarHelp')}</p></div>
+    <div className="settings-section">
+      <h3><span>{formatNumber(1, { minimumIntegerDigits: 2 })}</span>{t('companion.partnerAppearance')}</h3>
+      <div className="avatar-setting">
+        <span className="avatar-setting-symbol">A</span>
+        <div><strong>{t('companion.defaultAvatar')}</strong><p>{t('companion.builtInAvatar')}</p></div>
+      </div>
+      <p className="field-help">{t('companion.avatarHelp')}</p>
+    </div>
     <div className="settings-section"><h3><span>{formatNumber(2, { minimumIntegerDigits: 2 })}</span>{t('companion.partnerProfile')}</h3><label className="field">{t('companion.name')}<input required maxLength={30} value={draft.characterName} onChange={(event) => set('characterName', event.target.value)} /></label><label className="field">{t('companion.personality')}<textarea required maxLength={1000} rows={3} value={draft.persona} onChange={(event) => set('persona', event.target.value)} /></label></div>
     <div className="settings-section"><h3><span>{formatNumber(3, { minimumIntegerDigits: 2 })}</span>{t('companion.practicePreferences')}</h3><p className="field-help">{t('companion.voiceLanguageHelp')}</p><p className="field-help">{t('companion.explanationHelp')}</p><label className="field">{t('companion.practiceLevel')}<select value={draft.japaneseLevel} onChange={(event) => set('japaneseLevel', event.target.value as Settings['japaneseLevel'])}><option value="beginner">{t('companion.beginner')}</option><option value="intermediate">{t('companion.intermediate')}</option><option value="advanced">{t('companion.advanced')}</option></select></label><div className="field-grid"><label className="field">{t('companion.voiceType')}<input required maxLength={80} value={draft.voice} onChange={(event) => set('voice', event.target.value)} /><span className="field-help">{t('companion.voiceHelp')}</span></label><label className="field">{t('companion.silenceWait')}<select value={draft.vadSilenceMs} onChange={(event) => set('vadSilenceMs', Number(event.target.value))}>{[600, 800, 1200, 1600, 2000, 3000].map((value) => <option key={value} value={value}>{t('companion.seconds', { value: formatNumber(value / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}{value === 1600 ? t('companion.defaultSuffix') : ''}</option>)}</select><span className="field-help">{t('companion.silenceHelp')}</span></label></div></div>
     {active && <p className="inline-info">{t('companion.endBeforeSettings')}</p>}
-    <div className="panel-save"><span>{saved ? t('companion.settingsSaved') : t('companion.localStorageHelp')}</span><button className="primary-button" disabled={busy || uploading || active}><Icon name={saved ? 'check' : 'arrow'} size={17} />{busy ? t('companion.savingProgress') : t('companion.saveSettings')}</button></div>
+    <div className="panel-save"><span>{saved ? t('companion.settingsSaved') : t('companion.localStorageHelp')}</span><button className="primary-button" disabled={busy || active}><Icon name={saved ? 'check' : 'arrow'} size={17} />{busy ? t('companion.savingProgress') : t('companion.saveSettings')}</button></div>
   </form></>;
 }

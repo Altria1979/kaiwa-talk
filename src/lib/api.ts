@@ -1,5 +1,5 @@
 import { AppError, describeError, type ErrorDescriptor } from '../../shared/app-errors';
-import { MAX_MODEL_BYTES, type BrowserBailianCredentials, type ChatMessage, type MessageReadingAid, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
+import { type BrowserBailianCredentials, type ChatMessage, type MessageReadingAid, type ServiceStatus, type SessionRecord, type Settings } from '../../shared/protocol';
 import { browserCredentialHeaders, readBrowserCredentials } from './bailian-credentials';
 import { ensureBrowserSession, SERVICE_URL } from './browser-session';
 export { ensureBrowserSession, SERVICE_URL, SOCKET_URL } from './browser-session';
@@ -42,22 +42,4 @@ export const api = {
     { method: 'POST', headers: browserCredentialHeaders(), signal },
     70_000,
   ),
-  uploadAvatar: async (file: File | Blob) => {
-    if (file.size > MAX_MODEL_BYTES) return Promise.reject(new ApiError('モデルファイルは 30 MB 以下にしてください。'));
-    const storage = await request<{ storage: 'local' | 'blob' }>('/api/avatar/storage');
-    if (storage.storage === 'blob') {
-      const grant = await request<{ id: string; pathname: string; token: string }>('/api/avatar/upload', json('POST', {}));
-      try {
-        const { put } = await import('@vercel/blob/client');
-        await put(grant.pathname, file, { token: grant.token, access: 'private', contentType: 'application/octet-stream', multipart: true });
-        return await request<{ avatarUrl: string }>('/api/avatar/complete', json('POST', { id: grant.id }), 70_000);
-      } catch (error) {
-        if (error instanceof ApiError) throw error;
-        throw new ApiError('ローカルサービスでリクエストを完了できませんでした。');
-      }
-    }
-    return request<{ avatarUrl: string }>('/api/avatar', {
-      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file,
-    }, 30_000);
-  },
 };

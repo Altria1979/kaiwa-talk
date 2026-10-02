@@ -64,6 +64,13 @@ const cloudScript = `
 const cloudStorage = { TURSO_DATABASE_URL: 'libsql://test.invalid', TURSO_AUTH_TOKEN: 'test-only-token', BLOB_READ_WRITE_TOKEN: 'test-only-token' };
 const secret = 'test-only-cloud-password-0123456789';
 
+test('cloud configuration starts with database credentials and no avatar upload token', () => {
+  assert.deepEqual(output(cloudScript, {
+    ...cloudStorage, BLOB_READ_WRITE_TOKEN: '', KAIWA_TALK_DEPLOYMENT: 'vercel',
+    KAIWA_TALK_PUBLIC_ORIGIN: 'https://kaiwa.example', KAIWA_TALK_ACCESS_PASSWORD: secret,
+  }), { cloud: true, publicOrigin: 'https://kaiwa.example', servicePort: 8080 });
+});
+
 test('cloud configuration supports all naming generations and gives the preferred origin priority', () => {
   const namingGenerations = ['VIRTUALMAID', 'KAIWA_LAB', 'KAIWA_TALK'];
   const environment = {};

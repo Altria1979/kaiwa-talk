@@ -25,8 +25,6 @@
 - POST /api/memories {content} → MemoryRecord
 - PUT /api/memories/:id {content} → MemoryRecord
 - DELETE /api/memories/:id → {ok:true}
-- POST /api/avatar，Content-Type application/octet-stream，原始 VRM body → {avatarUrl:string}，同时保存 settings
-- GET /api/avatars/:id.vrm → 内嵌资源的 VRM 1.0 二进制
 - GET /ws WebSocket upgrade，JSON 消息类型见 shared/protocol.ts。voice.stop 用于录音故障后的文字降级；speech.started 携带 turnId:string|null，只通知候选目标，不直接取消或改变会话状态。前端结合本地确认与有效中间文字判断插话；降级时至少需要有效中间文字。仅中断匹配轮次或在无服务器轮次时停止本地重听。cancel 可带 turnId，服务端对不匹配目标完全忽略，手动无目标取消保持原行为。
 - reply.suggestions 输出 {turnId, messageId, status:'loading'|'ready'|'unavailable', suggestions:ReplySuggestion[]}。ReplySuggestion 为 {text,reading,meaning}；ready 必须三项。ChatMessage.replySuggestions 为可选持久化字段；不加入后续聊天上下文。正文完成后并行生成，18 秒超时，取消随当前轮次传播。
 
@@ -50,7 +48,9 @@ beginTurn 读取一次设置及回复模式：回复模式由语音是否开启�
 
 ## 浏览器跨模块接口
 
-src/lib/api.ts 导出 api {status,settings,saveSettings,sessions,session,translate,memories,addMemory,updateMemory,deleteMemory,uploadAvatar}，返回上述 Promise 类型。
+伙伴形象固定使用 `public/models/default.vrm` 内置薇尔莉特，不支持上传或替换模型。
+
+src/lib/api.ts 导出 api {status,settings,saveSettings,sessions,session,translate,memories,addMemory,updateMemory,deleteMemory}，返回上述 Promise 类型。
 
 src/hooks/use-conversation.ts 导出 useConversation()：{state,connected,active,voiceEnabled,muted,session,messages,transcript,error,audioLevelRef,start({voice,sessionId?}),end(),sendText(text),cancel(),toggleMute(),replay(turnId,slow?),canReplay(turnId),loadHistory(sessionId),clearError()}。start / end / sendText / replay / loadHistory 均 Promise<void>。audioLevelRef 是 React.MutableRefObject<number>，Three 帧读取，不逐帧更新 React。无配置时仍可展示人物和设置；不伪造 AI 回复。
 

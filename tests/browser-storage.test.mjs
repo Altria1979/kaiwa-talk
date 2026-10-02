@@ -35,6 +35,25 @@ function setup(t, driver) {
 }
 
 for (const driver of ['local', 'libsql']) {
+  test(`${driver}: saved and patched avatars always resolve to the bundled model without changing other preferences`, async t => {
+    const { open, filename } = setup(t, driver);
+    const ownerId = randomUUID();
+    const store = open().forOwner(ownerId);
+    assert.equal((await store.getSettings()).avatarUrl, DEFAULT_SETTINGS.avatarUrl);
+    const db = new Database(filename);
+    t.after(() => db.close());
+    const saved = { ...DEFAULT_SETTINGS, characterName: 'My companion', voice: 'Serena', persona: 'My persona', avatarUrl: '/api/avatars/legacy.vrm' };
+    db.prepare('INSERT INTO browser_settings (owner_id, data) VALUES (?, ?)').run(ownerId, JSON.stringify(saved));
+    const expected = { ...saved, avatarUrl: DEFAULT_SETTINGS.avatarUrl };
+    assert.deepEqual(await store.getSettings(), expected);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data), saved);
+    for (const avatarUrl of ['/api/avatars/replacement.vrm', 'https://example.com/custom.vrm', null]) {
+      assert.deepEqual(await store.updateSettings({ avatarUrl, vadSilenceMs: 1800 }), { ...expected, vadSilenceMs: 1800 });
+      assert.deepEqual(await open().forOwner(ownerId).getSettings(), { ...expected, vadSilenceMs: 1800 });
+      assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).avatarUrl, DEFAULT_SETTINGS.avatarUrl);
+    }
+  });
+
   test(`${driver}: browser identities cannot read or mutate each other's records, even with known IDs`, async t => {
     const { open } = setup(t, driver);
     const manager = open();

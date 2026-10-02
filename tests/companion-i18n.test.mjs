@@ -67,7 +67,7 @@ mock.module('../src/lib/api.ts', { exports: { api: {
 } } });
 for (const [path, names] of [
   ['reading-aids', ['ReadingControls', 'ReplyReading']],
-  ['avatar-stage', ['AvatarStage', 'validateAvatarFile']],
+  ['avatar-stage', ['AvatarStage']],
   ['avatar-controls', ['AvatarControls']],
   ['icon', ['Icon']],
   ['reply-suggestions', ['ReplySuggestions']],
@@ -218,6 +218,30 @@ function panel() {
   const panelElement = find(render(), nodeType('SettingsPanel'));
   return { root: render, element: panelElement, render: harness(panelElement.type, panelElement.props) };
 }
+
+test('appearance stays built in and settings cannot restore an old custom avatar in any locale', async () => {
+  const originalLocale = locale;
+  try {
+    for (const next of ['ja', 'zh-CN', 'en']) {
+      locale = next;
+      const view = panel();
+      const tree = view.render({ ...view.element.props, active: false, settings: {
+        ...DEFAULT_SETTINGS, characterName: 'My companion', avatarUrl: '/api/avatars/old-custom.vrm',
+      } });
+      const appearance = find(tree, node => node.props.className === 'avatar-setting');
+      assert.equal(text(find(appearance, node => node.type === 'strong')), t('companion.defaultAvatar'));
+      assert.ok(text(appearance).includes(t('companion.builtInAvatar')));
+      assert.equal(find(appearance, node => node.type === 'button'), undefined);
+      assert.equal(find(tree, node => node.type === 'input' && node.props.type === 'file'), undefined);
+      find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+      await new Promise(resolve => setImmediate(resolve));
+      assert.equal(savedSettings.avatarUrl, DEFAULT_SETTINGS.avatarUrl);
+      assert.equal(savedSettings.characterName, 'My companion');
+    }
+  } finally {
+    locale = originalLocale;
+  }
+});
 
 test('starter labels change while their sent Japanese text and stable keys remain unchanged', async () => {
   const render = harness(Companion);

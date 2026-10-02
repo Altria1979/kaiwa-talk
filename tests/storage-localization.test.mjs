@@ -50,10 +50,15 @@ test('previous built-in voices migrate to Violet and persist on the next setting
   }
 });
 
-test('the previous default character name follows the replacement default model', async () => {
-  saveSettings({ ...DEFAULT_SETTINGS, characterName: 'VRoid Avatar A' });
-  assert.equal((await store.getSettings()).characterName, DEFAULT_SETTINGS.characterName);
-  assert.equal((await store.updateSettings({ vadSilenceMs: 1800 })).characterName, DEFAULT_SETTINGS.characterName);
+test('a saved character name remains stable after the bundled model becomes fixed', async () => {
+  for (const avatarUrl of [DEFAULT_SETTINGS.avatarUrl, '/api/avatars/custom.vrm']) {
+    saveSettings({ ...DEFAULT_SETTINGS, characterName: 'VRoid Avatar A', avatarUrl });
+    for (let i = 0; i < 2; i++) {
+      assert.equal((await store.getSettings()).characterName, 'VRoid Avatar A');
+      assert.equal((await store.updateSettings({ vadSilenceMs: 1800 })).characterName, 'VRoid Avatar A');
+      assert.equal((await store.getSettings()).avatarUrl, DEFAULT_SETTINGS.avatarUrl);
+    }
+  }
 });
 
 test('default cloned voice preserves custom voices and their saved settings', async () => {
@@ -99,9 +104,9 @@ test('legacy built-in personas migrate and persist only for their browser withou
   ]) {
     const settings = { ...DEFAULT_SETTINGS, persona, characterName: '私の相手', voice: 'Serena', avatarUrl: '/api/avatars/custom.vrm' };
     saveSettings(settings);
-    assert.deepEqual(await store.getSettings(), { ...settings, persona: DEFAULT_SETTINGS.persona });
+    assert.deepEqual(await store.getSettings(), { ...settings, persona: DEFAULT_SETTINGS.persona, avatarUrl: DEFAULT_SETTINGS.avatarUrl });
     assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).persona, persona);
-    const expected = { ...settings, persona: DEFAULT_SETTINGS.persona, vadSilenceMs: 1800 };
+    const expected = { ...settings, persona: DEFAULT_SETTINGS.persona, avatarUrl: DEFAULT_SETTINGS.avatarUrl, vadSilenceMs: 1800 };
     assert.deepEqual(await store.updateSettings({ vadSilenceMs: 1800 }), expected);
     assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data), expected);
     assert.deepEqual(await otherStore.getSettings(), otherSettings);
@@ -125,7 +130,7 @@ test('persona migration preserves custom text and extended legacy personas exact
   }
 });
 
-test('legacy character name migrates without changing the imported avatar or saved history', async () => {
+test('legacy character name migrates with the bundled avatar without changing saved history', async () => {
   const avatarUrl = '/api/avatars/existing-avatar-a.vrm';
   saveSettings({ ...DEFAULT_SETTINGS, characterName: '小春', avatarUrl });
   const session = (await store.createSession());
@@ -136,20 +141,20 @@ test('legacy character name migrates without changing the imported avatar or sav
   const history = () => ['browser_sessions', 'browser_messages', 'browser_memories'].map(table => db.prepare(`SELECT data FROM ${table} WHERE owner_id = ? ORDER BY rowid`).all(ownerId));
   const before = history();
 
-  assert.deepEqual((await store.getSettings()), { ...DEFAULT_SETTINGS, avatarUrl });
+  assert.deepEqual((await store.getSettings()), DEFAULT_SETTINGS);
   const updated = (await store.updateSettings({ voice: 'Serena' }));
   assert.equal(updated.characterName, 'ヴァイオレット');
-  assert.equal(updated.avatarUrl, avatarUrl);
+  assert.equal(updated.avatarUrl, DEFAULT_SETTINGS.avatarUrl);
   assert.equal(JSON.parse(db.prepare('SELECT data FROM browser_settings WHERE owner_id = ?').get(ownerId).data).characterName, 'ヴァイオレット');
   assert.deepEqual(history(), before);
 });
 
-test('character migration preserves custom names and model selections exactly', async () => {
+test('character migration preserves custom names while fixing the bundled model', async () => {
   for (const characterName of ['小春ちゃん', 'Koharu', '私の会話パートナー', 'VRoid Avatar A']) {
     const settings = { ...DEFAULT_SETTINGS, characterName, avatarUrl: '/api/avatars/my-avatar.vrm' };
     saveSettings(settings);
-    assert.deepEqual((await store.getSettings()), settings);
-    assert.deepEqual((await store.updateSettings({ vadSilenceMs: 1800 })), { ...settings, vadSilenceMs: 1800 });
+    assert.deepEqual((await store.getSettings()), { ...settings, avatarUrl: DEFAULT_SETTINGS.avatarUrl });
+    assert.deepEqual((await store.updateSettings({ vadSilenceMs: 1800 })), { ...settings, avatarUrl: DEFAULT_SETTINGS.avatarUrl, vadSilenceMs: 1800 });
   }
 });
 
@@ -159,7 +164,7 @@ test('saved and patched languages are fixed to Japanese without changing custom 
     persona: '请记住我喜欢料理。这是我自己写的人物设定。',
     characterName: '私の会話パートナー',
     voice: 'Serena',
-    avatarUrl: '/api/avatars/my-avatar.vrm',
+    avatarUrl: DEFAULT_SETTINGS.avatarUrl,
   };
   const session = await store.createSession();
   await store.addMessage({ sessionId: session.id, turnId: 'old', role: 'user', content: '以前の会話です。', delivery: 'text' });

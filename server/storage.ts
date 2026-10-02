@@ -29,14 +29,14 @@ async function checkLease(db: DatabaseConnection, browserId: string, guard: Sess
 
 async function readSettings(db: DatabaseConnection, browserId: string): Promise<Settings> {
   const settings = { ...DEFAULT_SETTINGS, ...parse<Settings>((await db.execute('SELECT data FROM browser_settings WHERE owner_id = ?', [browserId])).rows[0]) };
-  // Only known built-in values are migrated; custom names, personas, models and voices remain intact.
+  // Only known built-in text and voice values migrate; the avatar is always bundled.
   if (settings.voice === 'Cherry' || settings.voice === 'qwen-tts-vc-kaiwa-voice-20261001155111507-6512') settings.voice = DEFAULT_SETTINGS.voice;
   if (settings.characterName === '小春') settings.characterName = DEFAULT_SETTINGS.characterName;
-  if (settings.characterName === 'VRoid Avatar A' && settings.avatarUrl === DEFAULT_SETTINGS.avatarUrl) settings.characterName = DEFAULT_SETTINGS.characterName;
   if (settings.persona === '温柔、耐心、有好奇心的日语聊天伙伴。像朋友一样自然交流。'
     || settings.persona === '優しく、辛抱強く、好奇心旺盛な日本語の会話パートナー。友達のように自然に話します。') settings.persona = DEFAULT_SETTINGS.persona;
   settings.learningLanguage = DEFAULT_SETTINGS.learningLanguage;
   settings.supportLanguage = DEFAULT_SETTINGS.supportLanguage;
+  settings.avatarUrl = DEFAULT_SETTINGS.avatarUrl;
   return settings;
 }
 
@@ -91,6 +91,7 @@ export function createStore(options: DatabaseOptions) {
             ...patch,
             learningLanguage: DEFAULT_SETTINGS.learningLanguage,
             supportLanguage: DEFAULT_SETTINGS.supportLanguage,
+            avatarUrl: DEFAULT_SETTINGS.avatarUrl,
           };
           await db.execute('INSERT INTO browser_settings (owner_id, data) VALUES (?, ?) ON CONFLICT(owner_id) DO UPDATE SET data = excluded.data', [browserId, JSON.stringify(settings)]);
           return settings;

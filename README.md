@@ -25,8 +25,8 @@
 | 重听与慢放 | 重听当前会话已合成的完整句，以 0.8 倍速度慢放并保持音高 |
 | 日语解释与回顾 | 按需获取简明日语解释；会话结束后生成话题摘要、三个实用表达和一个改进建议 |
 | 3D 虚拟伙伴 | 跟随音频的口型、表情与字幕；挥手、点头、鞠躬等动作，以及点击头部、身体、手部的互动 |
-| 角色与练习设置 | 调整角色名字、性格、音色、难度和说话后的等待时间；导入自己的 VRM 0.x / 1.0 形象 |
-| 浏览器隔离 | 不同浏览器分别保存角色设置和上传头像；同一浏览器刷新后可继续使用 |
+| 角色与练习设置 | 调整角色名字、性格、音色、难度和说话后的等待时间；形象固定使用内置薇尔莉特 |
+| 浏览器隔离 | 不同浏览器分别保存角色设置；同一浏览器刷新后可继续使用 |
 | 三语界面 | 日本語、简体中文、English 即时切换；已有对话与学习内容不会因此被翻译或改写 |
 
 语音输入以日语为主。中文求助或其他语言练习可以使用文字输入；回复候选的翻译使用简体中文，额外解释及学习回顾使用日语。AI 内容可能有误，本项目不提供发音评分或考试能力认证。
@@ -55,15 +55,15 @@ API Key 只保存在当前浏览器的 localStorage 中，调用时通过项目�
 
 导出录音仅暂存在当前页面，格式由浏览器支持情况决定（如 WebM 或 M4A）。请在开始下一段对话或刷新、关闭页面前下载；历史记录不能恢复这份录音。静音期间不会录入麦克风声音，纯文字且未播放音频的对话没有可导出的录音。麦克风和扬声器效果受设备、环境与浏览器影响，使用耳机通常有助于减少回声。
 
-### 换一个喜欢的伙伴
+### 内置伙伴与形象控制
 
-在「练习设置 → 伙伴形象」上传 **VRM 0.x / 1.0** 模型，最大 **30 MB**，贴图与资源必须内嵌，不支持外部资源引用。导入失败时保留原形象。请先确认模型作者允许相应使用。
+伙伴形象固定使用项目内置的**薇尔莉特（Violet Evergarden v1）**，模型文件为 `public/models/default.vrm`。应用不支持上传、导入或替换形象。
 
 点击右下角星形的「角色设置」按钮，可打开动作、表情、互动和形象大小控件。
 
-可以调节全身到近景的取景大小，通过「动作／表情／互动」切换姿态、表情和触碰反应。动作互动本身不调用 AI；自定义模型缺少相应骨骼或表情时，部分操作不可用。
+可以调节全身到近景的取景大小，通过「动作／表情／互动」切换姿态、表情和触碰反应。动作互动本身不调用 AI。
 
-在角色区域拖动可 360° 环绕查看，滚轮缩放，右键拖动平移；手机支持单指旋转、双指缩放和平移。角色下方也有缩放和「重置视角」按钮。聚焦视角控件后，左右方向键旋转、加减键缩放、Home 键复位。手动调整后会保留视角；重置、修改取景大小或切换模型后恢复正面自动取景。拖动和双指操作不会触发触碰互动。
+在角色区域拖动可 360° 环绕查看，滚轮缩放，右键拖动平移；手机支持单指旋转、双指缩放和平移。角色下方也有缩放和「重置视角」按钮。聚焦视角控件后，左右方向键旋转、加减键缩放、Home 键复位。手动调整后会保留视角；重置或修改取景大小后恢复正面自动取景。拖动和双指操作不会触发触碰互动。
 
 #### Violet 模型来源与使用条件
 
@@ -82,7 +82,7 @@ API Key 只保存在当前浏览器的 localStorage 中，调用时通过项目�
 | 修改（Alterations） | 禁止 |
 | 署名（Attribution） | 必须 |
 
-个人使用时，请自行前往原始页面确认并接受使用条件，下载后通过「练习设置 → 伙伴形象」导入。免费提供下载、项目免费开源或已注明作者，都不会取消上述限制。
+个人使用时，请自行前往原始页面确认并接受使用条件。免费提供下载、项目免费开源或已注明作者，都不会取消上述限制。
 
 本项目未另行取得该模型的再分发授权。**不能将该 VRM 随公开仓库、安装包或网站部署向他人分发，包括把文件放在网站公开路径供浏览器加载。** 公开发布前须移除或替换为获得相应使用和分发授权的模型；仅补充 README 或署名不等于取得这些授权。更多元数据与许可记录见[第三方声明](THIRD_PARTY_NOTICES.md)。
 
@@ -90,7 +90,7 @@ API Key 只保存在当前浏览器的 localStorage 中，调用时通过项目�
 
 当前界面保留本次对话和学习回顾，已移除历史与记忆管理入口；服务端已有记录仍保留。
 
-- 网站免登录，自动为浏览器建立独立身份。历史、记忆、设置与头像保存在服务端，并按身份隔离；**不是所有数据都仅保存在浏览器本地**。
+- 网站免登录，自动为浏览器建立独立身份。历史、记忆与设置保存在服务端，并按身份隔离；**不是所有数据都仅保存在浏览器本地**。
 - 同一个浏览器配置文件和站点来源下，多个标签页共用记录；同一浏览器同时只能进行一段会话，不同浏览器可以分别对练。
 - 清除网站数据、无痕窗口结束、换浏览器或更换域名后，可能失去原记录的访问权限；目前没有账号登录、跨设备同步或身份找回功能。
 - 百炼接收用于识别的音频、对话上下文和需要合成的文本。完整对话录音仅在当前页面内存中暂存，并在你点击导出后下载到设备，不上传到服务端保存；密钥不会作为服务器默认凭据供他人使用。
@@ -109,7 +109,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)。启动器同时运行 Next.js 网页和端口 3001 的 Node 服务。VAD 资源在启动和构建时从锁定依赖生成。当前工作区的 `public/models/default.vrm` 是上述 Violet 模型，使用前须遵守其独立条款；它不是可自由随项目分发的示例素材。需要其他形象时，可导入自己获得相应使用授权的模型。
+打开 [http://localhost:3000](http://localhost:3000)。启动器同时运行 Next.js 网页和端口 3001 的 Node 服务。VAD 资源在启动和构建时从锁定依赖生成。当前工作区的 `public/models/default.vrm` 是上述 Violet 模型，使用前须遵守其独立条款；它不是可自由随项目分发的示例素材。应用固定加载该内置形象，不提供更换入口。
 
 端口被占用时可运行 `KAIWA_TALK_WEB_PORT=13000 pnpm dev`，服务端自动使用下一个端口。本地数据保存在忽略提交的 `data/` 目录中。使用内置模型名称无需 `.env.local`；API Key 仍在网页中配置。
 
@@ -122,9 +122,9 @@ pnpm start
 
 ### 部署到自己的 Vercel
 
-项目使用 **Vercel Services**：Next.js 提供页面，Node.js 容器处理 HTTP、WebSocket 和语音会话；Turso 保存结构化数据，**Private Vercel Blob** 保存上传模型。它需要服务端运行时，不是纯静态导出站点。
+项目使用 **Vercel Services**：Next.js 提供页面，Node.js 容器处理 HTTP、WebSocket 和语音会话；Turso 保存结构化数据，伙伴形象从项目的固定内置模型加载。它需要服务端运行时，不是纯静态导出站点。
 
-部署步骤、签名密钥、数据库与 Blob 环境变量见 [Vercel 部署指南](docs/vercel-deployment.md)。用户自备模型服务密钥，部署方承担应用、数据库、存储和流量费用。当前仅限制单个头像文件大小，尚未设置累计上传配额；面向更多访客开放前应配置部署侧限流、用量监控和存储管理。
+部署步骤、签名密钥与数据库环境变量见 [Vercel 部署指南](docs/vercel-deployment.md)。用户自备模型服务密钥，部署方承担应用、数据库、存储和流量费用。面向更多访客开放前应配置部署侧限流、用量监控和存储管理。
 
 ## 3. 技术实现与开源致谢
 
@@ -134,11 +134,11 @@ pnpm start
 | --- | --- |
 | 网页与类型 | [Next.js 16](https://github.com/vercel/next.js) App Router、[React 19](https://github.com/facebook/react)、[TypeScript 5.9](https://github.com/microsoft/TypeScript) |
 | 界面与国际化 | CSS Modules、全局样式与自有中／日／英字典，三语共用应用路由 |
-| 虚拟形象 | [Three.js](https://github.com/mrdoob/three.js) 与 [three-vrm](https://github.com/pixiv/three-vrm)，加载 VRM 0.x / 1.0 并驱动口型、姿态和表情 |
+| 虚拟形象 | [Three.js](https://github.com/mrdoob/three.js) 与 [three-vrm](https://github.com/pixiv/three-vrm)，加载固定内置 VRM 形象并驱动口型、姿态和表情 |
 | 对话与语音 | 百炼 Qwen 对话模型、Fun-ASR 实时识别、Qwen 实时 TTS；默认模型由环境配置控制 |
 | 音频与人声检测 | Web Audio、AudioWorklet、[vad-web](https://github.com/ricky0123/vad)、[Silero VAD](https://github.com/snakers4/silero-vad)、[ONNX Runtime](https://github.com/microsoft/onnxruntime) |
 | 实时服务 | Node.js 24、[ws](https://github.com/websockets/ws)、HTTP API 与 WebSocket 事件协议 |
-| 持久化 | 本地 [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)，云端 Turso/libSQL 与私有 Vercel Blob |
+| 持久化 | 本地 [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)，云端 Turso/libSQL |
 | 质量与部署 | Node 内置测试、tsx、TypeScript、ESLint；Vercel Services 与 Docker 后端 |
 
 ### 核心实现
@@ -146,7 +146,7 @@ pnpm start
 - **可取消的实时会话**：为回复分配独立轮次，协调识别、文本生成、分句合成与播放。停止或插话后取消旧任务，避免过期结果覆盖新回复。见 [`server/session.ts`](server/session.ts) 和 [`use-conversation.ts`](src/hooks/use-conversation.ts)。
 - **语音与已听内容对齐**：浏览器只在完整句自然播完后确认播放；后续语音上下文区分已听内容与中断回复，重听与慢放复用本轮音频。见 [`browser-audio.ts`](src/lib/browser-audio.ts)。
 - **轻量的开口检测**：本地 VAD 提供人声活动信号，结合云端有效识别内容确认插话；Fun-ASR 负责最终断句，不把录音串行提交两次。它不是发音评分系统。
-- **浏览器身份隔离**：使用签名 HttpOnly Cookie，将 API、WebSocket、数据库查询、会话租约与私有头像路径绑定到同一身份。共享数据库连接不等于共享用户记录。见 [`cloud-access.ts`](shared/cloud-access.ts)、[`storage.ts`](server/storage.ts) 和 [`avatars.ts`](server/avatars.ts)。
+- **浏览器身份隔离**：使用签名 HttpOnly Cookie，将 API、WebSocket、数据库查询与会话租约绑定到同一身份。共享数据库连接不等于共享用户记录。见 [`cloud-access.ts`](shared/cloud-access.ts) 和 [`storage.ts`](server/storage.ts)。
 - **角色表现与对话分离**：手动动作不触发对话请求；自动表情从同一次回复提取，口型由实际播放音量驱动，字幕近似跟随句内播放进度。见 [`avatar-stage.tsx`](src/components/avatar-stage.tsx)。
 
 运行质量检查：
