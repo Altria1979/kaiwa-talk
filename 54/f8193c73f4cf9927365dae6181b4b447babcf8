@@ -1,0 +1,80 @@
+docs/vercel-deployment.md
+  s_8bd8fc91e47b51::t_f047f9d7999356 3,5,22,26,28,30,49,51,63,73,75,79,81,84,87,95,118
+tests/naming-config.test.mjs
+  s_8bd8fc91e47b51::t_b01db29488b79c 67-73
+README.ja.md
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 28-29,58,64,70,89,102,104,114,118
+  s_8bd8fc91e47b51::t_bbe03fd1f2f6f9 60
+  s_ccd36282a09e7c::t_359ac51f444f6c 126
+src/i18n/messages/companion.ts
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 96-97,113,217-218,234,337,353
+  s_8bd8fc91e47b51::t_885745420a7bb5 336
+tests/cloud-http.test.mjs
+  s_8bd8fc91e47b51::t_b01db29488b79c 109-125
+server/config.ts
+  s_8bd8fc91e47b51::t_03015ca1e762e0 15
+tests/browser-storage.test.mjs
+  s_8bd8fc91e47b51::t_b01db29488b79c 38-56
+docs/development.md
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 26,60-61,75,79,100,104,112,134,138,140
+server/storage.ts
+  s_8bd8fc91e47b51::t_03015ca1e762e0 32,39,94
+src/components/companion.tsx
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 15,279,307,352,362,374-381,385
+tests/storage-localization.test.mjs
+  s_8bd8fc91e47b51::t_08b451c6be2b3c 53-61,107,109,133,144,147,152
+  s_8bd8fc91e47b51::t_6161f46c9c45c9 156-157,167
+docs/IMPLEMENTATION.md
+  s_ccd36282a09e7c::t_359ac51f444f6c 51-53
+tests/companion-i18n.test.mjs
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 70
+  s_8bd8fc91e47b51::t_77f9c823b6a475 222-244
+  s_8bd8fc91e47b51::t_eb663f70da00c6 245
+src/lib/api.ts
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 2
+src/i18n/messages/controls.ts
+  s_5254af42996f34::t_72634dbab10654 17,26,45,54,71,80
+server/index.ts
+  s_8bd8fc91e47b51::t_03015ca1e762e0 13,274-275
+README.md
+  s_8bd8fc91e47b51::t_bbe03fd1f2f6f9 141
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 28-29,58,60,64,66,85,93,112,125,127,137
+  s_ccd36282a09e7c::t_359ac51f444f6c 149
+README.en.md
+  s_ccd36282a09e7c::t_359ac51f444f6c 126
+  s_8bd8fc91e47b51::t_4ed7cdd262e608 28-29,58,60,64,70,89,102,104,114,118
+.env.example
+  s_8bd8fc91e47b51::t_8f93cb2f0ab95f 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "54f8193c73f4cf9927365dae6181b4b447babcf8",
+  "prompts": {},
+  "sessions": {
+    "s_5254af42996f34": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa84-0839-7cd1-a92d-ec8831d38ab7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_8bd8fc91e47b51": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa79-f43c-73e3-ba1a-4cb84c462e5d",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    },
+    "s_ccd36282a09e7c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fa78-e084-7702-abd8-38dc35fa11e9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Altria1979 <hakusai22@qq.com>"
+    }
+  }
+}
