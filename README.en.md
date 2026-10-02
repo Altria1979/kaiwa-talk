@@ -14,7 +14,9 @@ The project connects a large language model (LLM), speech recognition (ASR), spe
 
 No registration or website password is required. Bring your own Alibaba Cloud Model Studio (Bailian) API key to start practising. Before configuring a key, you can still explore the interface, customise the character, try its actions, and manage settings. The interface supports 日本語, 简体中文, and English, with Japanese selected on your first visit.
 
-![English home screen with a virtual companion, practice topics, and conversation controls](docs/screenshots/en-home.jpg)
+![English home screen with the garden background, Violet, and voice and text conversation controls](docs/screenshots/en-home.jpg)
+
+Screenshots updated on 2026-10-02 from the current local version. The settings screenshot below uses a fresh browser session with no API key entered.
 
 | Feature | What you can do |
 | --- | --- |
@@ -24,8 +26,7 @@ No registration or website password is required. Bring your own Alibaba Cloud Mo
 | Japanese explanations and recaps | Request a brief Japanese explanation. After a conversation, receive a topic summary, three useful expressions, and one suggestion for improvement |
 | 3D companion | Mouth movements, expressions, and captions alongside speech; actions such as waving, nodding, and bowing; and interactions by clicking the head, body, or hands |
 | Character and practice settings | Adjust the name, personality, voice, difficulty, and pause after speaking. Import your own VRM 0.x / 1.0 avatar |
-| History and memories | Browse conversations and recaps. Explicitly save, edit, or delete preferences you want the companion to remember; memory suggestions are never saved automatically |
-| Browser isolation | Keep history, memories, character settings, and uploaded avatars separate for each browser, with access retained after refreshing the same browser |
+| Browser isolation | Keep character settings and uploaded avatars separate for each browser, with access retained after refreshing the same browser |
 | Three interface languages | Switch instantly between 日本語, 简体中文, and English. Existing conversations and learning content are not translated or rewritten when you switch |
 
 Voice input is primarily intended for Japanese. Use text to ask for help in Chinese or practise other languages. Suggested replies have Simplified Chinese translations; additional explanations and learning recaps are in Japanese. AI output may contain mistakes; this project does not score pronunciation or certify exam proficiency.
@@ -34,12 +35,12 @@ Voice input is primarily intended for Japanese. Use text to ask for help in Chin
 
 ### Set up your own API key
 
-1. Open the [website](https://kaiwa-talk.vercel.app/) and choose your preferred interface language in the header.
-2. Open “Practice settings”, enter your own Alibaba Cloud Model Studio (Bailian) API key, and click “Save API key”. See the [official guide](https://help.aliyun.com/zh/model-studio/get-api-key) for instructions on obtaining one.
+1. Open the [website](https://kaiwa-talk.vercel.app/), click “Settings” at the bottom right, and choose your preferred interface language at the top right of the dialog.
+2. In “Practice settings”, enter your own Alibaba Cloud Model Studio (Bailian) API key and click “Save API key”. See the [official guide](https://help.aliyun.com/zh/model-studio/get-api-key) for instructions on obtaining one.
 3. The default endpoint works for the Beijing region. For another region or workspace, expand the endpoint settings and enter the corresponding domain, such as `dashscope-intl.aliyuncs.com` for Singapore. Your key and endpoint must belong to the same region.
 4. Choose a practice difficulty, character personality, and voice, save your settings, and start a conversation.
 
-![Practice settings with API key controls, browser isolation details, and character options](docs/screenshots/en-settings.jpg)
+![Practice settings dialog with interface language, reading hints, API key controls, and avatar options](docs/screenshots/en-settings.jpg)
 
 Your API key is stored only in the current browser's localStorage. When making a request, the application server forwards it to Bailian; it is not written to the conversation database, URLs, or logs. localStorage is not encrypted, so use a browser you trust. You can update or remove the key in settings. Saving a key checks only the configuration format: it does not call a paid model or confirm account permissions or available quota. Actual conversations, speech recognition, speech synthesis, reply suggestions, explanations, and recaps consume your own service quota.
 
@@ -50,7 +51,7 @@ Your API key is stored only in the current browser's localStorage. When making a
 3. Pause briefly when you finish speaking. By default, the app waits **1.6 seconds** before submitting your utterance; you can adjust this in settings. Recognised speech, your companion's response, and playback status appear on the page.
 4. If you are unsure how to respond, consult the Japanese suggestions with kana and Chinese translations on the same supporting line. Choose “Listen to sample” to hear the sentence or “Send” to reply directly. You can toggle kana in settings.
 5. Use “Listen again” or “Listen slowly” to hear a response again, or request a Japanese explanation. To interrupt generation and playback immediately, click “Stop current reply”.
-6. Click “End conversation” to release the microphone and wait for the learning recap. Choose “Export audio” under “This conversation’s audio” to save your voice and the companion audio actually played, including replays and examples. Only memory suggestions you explicitly save will be used in future conversations.
+6. Click “End conversation” to release the microphone and wait for the learning recap. Choose “Export audio” under “This conversation’s audio” to save your voice and the companion audio actually played, including replays and examples.
 
 The recording stays in memory on the current page, in a browser-supported format such as WebM or M4A. Download it before starting another conversation, reloading, or closing the page; history cannot restore it. Muted microphone input is excluded, and text-only conversations without audio playback have no recording to export. Microphone and speaker performance depends on your device, surroundings, and browser. Headphones usually help reduce echo.
 
@@ -58,9 +59,13 @@ The recording stays in memory on the current page, in a browser-supported format
 
 Upload a **VRM 0.x / 1.0** model from the avatar section of “Practice settings”. The limit is **30 MB**, and textures and other resources must be embedded. References to external resources are not supported. If an import fails, your previous avatar is kept. Check that the model's creator permits your intended use.
 
+Click the star-shaped avatar settings button at the bottom right to open actions, expressions, interactions, and framing controls.
+
 The default avatar in this workspace has been replaced locally with the user-provided **Violet Evergarden v1** by Little Cwoissant, preserving the original model unchanged. Its embedded terms require attribution and prohibit redistribution, commercial use, and modification, so it must not be distributed through a public repository or deployment. Adjust the framing from a full-body view to a close-up, and use “Actions / Expressions / Interactions” to select movements, expressions, and touch responses. These manual interactions do not call AI services. Some controls may be unavailable if a custom model lacks the required bones or expressions. See the [third-party notices](THIRD_PARTY_NOTICES.md) for the model's source and licence terms.
 
 ### Records and privacy
+
+The current interface shows the active conversation and its learning recap. History and memory management controls have been removed; existing server records are retained.
 
 - The site creates a separate browser identity automatically, without a login. History, memories, settings, and avatars are stored on the server and isolated by that identity. **Not all data is stored only in your browser.**
 - Tabs using the same browser profile and site origin share records. Each browser can have one active conversation at a time; different browsers can practise independently.
